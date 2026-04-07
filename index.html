@@ -10,24 +10,22 @@
         .container { max-width: 500px; margin: auto; }
         .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .section-title { font-weight: bold; font-size: 1rem; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--bg); padding-bottom: 8px; }
-        
         input { padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; box-sizing: border-box; }
         .spec-row, .area-row { display: flex; gap: 8px; margin-bottom: 8px; }
         .input-name { flex: 2; }
         .input-val { flex: 1; text-align: center; }
-        
         button { border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-add { background: var(--secondary); color: white; padding: 5px 10px; font-size: 0.8rem; }
         .btn-del { background: #fee2e2; color: var(--danger); padding: 8px 12px; }
         .btn-main { width: 100%; padding: 16px; background: var(--primary); color: white; font-size: 1.1rem; margin-top: 10px; }
-        .btn-save { width: 100%; padding: 12px; background: var(--success); color: white; margin-top: 10px; display: none; }
-        
-        /* 히스토리 스타일 */
+        .btn-save { width: 100%; padding: 12px; background: var(--success); color: white; margin-top: 10px; }
         .history-item { background: #fff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; margin-bottom: 10px; position: relative; }
         .history-date { font-size: 0.75rem; color: #94a3b8; }
-        .history-title { font-weight: bold; display: block; margin: 4px 0; }
-        .history-content { font-size: 0.85rem; color: #475569; white-space: pre-line; }
-        .btn-history-del { position: absolute; top: 10px; right: 10px; color: var(--danger); font-size: 0.8rem; background: none; }
+        .history-title { font-weight: bold; display: block; margin: 4px 0; color: var(--primary); }
+        .history-content { font-size: 0.85rem; color: #475569; white-space: pre-line; line-height: 1.5; margin-bottom: 10px;}
+        .history-btns { display: flex; gap: 10px; }
+        .btn-edit { background: #e0f2fe; color: var(--primary); padding: 6px 12px; font-size: 0.85rem; flex: 1; }
+        .btn-history-del { background: #fee2e2; color: var(--danger); padding: 6px 12px; font-size: 0.85rem; flex: 1; }
     </style>
 </head>
 <body>
@@ -37,70 +35,44 @@
 
     <div class="card">
         <label style="font-weight: bold; font-size: 0.9rem;">현장/부위 명칭</label>
-        <input type="text" id="siteName" style="width: 100%; margin-top: 5px;" placeholder="예: 한남동 빌라 거실">
+        <input type="text" id="siteName" style="width: 100%; margin-top: 5px;" placeholder="예: 한남동 거실">
     </div>
 
     <div class="card">
-        <div class="section-title">
-            사용 제품 규격 (mm)
-            <button class="btn-add" onclick="addSpecRow()">+ 추가</button>
-        </div>
-        <div id="spec-list">
-            <div class="spec-row">
-                <input type="text" class="input-name" value="1200" placeholder="명칭">
-                <input type="number" class="input-val" value="1180" placeholder="길이">
-                <button class="btn-del" onclick="this.parentElement.remove()">X</button>
-            </div>
-            <div class="spec-row">
-                <input type="text" class="input-name" value="900" placeholder="명칭">
-                <input type="number" class="input-val" value="880" placeholder="길이">
-                <button class="btn-del" onclick="this.parentElement.remove()">X</button>
-            </div>
-        </div>
+        <div class="section-title">제품 규격 (mm) <button class="btn-add" onclick="addSpecRow()">+ 추가</button></div>
+        <div id="spec-list"></div>
     </div>
 
     <div class="card">
-        <div class="section-title">
-            실측 길이 입력 (mm)
-            <button class="btn-add" onclick="addAreaRow()">+ 부위 추가</button>
-        </div>
-        <div id="area-list">
-            <div class="area-row">
-                <input type="text" class="input-name" value="A구간" placeholder="부위">
-                <input type="number" class="input-val" placeholder="길이">
-            </div>
-        </div>
+        <div class="section-title">실측 길이 (mm) <button class="btn-add" onclick="addAreaRow()">+ 부위 추가</button></div>
+        <div id="area-list"></div>
     </div>
 
-    <button class="btn-main" onclick="runCalculation()">계산 및 결과 확인</button>
+    <button class="btn-main" onclick="runCalculation()">1. 계산하기</button>
 
     <div id="result-area" style="display:none; margin-top: 20px;">
         <div class="card" id="current-result" style="border: 2px solid var(--primary);"></div>
-        <button class="btn-save" id="saveBtn" onclick="saveToHistory()">📥 이 내역 저장하기</button>
+        <button class="btn-save" onclick="saveToHistory()">2. 이 내역 저장하기 📥</button>
     </div>
 
     <hr style="margin: 30px 0; border: 1px solid #e2e8f0;">
 
-    <div class="section-title">
-        📋 저장된 발주 히스토리
-        <button class="btn-add" style="background: var(--danger);" onclick="clearHistory()">전체 삭제</button>
-    </div>
+    <div class="section-title">📋 저장된 히스토리 <button class="btn-add" style="background: var(--danger);" onclick="clearHistory()">전체 삭제</button></div>
     <div id="history-list"></div>
 </div>
 
 <script>
-    // 페이지 로드 시 히스토리 불러오기
-    window.onload = () => { renderHistory(); };
+    window.onload = () => { loadSpecs(); addAreaRow(); renderHistory(); };
 
-    function addSpecRow() {
+    function addSpecRow(name='', val='') {
         const div = document.createElement('div'); div.className = 'spec-row';
-        div.innerHTML = `<input type="text" class="input-name" placeholder="명칭"><input type="number" class="input-val" placeholder="길이"><button class="btn-del" onclick="this.parentElement.remove()">X</button>`;
+        div.innerHTML = `<input type="text" class="input-name" value="${name}" placeholder="명칭"><input type="number" class="input-val" value="${val}" placeholder="길이"><button class="btn-del" onclick="this.parentElement.remove()">X</button>`;
         document.getElementById('spec-list').appendChild(div);
     }
 
-    function addAreaRow() {
+    function addAreaRow(name='', val='') {
         const div = document.createElement('div'); div.className = 'area-row';
-        div.innerHTML = `<input type="text" class="input-name" placeholder="부위"><input type="number" class="input-val" placeholder="길이"><button class="btn-del" onclick="this.parentElement.remove()">X</button>`;
+        div.innerHTML = `<input type="text" class="input-name" value="${name}" placeholder="부위"><input type="number" class="input-val" value="${val}" placeholder="길이"><button class="btn-del" onclick="this.parentElement.remove()">X</button>`;
         document.getElementById('area-list').appendChild(div);
     }
 
@@ -112,9 +84,13 @@
         const specs = Array.from(specRows).map(row => ({
             name: row.querySelectorAll('input')[0].value,
             size: parseFloat(row.querySelectorAll('input')[1].value)
-        })).filter(s => s.size > 0).sort((a, b) => b.size - a.size);
+        })).filter(s => s.size > 0);
+        
+        localStorage.setItem('t5_specs_default', JSON.stringify(specs));
+        const sortedSpecs = [...specs].sort((a, b) => b.size - a.size);
 
         const areaRows = document.querySelectorAll('#area-list .area-row');
+        let areaInputs = [];
         let areaDetails = [];
         let grandTotal = {};
 
@@ -122,76 +98,6 @@
             const name = row.querySelectorAll('input')[0].value || "구간";
             const len = parseFloat(row.querySelectorAll('input')[1].value);
             if (!len) return;
+            areaInputs.push({ name, len });
 
-            let temp = len - 50; // 마진
-            let counts = [];
-            specs.forEach(s => {
-                let count = Math.floor(temp / s.size);
-                if (count > 0) {
-                    counts.push({ name: s.name, count: count });
-                    grandTotal[s.name] = (grandTotal[s.name] || 0) + count;
-                    temp -= (s.size * count);
-                }
-            });
-            areaDetails.push({ name, len, counts, leftover: temp.toFixed(0) });
-        });
-
-        if (areaDetails.length === 0) { return alert("길이를 입력해주세요."); }
-
-        lastCalcData = { siteName, areaDetails, grandTotal, date: new Date().toLocaleString() };
-        displayResult(lastCalcData);
-    }
-
-    function displayResult(data) {
-        let html = `<strong>📍 ${data.siteName}</strong><br><small>${data.date}</small><hr>`;
-        data.areaDetails.forEach(a => {
-            html += `<div style="margin-bottom:8px;">• ${a.name}(${a.len}mm): ${a.counts.map(c => `${c.name}-${c.count}개`).join(', ')} <span style="color:red; font-size:0.8rem;">(여유:${a.leftover})</span></div>`;
-        });
-        html += `<div style="background:#f1f5f9; padding:10px; margin-top:10px; border-radius:5px;"><strong>합계:</strong> `;
-        html += Object.entries(data.grandTotal).map(([k, v]) => `${k}용 ${v}개`).join(' / ') + `</div>`;
-
-        document.getElementById('current-result').innerHTML = html;
-        document.getElementById('result-area').style.display = 'block';
-        document.getElementById('saveBtn').style.display = 'block';
-    }
-
-    function saveToHistory() {
-        let history = JSON.parse(localStorage.getItem('t5_history') || '[]');
-        history.unshift(lastCalcData); // 최신순 저장
-        localStorage.setItem('t5_history', JSON.stringify(history));
-        alert("히스토리에 저장되었습니다.");
-        renderHistory();
-    }
-
-    function renderHistory() {
-        const history = JSON.parse(localStorage.getItem('t5_history') || '[]');
-        const container = document.getElementById('history-list');
-        container.innerHTML = history.map((item, idx) => `
-            <div class="history-item">
-                <button class="btn-history-del" onclick="deleteHistory(${idx})">삭제</button>
-                <span class="history-date">${item.date}</span>
-                <span class="history-title">${item.siteName}</span>
-                <div class="history-content">
-                    ${Object.entries(item.grandTotal).map(([k,v]) => `${k}: ${v}개`).join(' | ')}
-                </div>
-            </div>
-        `).join('');
-    }
-
-    function deleteHistory(idx) {
-        let history = JSON.parse(localStorage.getItem('t5_history') || '[]');
-        history.splice(idx, 1);
-        localStorage.setItem('t5_history', JSON.stringify(history));
-        renderHistory();
-    }
-
-    function clearHistory() {
-        if(confirm("모든 저장 내역을 삭제할까요?")) {
-            localStorage.removeItem('t5_history');
-            renderHistory();
-        }
-    }
-</script>
-
-</body>
-</html>
+            let temp =

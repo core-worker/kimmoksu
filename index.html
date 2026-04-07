@@ -12,8 +12,8 @@
         .section-title { font-weight: bold; font-size: 1rem; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--bg); padding-bottom: 8px; }
         input { padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; box-sizing: border-box; }
         .spec-row, .area-row { display: flex; gap: 8px; margin-bottom: 8px; }
-        .input-name { flex: 2; }
-        .input-val { flex: 1; text-align: center; }
+        .input-name { flex: 2; width: 100%; }
+        .input-val { flex: 1; text-align: center; width: 100%; }
         button { border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-add { background: var(--secondary); color: white; padding: 5px 10px; font-size: 0.8rem; }
         .btn-del { background: #fee2e2; color: var(--danger); padding: 8px 12px; }
@@ -24,14 +24,14 @@
         .history-title { font-weight: bold; display: block; margin: 4px 0; color: var(--primary); }
         .history-content { font-size: 0.85rem; color: #475569; white-space: pre-line; line-height: 1.5; margin-bottom: 10px;}
         .history-btns { display: flex; gap: 10px; }
-        .btn-edit { background: #e0f2fe; color: var(--primary); padding: 6px 12px; font-size: 0.85rem; flex: 1; }
+        .btn-edit { background: #e0f2fe; color: var(--primary); padding: 6px 12px; font-size: 0.85rem; flex: 1; text-align: center; text-decoration: none; display: inline-block; }
         .btn-history-del { background: #fee2e2; color: var(--danger); padding: 6px 12px; font-size: 0.85rem; flex: 1; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="text-align: center;">🏗️ T5 발주 매니저</h2>
+    <h2 style="text-align: center;">🏗️ 김목수이야기 계산기</h2>
 
     <div class="card">
         <label style="font-weight: bold; font-size: 0.9rem;">현장/부위 명칭</label>
@@ -62,7 +62,12 @@
 </div>
 
 <script>
-    window.onload = () => { loadSpecs(); addAreaRow(); renderHistory(); };
+    // 페이지 시작 시 실행
+    window.onload = () => { 
+        loadSpecs(); 
+        if (document.querySelectorAll('#area-list .area-row').length === 0) addAreaRow(); 
+        renderHistory(); 
+    };
 
     function addSpecRow(name='', val='') {
         const div = document.createElement('div'); div.className = 'spec-row';
@@ -86,7 +91,8 @@
             size: parseFloat(row.querySelectorAll('input')[1].value)
         })).filter(s => s.size > 0);
         
-        localStorage.setItem('t5_specs_default', JSON.stringify(specs));
+        // 규격 저장 (다음에 열 때도 유지됨)
+        localStorage.setItem('t5_specs_v2', JSON.stringify(specs));
         const sortedSpecs = [...specs].sort((a, b) => b.size - a.size);
 
         const areaRows = document.querySelectorAll('#area-list .area-row');
@@ -100,4 +106,114 @@
             if (!len) return;
             areaInputs.push({ name, len });
 
-            let temp =
+            let temp = len - 50; 
+            let counts = [];
+            sortedSpecs.forEach(s => {
+                let count = Math.floor(temp / s.size);
+                if (count > 0) {
+                    counts.push({ name: s.name, count: count });
+                    grandTotal[s.name] = (grandTotal[s.name] || 0) + count;
+                    temp -= (s.size * count);
+                }
+            });
+            areaDetails.push({ name, len, counts, leftover: temp.toFixed(0) });
+        });
+
+        if (areaDetails.length === 0) return alert("실측 길이를 입력해주세요.");
+
+        lastCalcData = { siteName, specs, areaInputs, areaDetails, grandTotal, date: new Date().toLocaleString() };
+        
+        let html = `<strong>📍 계산 완료: ${lastCalcData.siteName}</strong><br><hr>`;
+        lastCalcData.areaDetails.forEach(a => {
+            html += `• ${a.name}: ${a.counts.map(c => `${c.name}-${c.count}개`).join(', ')} (남음:${a.leftover}mm)<br>`;
+        });
+        html += `<div style="margin-top:10px; font-weight:bold;">총 수량: ${Object.entries(lastCalcData.grandTotal).map(([k, v]) => `${k}용 ${v}개`).join(' / ')}</div>`;
+        
+        document.getElementById('current-result').innerHTML = html;
+        document.getElementById('result-area').style.display = 'block';
+        window.scrollTo({ top: document.getElementById('result-area').offsetTop - 20, behavior: 'smooth' });
+    }
+
+    function saveToHistory() {
+        if(!lastCalcData) return;
+        let history = JSON.parse(localStorage.getItem('t5_history_v2') || '[]');
+        history.unshift(lastCalcData);
+        localStorage.setItem('t5_history_v2', JSON.stringify(history));
+        renderHistory();
+        alert("저장되었습니다.");
+    }
+
+    function renderHistory() {
+        const history = JSON.parse(localStorage.getItem('t5_history_v2') || '[]');
+        const list = document.getElementById('history-list');
+        if(history.length === 0) {
+            list.innerHTML = '<p style="text-align:center; color:#94a3b8;">저장된 내역이 없습니다.</p>';
+            return;
+        }
+        list.innerHTML = history.map((item, idx) => `
+            <div class="history-item">
+                <span class="history-date">${item.date}</span>
+                <span class="history-title">${item.siteName}</span>
+                <div class="history-content">합계: ${Object.entries(item.grandTotal).map(([k,v]) => `${k}-${v}개`).join(', ')}</div>
+                <div class="history-btns">
+                    <button class="btn-edit" onclick="loadToEdit(${idx})">불러오기(수정)</button>
+                    <button class="btn-history-del" onclick="deleteHistory(${idx})">삭제</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function loadToEdit(idx) {
+        const history = JSON.parse(localStorage.getItem('t5_history_v2') || '[]');
+        const data = history[idx];
+        if(!data) return;
+
+        if(!confirm("기존 입력 내용을 지우고 이 내역을 불러올까요?")) return;
+
+        document.getElementById('siteName').value = data.siteName;
+        
+        const specList = document.getElementById('spec-list');
+        specList.innerHTML = '';
+        data.specs.forEach(s => addSpecRow(s.name, s.size));
+
+        const areaList = document.getElementById('area-list');
+        areaList.innerHTML = '';
+        data.areaInputs.forEach(a => addAreaRow(a.name, a.len));
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.getElementById('result-area').style.display = 'none';
+    }
+
+    function loadSpecs() {
+        // 지정하신 새로운 기본 규격 세팅
+        const defaultSpecs = [
+            {"name":"1200","size":1190},
+            {"name":"900","size":890},
+            {"name":"600","size":590},
+            {"name":"400","size":385},
+            {"name":"300","size":330}
+        ];
+        const savedSpecs = JSON.parse(localStorage.getItem('t5_specs_v2'));
+        const specsToLoad = savedSpecs && savedSpecs.length > 0 ? savedSpecs : defaultSpecs;
+        
+        document.getElementById('spec-list').innerHTML = '';
+        specsToLoad.forEach(s => addSpecRow(s.name, s.size));
+    }
+
+    function deleteHistory(idx) {
+        if(!confirm("삭제하시겠습니까?")) return;
+        let history = JSON.parse(localStorage.getItem('t5_history_v2') || '[]');
+        history.splice(idx, 1);
+        localStorage.setItem('t5_history_v2', JSON.stringify(history));
+        renderHistory();
+    }
+
+    function clearHistory() {
+        if(confirm("모든 내역을 삭제할까요?")) {
+            localStorage.removeItem('t5_history_v2');
+            renderHistory();
+        }
+    }
+</script>
+</body>
+</html>

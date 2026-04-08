@@ -16,55 +16,63 @@
     <h3 style="margin-bottom:20px;">👥 팀원 관리</h3>
 
     <div id="create-team-area" class="card" style="display:none;">
-        <div class="section-title">팀 생성</div>
-        <input type="text" id="newTeamName" placeholder="팀 이름 (예: 김목수이야기 한남현장)">
+        <div class="section-title">우리 팀 생성</div>
+        <input type="text" id="newTeamName" placeholder="팀 이름 (예: 김목수이야기 1팀)">
         <button class="btn-main" onclick="createNewTeam()">팀 만들기</button>
     </div>
 
     <div id="manage-team-area" class="card" style="display:none;">
-        <div class="section-title">우리 팀: <span id="currentTeamName"></span></div>
+        <div class="section-title">팀: <span id="currentTeamName"></span></div>
         <div style="display:flex; gap:8px; margin-bottom:20px;">
-            <input type="email" id="inviteEmail" placeholder="팀원 이메일" style="margin-bottom:0;">
-            <button onclick="inviteMember()" style="padding:0 15px; background:var(--primary); color:white; border-radius:10px;">초대</button>
+            <input type="email" id="inviteEmail" placeholder="초대할 팀원 이메일" style="margin-bottom:0;">
+            <button onclick="inviteMember()" style="padding:0 15px; background:var(--primary); color:white; border-radius:12px;">초대</button>
         </div>
-        <div id="member-list-area"></div>
+        <div id="member-list-area">닉네임을 불러오는 중...</div>
     </div>
 </div>
 
 <script>
     let myEmail, myTeamId;
-    auth.onAuthStateChanged(user => { if (user) { myEmail = user.email; checkMyTeam(); } else { location.href='index.html'; } });
+
+    auth.onAuthStateChanged(user => { 
+        if (user) { myEmail = user.email; checkMyTeam(); } 
+        else { location.href='index.html'; } 
+    });
 
     async function checkMyTeam() {
-        // 리더인 팀 탐색
-        const q1 = await db.collection("teams").where("leader", "==", myEmail).get();
-        if (!q1.empty) { renderTeam(q1.docs[0], true); return; }
-        // 멤버인 팀 탐색
-        const q2 = await db.collection("teams").where("members", "array-contains", myEmail).get();
-        if (!q2.empty) { renderTeam(q2.docs[0], false); }
+        const q = await db.collection("teams").where("members", "array-contains", myEmail).get();
+        if (!q.empty) { renderTeam(q.docs[0]); }
         else { document.getElementById('create-team-area').style.display='block'; }
     }
 
-    function renderTeam(doc, isLeader) {
+    async function renderTeam(doc) {
         myTeamId = doc.id;
         const d = doc.data();
+        const isLeader = (d.leader === myEmail);
         document.getElementById('manage-team-area').style.display='block';
         document.getElementById('currentTeamName').innerText = d.teamName;
         
-        let html = `<strong>멤버 목록 (${d.members.length}명)</strong><br><br>`;
-        d.members.forEach(m => {
-            const isTargetLeader = (m === d.leader);
-            html += `<div style="display:flex; justify-content:space-between; align-items:center; background:#2d3748; padding:12px; border-radius:10px; margin-bottom:10px;">
-                <span>${m} ${isTargetLeader ? '👑' : ''}</span>
+        let html = `<strong style="display:block; margin-bottom:15px;">멤버 목록 (${d.members.length}명)</strong>`;
+        for(const email of d.members) {
+            // 각 멤버의 닉네임을 DB에서 가져오기
+            const uDoc = await db.collection("users").doc(email).get();
+            const nickname = uDoc.exists ? uDoc.data().nickname : email.split('@')[0];
+            const isTargetLeader = (email === d.leader);
+
+            html += `<div style="display:flex; justify-content:space-between; align-items:center; background:#2d3748; padding:12px; border-radius:12px; margin-bottom:10px;">
+                <div style="display:flex; flex-direction:column;">
+                    <span style="font-weight:bold;">${nickname} ${isTargetLeader ? '👑' : ''}</span>
+                    <small style="color:#9ca3af; font-size:0.75rem;">${email}</small>
+                </div>
                 <div style="display:flex; gap:5px;">
-                    ${isLeader && m !== myEmail ? `
-                        <button onclick="delegateLeader('${m}')" style="color:var(--primary); border:1px solid var(--primary); font-size:0.7rem; padding:3px 6px; border-radius:5px; background:none;">위임</button>
-                        <button onclick="removeMember('${m}')" style="color:var(--danger); border:1px solid var(--danger); font-size:0.7rem; padding:3px 6px; border-radius:5px; background:none;">제외</button>
+                    ${isLeader && email !== myEmail ? `
+                        <button onclick="delegateLeader('${email}')" style="color:var(--primary); border:1px solid var(--primary); font-size:0.75rem; padding:4px 8px; border-radius:6px; background:none;">위임</button>
+                        <button onclick="removeMember('${email}')" style="color:var(--danger); border:1px solid var(--danger); font-size:0.75rem; padding:4px 8px; border-radius:6px; background:none;">제외</button>
                     ` : ''}
-                    ${!isLeader && m === myEmail ? `<button onclick="leaveTeam()" style="color:#9ca3af; background:none; font-size:0.75rem;">나가기</button>` : ''}
+                    ${!isLeader && email === myEmail ? `<button onclick="leaveTeam()" style="color:#9ca3af; background:none; font-size:0.75rem;">나가기</button>` : ''}
                 </div>
             </div>`;
-        });
+        }
         document.getElementById('member-list-area').innerHTML = html;
     }
 
@@ -79,18 +87,19 @@
         const email = document.getElementById('inviteEmail').value.trim();
         if(!email) return;
         await db.collection("teams").doc(myTeamId).update({ members: firebase.firestore.FieldValue.arrayUnion(email) });
+        alert(email + "님을 팀에 추가했습니다.");
         location.reload();
     }
 
     async function delegateLeader(newLeader) {
-        if(confirm(newLeader + "님에게 팀장 권한을 위임할까요?")) {
+        if(confirm(newLeader + "님에게 팀장 권한을 넘기시겠습니까?")) {
             await db.collection("teams").doc(myTeamId).update({ leader: newLeader });
             location.reload();
         }
     }
 
     async function removeMember(email) {
-        if(confirm(email + "님을 제외할까요?")) {
+        if(confirm(email + "님을 팀에서 제외할까요?")) {
             await db.collection("teams").doc(myTeamId).update({ members: firebase.firestore.FieldValue.arrayRemove(email) });
             location.reload();
         }

@@ -1,66 +1,53 @@
-:root { 
-    --primary: #3b82f6; 
-    --secondary: #4b5563; 
-    --success: #10b981; 
-    --danger: #ef4444; 
-    --bg: #111827; 
-    --card: #1f2937; 
-    --text: #f3f4f6; 
-    --input-bg: #374151; 
+/* 드롭다운 메뉴 스타일 (기본은 무조건 숨김) */
+.dropdown-menu {
+    display: none !important; /* !important를 붙여서 강제로 숨깁니다 */
+    position: absolute;
+    top: 50px;
+    right: 0;
+    background-color: #1f2937; /* var(--card) 색상 */
+    border: 1px solid #374151;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    z-index: 1000;
+    min-width: 140px;
+    overflow: hidden;
 }
 
-body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg); margin: 0; color: var(--text); }
-.container { max-width: 500px; margin: auto; padding: 15px; box-sizing: border-box; }
-
-/* 상단바 */
-.top-nav { display: flex; justify-content: flex-end; padding: 10px 0; position: relative; }
-.more-btn { background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer; padding: 5px 10px; }
-
-/* 로고 및 카드 */
-.logo-wrapper { display: flex; justify-content: center; align-items: center; padding: 40px 0; }
-.main-logo { width: 100%; max-width: 260px; height: auto; object-fit: contain; }
-.card { background: var(--card); padding: 20px; border-radius: 16px; box-shadow: 0 10px 15px rgba(0, 0, 0, 0.4); margin-bottom: 20px; }
-
-/* [핵심] 입력창 디자인 개선 */
-input, select, textarea { 
-    padding: 14px 18px; /* 위아래 14px, 좌우 18px로 여백 대폭 확대 */
-    border: 1px solid #4b5563; 
-    border-radius: 12px; 
-    width: 100%; 
-    margin-bottom: 12px; 
-    background: var(--input-bg); 
-    color: white; 
-    box-sizing: border-box; 
-    font-size: 1rem;
-    outline: none;
-}
-input:focus { border-color: var(--primary); }
-
-/* [핵심] 구간/길이 가로 배치 스타일 */
-.area-row { 
-    display: flex; 
-    gap: 12px; /* 입력창 사이 간격 */
-    margin-bottom: 12px; 
-}
-.area-row input { 
-    flex: 1; /* 반반씩 나눠 갖기 */
-    margin-bottom: 0; /* 줄 바꿈 여백 제거 */
+/* 버튼을 눌러서 .show 클래스가 추가되었을 때만 보이게 함 */
+.dropdown-menu.show {
+    display: block !important;
 }
 
-/* 제목 및 버튼 */
-.section-title { font-weight: bold; font-size: 1.1rem; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; }
-button { border: none; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-.btn-main { width: 100%; padding: 18px; background: var(--primary); color: white; font-size: 1.1rem; margin-top: 5px; }
-.btn-home { background: #374151; color: white; padding: 10px 16px; font-size: 0.85rem; margin-bottom: 15px; }
+/* 드롭다운 내부 버튼 디자인 */
+.dropdown-menu button {
+    display: block;
+    width: 100%;
+    padding: 14px 16px;
+    text-align: left;
+    background: none;
+    color: #f3f4f6; /* var(--text) 색상 */
+    font-size: 0.95rem;
+    border: none;
+    border-bottom: 1px solid #374151;
+    cursor: pointer;
+    transition: background 0.2s;
+}
 
-/* 메뉴판 */
-.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-.menu-item { background: var(--card); padding: 35px 15px; border-radius: 20px; text-align: center; border: 1px solid #374151; cursor: pointer; }
-.menu-item i { font-size: 2.2rem; display: block; margin-bottom: 12px; }
-.menu-item.disabled { opacity: 0.3; cursor: default; }
+.dropdown-menu button:last-child {
+    border-bottom: none;
+}
 
-/* 히스토리 아이템 여백 개선 */
-.history-item { background: #374151; padding: 18px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #4b5563; }
-.history-btns { display: flex; gap: 10px; margin-top: 15px; }
-.btn-edit { background: #2563eb; color: white; flex: 1; padding: 12px; }
-.btn-del { background: #991b1b; color: white; flex: 1; padding: 12px; }
+.dropdown-menu button:active {
+    background-color: #374151;
+}
+
+/* ⋮ 버튼 크기 및 여백 조정 */
+.more-btn {
+    background: none;
+    border: none;
+    color: #f3f4f6;
+    font-size: 1.8rem;
+    cursor: pointer;
+    padding: 0 10px;
+    line-height: 1;
+}

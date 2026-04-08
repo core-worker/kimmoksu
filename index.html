@@ -16,6 +16,9 @@
         <div class="logo-wrapper"><img src="kimmoksu_main_logo.png" alt="로고" class="main-logo"></div>
         <div class="card">
             <h2 id="auth-title" style="text-align: center; margin-bottom: 25px;">로그인</h2>
+            
+            <input type="text" id="userNick" placeholder="사용할 닉네임 (예: 준호팀장)" style="display:none;">
+            
             <input type="email" id="userEmail" placeholder="이메일 주소">
             <input type="password" id="userPw" placeholder="비밀번호">
             
@@ -30,10 +33,7 @@
     </div>
 
     <div id="dashboard-box" style="display:none;">
-        <div class="nav-logo-area">
-            <img src="kimmoksu_main_logo.png" alt="로고" class="nav-logo">
-        </div>
-        
+        <div class="nav-logo-area"><img src="kimmoksu_main_logo.png" alt="로고" class="nav-logo"></div>
         <div class="welcome-row">
             <div class="welcome-text">
                 <h3 id="displayUserName"></h3>
@@ -47,7 +47,6 @@
                 </div>
             </div>
         </div>
-
         <div class="menu-grid">
             <div class="menu-item" onclick="location.href='t5.html'"><i>💡</i><span>T5 계산기</span></div>
             <div class="menu-item disabled" onclick="alert('준비중')"><i>📝</i><span>작업일보</span></div>
@@ -60,47 +59,60 @@
 <script>
     let isLoginMode = true;
 
-    auth.onAuthStateChanged(user => {
-        if (user) { showDashboard(user.email); }
-        else { document.getElementById('auth-box').style.display='block'; document.getElementById('dashboard-box').style.display='none'; }
+    // 로그인 상태 감지 및 닉네임 불러오기
+    auth.onAuthStateChanged(async (user) => {
+        if (user) { 
+            const userDoc = await db.collection("users").doc(user.email).get();
+            // 닉네임이 있으면 닉네임으로, 없으면 이메일 앞자리로 표시
+            const nick = userDoc.exists ? userDoc.data().nickname : user.email.split('@')[0];
+            showDashboard(nick);
+        } else { 
+            document.getElementById('auth-box').style.display='block'; 
+            document.getElementById('dashboard-box').style.display='none'; 
+        }
     });
-
-    function toggleDropdown(event) {
-        event.stopPropagation();
-        document.getElementById("myDropdown").classList.toggle("show");
-    }
-
-    window.onclick = function() {
-        const d = document.getElementById("myDropdown");
-        if (d && d.classList.contains('show')) d.classList.remove('show');
-    }
 
     function toggleAuthMode() {
         isLoginMode = !isLoginMode;
         document.getElementById('auth-title').innerText = isLoginMode ? "로그인" : "회원가입";
         document.getElementById('toggle-link').innerText = isLoginMode ? "회원가입" : "로그인";
+        // 가입 모드일 때만 닉네임 칸 보여줌
+        document.getElementById('userNick').style.display = isLoginMode ? "none" : "block";
     }
 
     async function handleAuth() {
         const email = document.getElementById('userEmail').value.trim();
         const pw = document.getElementById('userPw').value.trim();
+        const nick = document.getElementById('userNick').value.trim();
         const rememberMe = document.getElementById('rememberMe').checked;
-        if(!email || !pw) return alert("입력해주세요.");
+        
+        if(!email || !pw) return alert("이메일과 비번을 입력하세요.");
+        if(!isLoginMode && !nick) return alert("사용하실 닉네임을 입력하세요.");
+
         try {
             const p = rememberMe ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
             await auth.setPersistence(p);
-            if(isLoginMode) { await auth.signInWithEmailAndPassword(email, pw); }
-            else { await auth.createUserWithEmailAndPassword(email, pw); alert("가입 성공!"); }
-        } catch(e) { alert(e.message); }
+            
+            if(isLoginMode) { 
+                await auth.signInWithEmailAndPassword(email, pw); 
+            } else { 
+                await auth.createUserWithEmailAndPassword(email, pw);
+                // 가입 시 DB에 닉네임 저장
+                await db.collection("users").doc(email).set({ nickname: nick, email: email });
+                alert(nick + "님, 가입을 환영합니다!");
+            }
+        } catch(e) { alert("오류: " + e.message); }
     }
 
-    function showDashboard(email) { 
+    function showDashboard(nickname) { 
         document.getElementById('auth-box').style.display='none'; 
         document.getElementById('dashboard-box').style.display='block'; 
-        document.getElementById('displayUserName').innerText = `${email.split('@')[0]}님 반갑습니다!`;
+        document.getElementById('displayUserName').innerText = `${nickname}님 반갑습니다!`;
     }
 
-    async function handleLogout() { if(confirm("로그아웃 할까요?")) { await auth.signOut(); location.reload(); } }
+    function toggleDropdown(event) { event.stopPropagation(); document.getElementById("myDropdown").classList.toggle("show"); }
+    window.onclick = function() { const d = document.getElementById("myDropdown"); if (d && d.classList.contains('show')) d.classList.remove('show'); }
+    async function handleLogout() { if(confirm("로그아웃 하시겠습니까?")) { await auth.signOut(); location.reload(); } }
 </script>
 </body>
 </html>

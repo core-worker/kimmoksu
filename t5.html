@@ -1,40 +1,181 @@
-// t5.html의 <script> 부분 중 변경된 핵심 로직
-let currentNickname = "";
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>T5 계산기 - 김목수이야기</title>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <button class="btn-home" onclick="location.href='index.html'">⬅ 홈으로</button>
+    
+    <div id="team-info-badge" style="font-size:0.8rem; color:var(--primary); margin-bottom:5px; font-weight:bold; padding-left:5px;"></div>
+    <h3 style="margin-top:0;">💡 T5 발주 계산기</h3>
+    
+    <div class="card">
+        <div class="section-title">제품 규격 설정 <button id="specToggleBtn" onclick="toggleSpecSection()" style="background:#4b5563; color:white; width:28px; height:28px; border-radius:50%; font-size:1.2rem;">+</button></div>
+        <div id="spec-section" style="display:none;">
+            <div id="spec-list"></div>
+            <button onclick="addSpecRow()" style="width:100%; padding:8px; background:#4b5563; color:white; font-size:0.8rem; border-radius:8px;">+ 규격 추가</button>
+        </div>
+    </div>
 
-auth.onAuthStateChanged(async (user) => {
-    if (user) { 
-        currentUserEmail = user.email; 
-        // 내 닉네임 가져오기
-        const userDoc = await db.collection("users").doc(user.email).get();
-        currentNickname = userDoc.exists ? userDoc.data().nickname : user.email.split('@')[0];
-        await findMyTeam(); 
-    } else { location.href = 'index.html'; }
-});
+    <div class="card">
+        <div class="section-title">실측 길이 입력 (mm) <button onclick="addAreaRow()" style="font-size:0.8rem; background:var(--secondary); color:white; padding:5px 12px; border-radius:8px;">+ 추가</button></div>
+        <input type="text" id="siteName" placeholder="현장/부위 명칭 (예: 101호 천장)">
+        <div id="area-list"></div>
+        <button class="btn-main" onclick="runT5Calc()">1. 계산하기</button>
+    </div>
 
-function runT5Calc() {
-    // ... 기존 계산 로직 ...
-    lastT5Data = { 
-        site, specs, areas, grandTotal, 
-        userEmail: currentUserEmail, 
-        userName: currentNickname, // 👈 이메일 대신 닉네임 저장!
-        teamId: myTeamId,
-        createdAt: Date.now() 
-    };
-    // ... 결과 표시 로직 ...
-}
+    <div id="t5-result-area" style="display:none;" class="card"></div>
+    <button class="btn-main" id="t5-save-btn" style="display:none; background:var(--success); margin-bottom:20px;" onclick="saveT5ToCloud()">2. 팀 히스토리에 저장 🌐</button>
+    
+    <div class="section-title">📋 팀 공유 히스토리</div>
+    <div id="t5-history-list">팀 정보를 불러오는 중...</div>
+</div>
 
-function listenT5History() {
-    db.collection("t5_history").where("teamId","==", myTeamId).orderBy("createdAt","desc").limit(20).onSnapshot(ss => {
-        document.getElementById('t5-history-list').innerHTML = ss.docs.map(doc => {
-            const d = doc.data();
-            // 작성자 이름 표시 (닉네임이 있으면 닉네임으로)
-            const displayAuthor = d.userName || d.userEmail.split('@')[0];
-            return `<div class="history-item">
-                <div style="display:flex; justify-content:space-between;">
-                    <strong>${d.site}</strong>
-                    <span style="font-size:0.75rem; color:var(--primary);">👤 ${displayAuthor}</span>
-                </div>
-                </div>`;
-        }).join('');
+<script>
+    let currentUserEmail = null;
+    let currentNickname = ""; // 내 닉네임 보관용
+    let myTeamId = null;
+    let editingT5Id = null;
+    let lastT5Data = null;
+
+    // 로그인 및 닉네임 확인
+    auth.onAuthStateChanged(async (user) => {
+        if (user) { 
+            currentUserEmail = user.email; 
+            const userDoc = await db.collection("users").doc(user.email).get();
+            currentNickname = userDoc.exists ? userDoc.data().nickname : user.email.split('@')[0];
+            await findMyTeam(); 
+        } else { 
+            alert("로그인이 필요합니다."); location.href = 'index.html'; 
+        }
     });
-}
+
+    async function findMyTeam() {
+        const q = await db.collection("teams").where("members", "array-contains", currentUserEmail).get();
+        if (!q.empty) {
+            const teamDoc = q.docs[0];
+            myTeamId = teamDoc.id;
+            document.getElementById('team-info-badge').innerText = `🚩 ${teamDoc.data().teamName}`;
+            listenT5History(); 
+        } else { 
+            document.getElementById('t5-history-list').innerHTML = "소속된 팀이 없습니다. 팀을 만들거나 초대받으세요."; 
+        }
+    }
+
+    function toggleSpecSection() {
+        const sec = document.getElementById('spec-section');
+        const isOpen = sec.style.display === 'block';
+        sec.style.display = isOpen ? 'none' : 'block';
+        document.getElementById('specToggleBtn').innerText = isOpen ? '+' : '-';
+    }
+
+    function addSpecRow(n='', s='') {
+        const div = document.createElement('div');
+        div.style.display = "flex"; div.style.gap = "8px"; div.style.marginBottom = "8px";
+        div.innerHTML = `<input type="text" style="flex:2; margin:0;" value="${n}"> <input type="number" style="flex:1; margin:0;" value="${s}"> <button onclick="this.parentElement.remove()" style="color:var(--danger); background:none; font-size:1.2rem; padding:0 5px;">×</button>`;
+        document.getElementById('spec-list').appendChild(div);
+    }
+
+    function addAreaRow(n='', v='') {
+        const div = document.createElement('div');
+        div.className = 'area-row'; 
+        div.innerHTML = `<input type="text" placeholder="구간" value="${n}"><input type="number" placeholder="길이" value="${v}">`;
+        document.getElementById('area-list').appendChild(div);
+    }
+
+    function runT5Calc() {
+        const site = document.getElementById('siteName').value || "현장";
+        const specs = Array.from(document.querySelectorAll('#spec-list > div')).map(r => ({
+            name: r.querySelectorAll('input')[0].value,
+            size: parseFloat(r.querySelectorAll('input')[1].value)
+        })).filter(x => x.size > 0).sort((a,b) => b.size - a.size);
+
+        const areas = Array.from(document.querySelectorAll('.area-row')).map(r => ({
+            name: r.querySelectorAll('input')[0].value || "구간",
+            len: parseFloat(r.querySelectorAll('input')[1].value)
+        })).filter(x => x.len > 0);
+
+        if(areas.length === 0) return alert("실측 길이를 넣으세요.");
+        
+        let grandTotal = {}, html = `<strong>📍 ${site}</strong><hr style="border:0; border-top:1px solid #4b5563; margin:10px 0;">`;
+        areas.forEach(a => {
+            let temp = a.len - 50, counts = [];
+            specs.forEach(s => {
+                let c = Math.floor(temp / s.size);
+                if(c > 0) { counts.push(`${s.name}-${c}개`); grandTotal[s.name] = (grandTotal[s.name] || 0) + c; temp -= s.size * c; }
+            });
+            html += `<div style="margin-bottom:5px;">• ${a.name}: ${counts.join(', ') || '없음'} <span style="color:#9ca3af; font-size:0.8rem;">(남음:${temp.toFixed(0)}mm)</span></div>`;
+        });
+
+        lastT5Data = { 
+            site, specs, areas, grandTotal, 
+            userEmail: currentUserEmail, 
+            userName: currentNickname, 
+            teamId: myTeamId,
+            createdAt: Date.now() 
+        };
+
+        document.getElementById('t5-result-area').innerHTML = html + `<div style="margin-top:15px; padding-top:10px; border-top:2px solid var(--primary);"><strong>합계: ${Object.entries(grandTotal).map(([k,v])=>`${k}-${v}개`).join(' / ')}</strong></div>`;
+        document.getElementById('t5-result-area').style.display = 'block';
+        document.getElementById('t5-save-btn').style.display = 'block';
+    }
+
+    async function saveT5ToCloud() {
+        if(!myTeamId) return alert("팀 정보가 없어 저장이 불가능합니다.");
+        try {
+            if(editingT5Id) await db.collection("t5_history").doc(editingT5Id).update(lastT5Data);
+            else await db.collection("t5_history").add(lastT5Data);
+            alert("팀원들과 공유되었습니다!");
+            location.reload();
+        } catch(e) { alert("저장 실패: " + e.message); }
+    }
+
+    function listenT5History() {
+        db.collection("t5_history").where("teamId","==", myTeamId).orderBy("createdAt","desc").limit(20).onSnapshot(ss => {
+            document.getElementById('t5-history-list').innerHTML = ss.docs.map(doc => {
+                const d = doc.data();
+                const displayAuthor = d.userName || d.userEmail.split('@')[0];
+                return `<div class="history-item">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div style="font-weight:bold; font-size:1rem; margin-bottom:8px;">${d.site}</div>
+                        <span style="font-size:0.75rem; color:var(--primary);">👤 ${displayAuthor}</span>
+                    </div>
+                    <div style="font-size:0.9rem; color:#d1d5db;">${Object.entries(d.grandTotal).map(([k,v])=>`${k}-${v}개`).join(', ')}</div>
+                    <div class="history-btns">
+                        <button class="btn-edit" onclick="loadT5ToEdit('${doc.id}')">수정</button>
+                        <button class="btn-del" onclick="deleteT5('${doc.id}')">삭제</button>
+                    </div>
+                </div>`;
+            }).join('') || "팀 내역 없음";
+        });
+    }
+
+    async function loadT5ToEdit(id) {
+        const doc = await db.collection("t5_history").doc(id).get();
+        const d = doc.data();
+        editingT5Id = id;
+        document.getElementById('siteName').value = d.site;
+        document.getElementById('spec-list').innerHTML = '';
+        d.specs.forEach(s => addSpecRow(s.name, s.size));
+        document.getElementById('area-list').innerHTML = '';
+        d.areas.forEach(a => addAreaRow(a.name, a.len));
+        window.scrollTo(0,0);
+    }
+
+    async function deleteT5(id) { if(confirm("삭제할까요?")) await db.collection("t5_history").doc(id).delete(); }
+
+    // 기본 규격 세팅
+    const defaultSpecs = [{"n":"1200","s":1190},{"n":"900","s":890},{"n":"600","s":590},{"n":"400","s":385},{"n":"300","s":330}];
+    defaultSpecs.forEach(x => addSpecRow(x.n, x.s));
+    addAreaRow();
+</script>
+</body>
+</html>

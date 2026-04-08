@@ -13,14 +13,10 @@
 <body>
 <div class="container">
     <div class="btn-home" onclick="location.href='index.html'">🏠 메인으로</div>
-    
-    <div id="team-info-badge" style="font-size:0.8rem; color:var(--primary); margin-bottom:10px; font-weight:bold; padding-left:5px;"></div>
+    <div id="team-info-badge" style="font-size:0.8rem; color:var(--primary); margin-bottom:10px; font-weight:bold;"></div>
     
     <div class="card">
-        <div class="section-title">
-            <span>제품 규격 설정</span>
-            <button id="specToggleBtn" onclick="toggleSpecSection()" style="background:#4b5563; color:white; width:30px; height:30px; border-radius:50%; border:none; box-shadow:none !important;">+</button>
-        </div>
+        <div class="section-title">제품 규격 설정 <button id="specToggleBtn" onclick="toggleSpecSection()" class="btn-circle">+</button></div>
         <div id="spec-section" style="display:none;">
             <div id="spec-list"></div>
             <button onclick="addSpecRow()" style="width:100%; padding:10px; background:#4b5563; color:white; font-size:0.8rem; border-radius:10px; border:none;">+ 규격 추가</button>
@@ -28,10 +24,7 @@
     </div>
 
     <div class="card">
-        <div class="section-title">
-            <span>실측 길이 입력 (mm)</span>
-            <button onclick="addAreaRow()" style="font-size:0.85rem; background:var(--secondary); color:white; padding:6px 14px; border-radius:10px; border:none; box-shadow:none !important;">+ 추가</button>
-        </div>
+        <div class="section-title">실측 길이 입력 (mm) <button onclick="addAreaRow()" style="font-size:0.85rem; background:var(--secondary); color:white; padding:6px 14px; border-radius:10px; border:none;">+ 추가</button></div>
         <input type="text" id="siteName" placeholder="현장/부위 명칭">
         <div id="area-list"></div>
         <button class="btn-main" onclick="runT5Calc()">1. 계산하기</button>
@@ -43,11 +36,67 @@
     <div class="section-title">📋 팀 공유 히스토리</div>
     <div id="t5-history-list"></div>
 </div>
-
 <script>
-    /* ... (t5 스크립트 로직은 그대로 유지) ... */
-    // [중요] 이전 t5.html 스크립트 그대로 사용하시면 됩니다.
-    // 디자인은 style.css와 위 HTML 태그들이 잡아줄 거예요!
+    let currentUserEmail, currentNickname, myTeamId, editingT5Id, lastT5Data;
+    auth.onAuthStateChanged(async user => {
+        if (user) { 
+            currentUserEmail = user.email; 
+            const userDoc = await db.collection("users").doc(user.email).get();
+            currentNickname = userDoc.exists ? userDoc.data().nickname : user.email.split('@')[0];
+            await findMyTeam(); 
+        } else { location.href = 'index.html'; }
+    });
+    async function findMyTeam() {
+        const q = await db.collection("teams").where("members", "array-contains", currentUserEmail).get();
+        if (!q.empty) { myTeamId = q.docs[0].id; document.getElementById('team-info-badge').innerText = `🚩 ${q.docs[0].data().teamName}`; listenT5History(); }
+    }
+    function toggleSpecSection() { const sec = document.getElementById('spec-section'); const isOpen = sec.style.display === 'block'; sec.style.display = isOpen ? 'none' : 'block'; document.getElementById('specToggleBtn').innerText = isOpen ? '+' : '-'; }
+    function addSpecRow(n='', s='') {
+        const div = document.createElement('div'); div.style.display = "flex"; div.style.gap = "8px"; div.style.marginBottom = "8px";
+        div.innerHTML = `<input type="text" style="flex:2; margin:0;" value="${n}"> <input type="number" style="flex:1; margin:0;" value="${s}"> <button onclick="this.parentElement.remove()" style="color:var(--danger); background:none; font-size:1.2rem; border:none; padding:0 5px;">×</button>`;
+        document.getElementById('spec-list').appendChild(div);
+    }
+    function addAreaRow(n='', v='') { const div = document.createElement('div'); div.style.display = "flex"; div.style.gap = "8px"; div.style.marginBottom = "8px"; div.innerHTML = `<input type="text" style="flex:1; margin:0;" placeholder="구간" value="${n}"><input type="number" style="flex:1; margin:0;" placeholder="길이" value="${v}">`; document.getElementById('area-list').appendChild(div); }
+    function runT5Calc() {
+        const site = document.getElementById('siteName').value || "현장";
+        const specs = Array.from(document.querySelectorAll('#spec-list > div')).map(r => ({ name: r.querySelectorAll('input')[0].value, size: parseFloat(r.querySelectorAll('input')[1].value) })).filter(x => x.size > 0).sort((a,b) => b.size - a.size);
+        const areaRows = document.getElementById('area-list').children;
+        const areas = Array.from(areaRows).map(r => ({ name: r.querySelectorAll('input')[0].value || "구간", len: parseFloat(r.querySelectorAll('input')[1].value) })).filter(x => x.len > 0);
+        if(areas.length === 0) return alert("길이를 입력하세요.");
+        let grandTotal = {}, html = `<strong>📍 ${site}</strong><hr style="border:0; border-top:1px solid #4b5563; margin:15px 0;">`;
+        areas.forEach(a => {
+            let temp = a.len - 50, counts = [];
+            specs.forEach(s => { let c = Math.floor(temp / s.size); if(c > 0) { counts.push(`${s.name}-${c}개`); grandTotal[s.name] = (grandTotal[s.name] || 0) + c; temp -= s.size * c; } });
+            html += `<div style="margin-bottom:5px;">• ${a.name}: ${counts.join(', ') || '없음'}</div>`;
+        });
+        lastT5Data = { site, specs, areas, grandTotal, userEmail: currentUserEmail, userName: currentNickname, teamId: myTeamId, createdAt: Date.now() };
+        document.getElementById('t5-result-area').innerHTML = html + `<div style="margin-top:15px; border-top:2px solid var(--primary); padding-top:10px;"><strong>합계: ${Object.entries(grandTotal).map(([k,v])=>`${k}-${v}개`).join('/')}</strong></div>`;
+        document.getElementById('t5-result-area').style.display = 'block'; document.getElementById('t5-save-btn').style.display = 'block';
+    }
+    async function saveT5ToCloud() { try { if(editingT5Id) await db.collection("t5_history").doc(editingT5Id).update(lastT5Data); else await db.collection("t5_history").add(lastT5Data); alert("공유완료"); location.reload(); } catch(e) { alert(e.message); } }
+    function listenT5History() {
+        db.collection("t5_history").where("teamId","==", myTeamId).orderBy("createdAt","desc").limit(15).onSnapshot(ss => {
+            document.getElementById('t5-history-list').innerHTML = ss.docs.map(doc => {
+                const d = doc.data();
+                const isOwner = d.userEmail === currentUserEmail;
+                return `<div class="history-item" style="background:#374151; padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid #4b5563;">
+                    <div style="display:flex; justify-content:space-between;"><strong>${d.site}</strong><span style="font-size:0.75rem; color:var(--primary);">👤 ${d.userName || '멤버'}</span></div>
+                    <div style="font-size:0.9rem; color:#ccc; margin-top:5px;">${Object.entries(d.grandTotal).map(([k,v])=>`${k}-${v}개`).join(', ')}</div>
+                    ${isOwner ? `<div style="display:flex; gap:10px; margin-top:10px;"><button onclick="loadT5ToEdit('${doc.id}')" style="background:#2563eb; color:white; flex:1; padding:8px; border-radius:8px; border:none;">수정</button><button onclick="deleteT5('${doc.id}')" style="background:#991b1b; color:white; flex:1; padding:8px; border-radius:8px; border:none;">삭제</button></div>` : ''}
+                </div>`;
+            }).join('');
+        });
+    }
+    async function loadT5ToEdit(id) {
+        const doc = await db.collection("t5_history").doc(id).get(); const d = doc.data();
+        editingT5Id = id; document.getElementById('siteName').value = d.site;
+        document.getElementById('spec-list').innerHTML = ''; d.specs.forEach(s => addSpecRow(s.name, s.size));
+        document.getElementById('area-list').innerHTML = ''; d.areas.forEach(a => addAreaRow(a.name, a.len));
+        window.scrollTo(0,0);
+    }
+    async function deleteT5(id) { if(confirm("삭제?")) await db.collection("t5_history").doc(id).delete(); }
+    const def = [{"n":"1200","s":1190},{"n":"900","s":890},{"n":"600","s":590},{"n":"400","s":385},{"n":"300","s":330}];
+    def.forEach(x => addSpecRow(x.n, x.s)); addAreaRow();
 </script>
 </body>
 </html>

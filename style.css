@@ -1,46 +1,94 @@
-/* ... 이전 스타일 ... */
-
-/* 로그인 화면 수정 */
-.form-options {
-  display: flex;
-  justify-content: flex-start; /* 왼쪽 정렬 */
-  align-items: center;
-  margin-top: 15px;
+:root { 
+    --primary: #3b82f6; 
+    --secondary: #4b5563; 
+    --success: #10b981; 
+    --danger: #ef4444; 
+    --bg: #111827; 
+    --card: #1f2937; 
+    --text: #f3f4f6; 
+    --input-bg: #374151; 
 }
 
-.remember-me {
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  color: #fff;
+body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg); margin: 0; color: var(--text); }
+.container { max-width: 500px; margin: auto; padding: 15px; box-sizing: border-box; }
+
+/* [로그인] 자동로그인 왼쪽 정렬 */
+.remember-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* 왼쪽 정렬 */
+    gap: 10px;
+    margin: 5px 0 20px 5px; /* 약간의 여백 */
+    color: #9ca3af;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+.remember-wrapper input { width: 20px; height: 20px; margin: 0; }
+
+/* [메인] 상단 큰 로고 (로그인 창과 비슷하게) */
+.nav-logo-area {
+    display: flex;
+    justify-content: center;
+    padding: 30px 0;
+}
+.nav-logo {
+    width: 100%;
+    max-width: 260px; /* 로그인 로고와 동일하게 */
+    height: auto;
+    object-fit: contain;
 }
 
-/* 메인 메뉴 로고 크기 수정 */
-.logo-area .main-logo {
-  width: [로그인 로고 너비]; /* 로그인 로고와 동일한 크기로 설정 */
+/* [메인] 환영 메시지 및 ⋮ 버튼 한 줄 배치 */
+.welcome-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end; /* 아래쪽 기준 정렬 */
+    margin-bottom: 30px;
+    padding: 0 5px;
 }
 
-/* 메인 메뉴 더보기 버튼 위치 수정 */
-.welcome-message-area {
-  display: flex;
-  justify-content: space-between; /* 양쪽 정렬 */
-  align-items: center;
-  margin-top: 20px;
+.welcome-text h3 { margin: 0; color: var(--primary); font-size: 1.3rem; }
+.welcome-text p { margin: 5px 0 0 0; font-size: 0.85rem; color: #9ca3af; }
+
+.more-btn {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 1.8rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
 }
 
-.welcome-message h2 {
-  font-size: 24px;
-  color: #fff;
+/* 드롭다운 위치 조정 */
+.dropdown-menu {
+    display: none !important;
+    position: absolute;
+    top: 40px;
+    right: 0;
+    background-color: var(--card);
+    border: 1px solid #374151;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    z-index: 1000;
+    min-width: 140px;
 }
-
-.welcome-message p {
-  font-size: 16px;
-  color: #ccc;
+.dropdown-menu.show { display: block !important; }
+.dropdown-menu button {
+    display: block; width: 100%; padding: 14px 16px; text-align: left;
+    background: none; color: var(--text); font-size: 0.95rem; border: none;
+    border-bottom: 1px solid #374151; cursor: pointer;
 }
+.dropdown-menu button:last-child { border-bottom: none; }
 
-.more-options {
-  cursor: pointer;
-  color: #fff;
-}
+/* 나머지 카드 및 입력창 스타일 */
+.logo-wrapper { display: flex; justify-content: center; padding: 40px 0; }
+.main-logo { width: 100%; max-width: 260px; height: auto; }
+.card { background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 20px; }
+input { padding: 14px 18px; border: 1px solid #4b5563; border-radius: 12px; width: 100%; margin-bottom: 12px; background: var(--input-bg); color: white; box-sizing: border-box; }
+.btn-main { width: 100%; padding: 18px; background: var(--primary); color: white; font-size: 1.1rem; border-radius: 12px; font-weight: bold; }
 
-/* ... 이하 스타일 ... */
+.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.menu-item { background: var(--card); padding: 35px 15px; border-radius: 20px; text-align: center; border: 1px solid #374151; cursor: pointer; }
+.menu-item i { font-size: 2.2rem; display: block; margin-bottom: 12px; }
+.menu-item.disabled { opacity: 0.3; }

@@ -3,72 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>김목수이야기 - 홈</title>
+    <title>김목수이야기 - 로그인</title>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-    <script src="firebase-config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script> <script src="firebase-config.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="container">
     
-    <div id="login-box">
+    <div id="auth-box">
         <div class="logo-wrapper">
             <img src="kimmoksu_main_logo.png" alt="김목수이야기" class="main-logo">
         </div>
+
         <div class="card">
-            <input type="text" id="teamId" placeholder="팀 아이디">
-            <input type="password" id="teamPw" placeholder="비밀번호">
-            <button class="btn-main" onclick="handleLogin()">접속하기</button>
+            <h2 id="auth-title" style="text-align: center; margin-bottom: 20px;">로그인</h2>
+            <input type="email" id="userEmail" placeholder="이메일 주소">
+            <input type="password" id="userPw" placeholder="비밀번호 (6자리 이상)">
+            
+            <button id="main-auth-btn" class="btn-main" onclick="handleAuth()">로그인하기</button>
+            
+            <p id="toggle-text" style="text-align: center; margin-top: 20px; font-size: 0.9rem; color: #9ca3af; cursor: pointer;" onclick="toggleAuthMode()">
+                아이디가 없으신가요? <b>회원가입</b>
+            </p>
         </div>
     </div>
 
     <div id="dashboard-box" style="display:none;">
         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 id="displayTeamName" style="margin:0; color:var(--primary);"></h3>
-            <button onclick="logout()" style="font-size:0.75rem; color:var(--danger); background:none; border:none; cursor:pointer;">로그아웃</button>
+            <h3 id="displayUserName" style="margin:0; color:var(--primary);"></h3>
+            <button onclick="handleLogout()" style="font-size:0.75rem; color:var(--danger); background:none; border:none; cursor:pointer;">로그아웃</button>
         </div>
         <div class="menu-grid">
             <div class="menu-item" onclick="location.href='t5.html'"><i>💡</i><span>T5 계산기</span></div>
             <div class="menu-item disabled" onclick="alert('서비스 준비중입니다.')"><i>📝</i><span>작업일보</span></div>
-            <div class="menu-item disabled" onclick="alert('서비스 준비중입니다.')"><i>🎨</i><span>줄눈 계산기</span></div>
-            <div class="menu-item disabled" onclick="alert('서비스 준비중입니다.')"><i>🛠️</i><span>공구 관리</span></div>
-        </div>
+            </div>
     </div>
-
 </div>
 
 <script>
-    window.onload = function() {
-        const savedTeam = localStorage.getItem('teamId');
-        if(savedTeam) { showDashboard(savedTeam); }
-    };
+    let isLoginMode = true;
 
-    async function handleLogin() {
-        const id = document.getElementById('teamId').value.trim();
-        const pw = document.getElementById('teamPw').value.trim();
-        if(!id || !pw) return alert("ID/PW를 입력하세요.");
+    // [중요] 페이지 로드 시 로그인 상태를 자동으로 확인 (자동 로그인 핵심)
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            // 이미 로그인된 상태라면 바로 대시보드 노출
+            showDashboard(user.email);
+        } else {
+            // 로그인이 안 되어 있다면 로그인 상자 노출
+            document.getElementById('auth-box').style.display = 'block';
+            document.getElementById('dashboard-box').style.display = 'none';
+        }
+    });
+
+    function toggleAuthMode() {
+        isLoginMode = !isLoginMode;
+        document.getElementById('auth-title').innerText = isLoginMode ? "로그인" : "회원가입";
+        document.getElementById('main-auth-btn').innerText = isLoginMode ? "로그인하기" : "가입하기";
+        document.getElementById('toggle-text').innerHTML = isLoginMode ? "아이디가 없으신가요? <b>회원가입</b>" : "이미 아이디가 있나요? <b>로그인</b>";
+    }
+
+    async function handleAuth() {
+        const email = document.getElementById('userEmail').value.trim();
+        const pw = document.getElementById('userPw').value.trim();
+        if(!email || !pw) return alert("이메일과 비번을 입력하세요.");
+
         try {
-            const doc = await db.collection("teams").doc(id).get();
-            if(doc.exists) {
-                if(doc.data().pw !== pw) return alert("비밀번호가 틀립니다.");
+            if (isLoginMode) {
+                // 로그인 시도
+                await auth.signInWithEmailAndPassword(email, pw);
             } else {
-                if(confirm("신규 팀을 생성할까요?")) { await db.collection("teams").doc(id).set({ pw: pw }); } else return;
+                // 회원가입 시도
+                await auth.createUserWithEmailAndPassword(email, pw);
+                alert("가입 성공! 자동으로 로그인됩니다.");
             }
-            localStorage.setItem('teamId', id);
-            showDashboard(id);
-        } catch(e) { alert("연결 오류: firebase-config.js를 확인하세요."); }
+        } catch (error) {
+            alert("오류: " + error.message);
+        }
     }
 
-    function showDashboard(id) {
-        const lBox = document.getElementById('login-box');
-        const dBox = document.getElementById('dashboard-box');
-        if(lBox) lBox.style.display = 'none';
-        if(dBox) dBox.style.display = 'block';
-        document.getElementById('displayTeamName').innerText = `팀: ${id}`;
+    function showDashboard(email) {
+        document.getElementById('auth-box').style.display = 'none';
+        document.getElementById('dashboard-box').style.display = 'block';
+        document.getElementById('displayUserName').innerText = `${email.split('@')[0]}님 환영합니다`;
     }
 
-    function logout() { localStorage.clear(); location.reload(); }
+    async function handleLogout() {
+        if(confirm("로그아웃 하시겠습니까?")) {
+            await auth.signOut();
+            location.reload();
+        }
+    }
 </script>
 </body>
 </html>

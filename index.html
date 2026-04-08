@@ -1,27 +1,106 @@
-<div class="login-box">
-  <form id="login-form">
-    <div class="form-options"> <label class="remember-me">
-        <input type="checkbox" name="remember" checked>
-        자동 로그인 유지
-      </label>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>김목수이야기 - 홈</title>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <div id="auth-box" style="display:none;">
+        <div class="logo-wrapper"><img src="kimmoksu_main_logo.png" alt="로고" class="main-logo"></div>
+        <div class="card">
+            <h2 id="auth-title" style="text-align: center; margin-bottom: 25px;">로그인</h2>
+            <input type="email" id="userEmail" placeholder="이메일 주소">
+            <input type="password" id="userPw" placeholder="비밀번호">
+            
+            <label class="remember-wrapper">
+                <input type="checkbox" id="rememberMe" checked>
+                <span>자동 로그인 유지</span>
+            </label>
+
+            <button class="btn-main" onclick="handleAuth()">접속하기</button>
+            <p style="text-align:center; margin-top:25px; color:#9ca3af; cursor:pointer;" onclick="toggleAuthMode()">아이디가 없나요? <b id="toggle-link">회원가입</b></p>
+        </div>
     </div>
 
-    </form>
+    <div id="dashboard-box" style="display:none;">
+        <div class="nav-logo-area">
+            <img src="kimmoksu_main_logo.png" alt="로고" class="nav-logo">
+        </div>
+        
+        <div class="welcome-row">
+            <div class="welcome-text">
+                <h3 id="displayUserName"></h3>
+                <p>현장 관리를 시작합니다.</p>
+            </div>
+            <div style="position: relative;">
+                <button class="more-btn" onclick="toggleDropdown(event)">⋮</button>
+                <div id="myDropdown" class="dropdown-menu">
+                    <button onclick="location.href='team.html'">👤 팀원 관리</button>
+                    <button onclick="handleLogout()" style="color:var(--danger);">🚪 로그아웃</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="menu-grid">
+            <div class="menu-item" onclick="location.href='t5.html'"><i>💡</i><span>T5 계산기</span></div>
+            <div class="menu-item disabled" onclick="alert('준비중')"><i>📝</i><span>작업일보</span></div>
+            <div class="menu-item disabled" onclick="alert('준비중')"><i>🎨</i><span>줄눈 계산기</span></div>
+            <div class="menu-item disabled" onclick="alert('준비중')"><i>🛠️</i><span>공구 관리</span></div>
+        </div>
+    </div>
 </div>
 
-<div class="main-menu-box">
-  <div class="logo-area"> <img src="logo.png" alt="STORY OF KIMMOKSU Logo" class="main-logo">
-  </div>
-  
-  <div class="welcome-message-area"> <div class="welcome-message">
-      <h2>idong2300님 반갑습니다!</h2>
-      <p>현장 관리를 시작합니다.</p>
-    </div>
-    <div class="more-options">
-      <span class="material-icons">more_vert</span>
-    </div>
-  </div>
+<script>
+    let isLoginMode = true;
 
-  <div class="menu-grid">
-    </div>
-</div>
+    auth.onAuthStateChanged(user => {
+        if (user) { showDashboard(user.email); }
+        else { document.getElementById('auth-box').style.display='block'; document.getElementById('dashboard-box').style.display='none'; }
+    });
+
+    function toggleDropdown(event) {
+        event.stopPropagation();
+        document.getElementById("myDropdown").classList.toggle("show");
+    }
+
+    window.onclick = function() {
+        const d = document.getElementById("myDropdown");
+        if (d && d.classList.contains('show')) d.classList.remove('show');
+    }
+
+    function toggleAuthMode() {
+        isLoginMode = !isLoginMode;
+        document.getElementById('auth-title').innerText = isLoginMode ? "로그인" : "회원가입";
+        document.getElementById('toggle-link').innerText = isLoginMode ? "회원가입" : "로그인";
+    }
+
+    async function handleAuth() {
+        const email = document.getElementById('userEmail').value.trim();
+        const pw = document.getElementById('userPw').value.trim();
+        const rememberMe = document.getElementById('rememberMe').checked;
+        if(!email || !pw) return alert("입력해주세요.");
+        try {
+            const p = rememberMe ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
+            await auth.setPersistence(p);
+            if(isLoginMode) { await auth.signInWithEmailAndPassword(email, pw); }
+            else { await auth.createUserWithEmailAndPassword(email, pw); alert("가입 성공!"); }
+        } catch(e) { alert(e.message); }
+    }
+
+    function showDashboard(email) { 
+        document.getElementById('auth-box').style.display='none'; 
+        document.getElementById('dashboard-box').style.display='block'; 
+        document.getElementById('displayUserName').innerText = `${email.split('@')[0]}님 반갑습니다!`;
+    }
+
+    async function handleLogout() { if(confirm("로그아웃 할까요?")) { await auth.signOut(); location.reload(); } }
+</script>
+</body>
+</html>

@@ -34,7 +34,7 @@
     <button class="btn-main" id="t5-save-btn" style="display:none; background:var(--success); margin-bottom:20px;" onclick="saveT5ToCloud()">2. 저장하기</button>
     
     <div class="section-title">📋 나의 계산 히스토리</div>
-    <div id="t5-history-list"></div>
+    <div id="t5-history-list">불러오는 중...</div>
 </div>
 
 <script>
@@ -43,8 +43,12 @@
     let lastT5Data = null;
 
     auth.onAuthStateChanged((user) => {
-        if (user) { currentUserEmail = user.email; listenT5History(); }
-        else { alert("로그인이 필요합니다."); location.href = 'index.html'; }
+        if (user) { 
+            currentUserEmail = user.email; 
+            setTimeout(() => listenT5History(), 500);
+        } else { 
+            alert("로그인이 필요합니다."); location.href = 'index.html'; 
+        }
     });
 
     function toggleSpecSection() {
@@ -62,14 +66,10 @@
         document.getElementById('spec-list').appendChild(div);
     }
 
-    // [핵심] 구간과 길이를 가로로 배치하는 함수
     function addAreaRow(n='', v='') {
         const div = document.createElement('div');
-        div.className = 'area-row'; // CSS에서 설정한 가로 배치 클래스 사용
-        div.innerHTML = `
-            <input type="text" placeholder="구간" value="${n}">
-            <input type="number" placeholder="길이" value="${v}">
-        `;
+        div.className = 'area-row'; 
+        div.innerHTML = `<input type="text" placeholder="구간" value="${n}"><input type="number" placeholder="길이" value="${v}">`;
         document.getElementById('area-list').appendChild(div);
     }
 
@@ -107,17 +107,30 @@
         document.getElementById('t5-result-area').innerHTML = html + `<div style="margin-top:15px; padding-top:10px; border-top:2px solid var(--primary);"><strong>합계: ${Object.entries(grandTotal).map(([k,v])=>`${k}-${v}개`).join(' / ')}</strong></div>`;
         document.getElementById('t5-result-area').style.display = 'block';
         document.getElementById('t5-save-btn').style.display = 'block';
+        document.getElementById('t5-save-btn').innerText = editingT5Id ? "2. 수정 내용 덮어쓰기 💾" : "2. 히스토리에 저장 🌐";
     }
 
     async function saveT5ToCloud() {
         if(!currentUserEmail) return;
-        if(editingT5Id) { await db.collection("t5_history").doc(editingT5Id).update(lastT5Data); alert("수정 완료"); }
-        else { await db.collection("t5_history").add(lastT5Data); alert("저장 완료"); }
-        location.reload();
+        try {
+            if(editingT5Id) { 
+                await db.collection("t5_history").doc(editingT5Id).update(lastT5Data); 
+                alert("수정 완료"); 
+            } else { 
+                await db.collection("t5_history").add(lastT5Data); 
+                alert("저장 완료"); 
+            }
+            location.reload();
+        } catch(e) { alert("저장 실패: " + e.message); }
     }
 
     function listenT5History() {
-        db.collection("t5_history").where("userEmail","==",currentUserEmail).orderBy("createdAt","desc").limit(15).onSnapshot(ss => {
+        if(!currentUserEmail) return;
+        db.collection("t5_history")
+          .where("userEmail","==",currentUserEmail)
+          .orderBy("createdAt","desc")
+          .limit(15)
+          .onSnapshot(ss => {
             document.getElementById('t5-history-list').innerHTML = ss.docs.map(doc => {
                 const d = doc.data();
                 return `<div class="history-item">
@@ -137,12 +150,19 @@
         const d = doc.data();
         editingT5Id = id;
         document.getElementById('siteName').value = d.site;
+        
+        // 규격 목록 불러오기
         document.getElementById('spec-list').innerHTML = '';
         d.specs.forEach(s => addSpecRow(s.name, s.size));
+        
+        // 구간 목록 불러오기
         document.getElementById('area-list').innerHTML = '';
         d.areas.forEach(a => addAreaRow(a.name, a.len));
-        document.getElementById('spec-section').style.display = 'block';
+        
+        // [수정된 부분] 규격 섹션을 강제로 열지 않음 (display: block 코드를 삭제함)
+        // 화면을 맨 위로만 올려줍니다.
         window.scrollTo(0,0);
+        alert("데이터를 불러왔습니다. 수정 후 '계산하기'를 다시 눌러주세요.");
     }
 
     async function deleteT5(id) { if(confirm("삭제할까요?")) await db.collection("t5_history").doc(id).delete(); }

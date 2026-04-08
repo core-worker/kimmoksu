@@ -29,3 +29,53 @@ button { border: none; border-radius: 10px; cursor: pointer; font-weight: bold; 
 
 /* 공통 */
 .btn-home { background: #374151; color: white; padding: 8px 15px; font-size: 0.85rem; margin-bottom: 15px; }
+
+/* 기존 스타일은 유지하고 맨 아래에 추가하세요 */
+
+/* 상단바 및 드롭다운 스타일 */
+.top-nav {
+    display: flex;
+    justify-content: flex-end; /* 우측 정렬 */
+    padding: 10px 0;
+    position: relative;
+}
+
+.more-btn {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px 10px;
+}
+
+.dropdown-menu {
+    display: none; /* 기본은 숨김 */
+    position: absolute;
+    top: 45px;
+    right: 0;
+    background-color: var(--card);
+    border: 1px solid #374151;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    z-index: 100;
+    min-width: 120px;
+}
+
+.dropdown-menu button {
+    display: block;
+    width: 100%;
+    padding: 12px 15px;
+    text-align: left;
+    background: none;
+    color: var(--text);
+    font-size: 0.9rem;
+    border-bottom: 1px solid #374151;
+    white-space: nowrap;
+}
+
+.dropdown-menu button:last-child { border-bottom: none; }
+.dropdown-menu button:active { background-color: #374151; }
+
+/* 메뉴가 보일 때 클래스 */
+.show { display: block; }

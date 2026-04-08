@@ -9,25 +9,10 @@
     --input-bg: #374151; 
 }
 
-body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg); margin: 0; color: var(--text); }
+body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg); margin: 0; color: var(--text); line-height: 1.5; }
 .container { max-width: 500px; margin: auto; padding: 15px; box-sizing: border-box; }
 
-/* [메인으로] 버튼 - 둥근 칩 디자인 유지 */
-.btn-home { 
-    background: rgba(55, 65, 81, 0.7); 
-    color: white; 
-    padding: 8px 16px; 
-    font-size: 0.8rem; 
-    border-radius: 20px; 
-    border: 1px solid rgba(255,255,255,0.1);
-    margin-bottom: 20px;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    cursor: pointer;
-}
-
-/* 상단바 레이아웃 (로고 좌측, 메뉴 우측) */
+/* [상단바 영역] 로고와 ⋮ 버튼을 한 줄로 */
 .top-nav { 
     display: flex; 
     justify-content: space-between; 
@@ -35,66 +20,64 @@ body { font-family: -apple-system, system-ui, sans-serif; background-color: var(
     padding: 10px 0; 
     margin-bottom: 20px;
 }
+.nav-logo { height: 35px; width: auto; object-fit: contain; cursor: pointer; }
 
-.nav-logo { height: 35px; width: auto; object-fit: contain; }
-
-/* 입력창 및 제목 간격 (이전 스타일로 복구) */
-.section-title { 
-    font-weight: bold; 
-    font-size: 1rem; 
-    margin-bottom: 12px; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-}
-
-input, select, textarea { 
-    padding: 14px 18px; 
-    border: 1px solid #4b5563; 
-    border-radius: 12px; 
-    width: 100%; 
-    margin-bottom: 12px; 
-    background: var(--input-bg); 
-    color: white; 
-    box-sizing: border-box; 
-    font-size: 1rem;
-    outline: none;
-    box-shadow: none !important; /* 그림자 절대 제거 */
-}
-
-/* 버튼 그림자 제거 */
-button { border: none; box-shadow: none !important; cursor: pointer; }
-
-/* 메인 큰 버튼 */
-.btn-main { 
-    width: 100%; 
-    padding: 16px; 
-    background: var(--primary); 
-    color: white; 
-    font-size: 1.1rem; 
-    border-radius: 12px; 
-    font-weight: bold;
-}
-
-.card { background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 20px; }
-
-/* 드롭다운 메뉴 */
+/* [드롭다운 메뉴] */
+.dropdown-wrapper { position: relative; }
+.more-btn { background: none; border: none; color: var(--text); font-size: 1.8rem; cursor: pointer; padding: 0 5px; }
 .dropdown-menu {
-    display: none !important;
+    display: none !important; /* 기본은 숨김 */
     position: absolute;
     top: 40px;
     right: 0;
     background-color: var(--card);
     border: 1px solid #374151;
     border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     z-index: 1000;
-    min-width: 140px;
+    min-width: 150px;
+    overflow: hidden;
 }
 .dropdown-menu.show { display: block !important; }
 .dropdown-menu button {
-    display: block; width: 100%; padding: 12px 16px; text-align: left;
-    background: none; color: var(--text); font-size: 0.9rem; border-bottom: 1px solid #374151;
+    display: block; width: 100%; padding: 14px 16px; text-align: left;
+    background: none; color: var(--text); font-size: 0.9rem; border: none;
+    border-bottom: 1px solid #374151; cursor: pointer;
 }
 .dropdown-menu button:last-child { border-bottom: none; }
+.dropdown-menu button:active { background-color: #374151; }
 
-.more-btn { background: none; color: var(--text); font-size: 1.8rem; line-height: 1; padding: 0 5px; }
+/* [메시지 영역] */
+.welcome-area { margin-bottom: 30px; padding-left: 5px; }
+.welcome-area h3 { margin: 0; color: var(--primary); font-size: 1.3rem; }
+.welcome-area p { margin: 5px 0 0 0; font-size: 0.85rem; color: #9ca3af; }
+
+/* [메뉴 그리드] */
+.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.menu-item { 
+    background: var(--card); 
+    padding: 30px 10px; 
+    border-radius: 16px; 
+    text-align: center; 
+    cursor: pointer; 
+    border: 1px solid transparent;
+    transition: 0.2s;
+}
+.menu-item:active { background: #2d3748; transform: scale(0.98); }
+.menu-item i { font-size: 2rem; display: block; margin-bottom: 10px; }
+.menu-item span { font-size: 0.95rem; font-weight: bold; }
+.menu-item.disabled { opacity: 0.3; cursor: default; }
+
+/* [기타 카드 및 버튼] */
+.card { background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 20px; }
+input { 
+    padding: 14px 18px; border: 1px solid #4b5563; border-radius: 12px; 
+    width: 100%; margin-bottom: 12px; background: var(--input-bg); 
+    color: white; box-sizing: border-box; font-size: 1rem; outline: none;
+}
+.btn-main { 
+    width: 100%; padding: 16px; background: var(--primary); color: white; 
+    font-size: 1.1rem; border-radius: 12px; font-weight: bold; border: none;
+}
+.logo-wrapper { display: flex; justify-content: center; padding: 40px 0; }
+.main-logo { width: 100%; max-width: 260px; height: auto; }

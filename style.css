@@ -1,3 +1,5 @@
+/* 기존 스타일 그대로 유지하고, 아래 nav-logo 클래스만 추가 또는 확인하세요 */
+
 :root { 
     --primary: #3b82f6; 
     --secondary: #4b5563; 
@@ -14,10 +16,18 @@ body { font-family: -apple-system, system-ui, sans-serif; background-color: var(
 
 /* 상단바 및 드롭다운 */
 .top-nav { display: flex; justify-content: flex-end; padding: 10px 0; position: relative; }
+
+/* [추가] 대시보드용 작은 로고 스타일 */
+.nav-logo {
+    height: 32px; /* 상단바 높이에 맞게 조절 */
+    width: auto;
+    object-fit: contain;
+}
+
 .more-btn { background: none; border: none; color: var(--text); font-size: 1.8rem; cursor: pointer; padding: 0 10px; line-height: 1; }
 
 .dropdown-menu {
-    display: none !important; /* 기본은 강제로 숨김 */
+    display: none !important;
     position: absolute;
     top: 45px;
     right: 0;
@@ -30,7 +40,7 @@ body { font-family: -apple-system, system-ui, sans-serif; background-color: var(
     overflow: hidden;
 }
 
-.dropdown-menu.show { display: block !important; } /* 클릭 시에만 보임 */
+.dropdown-menu.show { display: block !important; }
 
 .dropdown-menu button {
     display: block; width: 100%; padding: 14px 16px; text-align: left;

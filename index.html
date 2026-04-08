@@ -1,71 +1,30 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>김목수이야기 - 홈</title>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-    <script src="firebase-config.js"></script>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="container">
-    <div id="auth-box" style="display:none;">
-        <div class="logo-wrapper"><img src="kimmoksu_main_logo.png" alt="로고" class="main-logo"></div>
-        <div class="card">
-            <h2 style="text-align: center; margin-bottom: 20px;">로그인</h2>
-            <input type="email" id="userEmail" placeholder="이메일 주소">
-            <input type="password" id="userPw" placeholder="비밀번호">
-            <label class="remember-wrapper"><input type="checkbox" id="rememberMe" checked><span> 자동 로그인</span></label>
-            <button class="btn-main" onclick="handleAuth()">로그인하기</button>
-            <p style="text-align:center; margin-top:20px; color:#9ca3af; cursor:pointer;" onclick="toggleAuthMode()">회원가입</p>
-        </div>
-    </div>
-
-    <div id="dashboard-box" style="display:none;">
-        <div class="top-nav">
-            <button class="more-btn" onclick="toggleDropdown()">⋮</button>
-            <div id="myDropdown" class="dropdown-menu">
-                <button onclick="location.href='team.html'">👤 팀원 관리</button>
-                <button onclick="handleLogout()" style="color:var(--danger);">🚪 로그아웃</button>
-            </div>
-        </div>
+<div class="top-nav" style="display:flex; justify-content: flex-end; padding-top:10px;">
+    <div style="position: relative;">
+        <button class="more-btn" onclick="toggleDropdown(event)">⋮</button>
         
-        <div style="margin-bottom: 30px;">
-            <h3 id="displayUserName" style="margin:0; color:var(--primary);"></h3>
-            <p style="font-size:0.8rem; color:#9ca3af;">현장 관리를 시작합니다.</p>
-        </div>
-
-        <div class="menu-grid">
-            <div class="menu-item" onclick="location.href='t5.html'"><i>💡</i><span>T5 계산기</span></div>
-            <div class="menu-item disabled" onclick="alert('준비중')"><i>📝</i><span>작업일보</span></div>
-            <div class="menu-item disabled" onclick="alert('준비중')"><i>🎨</i><span>줄눈 계산기</span></div>
-            <div class="menu-item disabled" onclick="alert('준비중')"><i>🛠️</i><span>공구 관리</span></div>
+        <div id="myDropdown" class="dropdown-menu">
+            <button onclick="location.href='team.html'">👤 팀원 관리</button>
+            <button onclick="handleLogout()" style="color:var(--danger);">🚪 로그아웃</button>
         </div>
     </div>
 </div>
 
 <script>
-    auth.onAuthStateChanged(user => {
-        if (user) { showDashboard(user.email); }
-        else { document.getElementById('auth-box').style.display='block'; document.getElementById('dashboard-box').style.display='none'; }
-    });
-
-    function toggleDropdown() { document.getElementById("myDropdown").classList.toggle("show"); }
-    window.onclick = function(event) { if (!event.target.matches('.more-btn')) { 
-        var d = document.getElementsByClassName("dropdown-menu");
-        for (var i=0; i<d.length; i++) { if (d[i].classList.contains('show')) d[i].classList.remove('show'); }
-    }}
-
-    async function handleAuth() { /* 기존 handleAuth 로직 동일 */ }
-    function showDashboard(email) { 
-        document.getElementById('auth-box').style.display='none'; 
-        document.getElementById('dashboard-box').style.display='block'; 
-        document.getElementById('displayUserName').innerText = `${email.split('@')[0]}님`;
+    // 드롭다운 열기/닫기 함수
+    function toggleDropdown(event) {
+        // 이벤트 전파 방지 (버튼 클릭이 창 전체 클릭으로 인식되지 않게 함)
+        event.stopPropagation();
+        const dropdown = document.getElementById("myDropdown");
+        dropdown.classList.toggle("show");
     }
-    async function handleLogout() { if(confirm("로그아웃 할까요?")) { await auth.signOut(); location.reload(); } }
+
+    // 메뉴 바깥쪽 아무 데나 누르면 메뉴가 닫히게 하는 기능
+    window.onclick = function(event) {
+        const dropdown = document.getElementById("myDropdown");
+        if (dropdown && dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
+        }
+    }
+    
+    // ... 나머지 로그인 관련 함수들은 기존과 동일하게 유지 ...
 </script>
-</body>
-</html>

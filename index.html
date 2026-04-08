@@ -27,7 +27,9 @@
     </div>
 
     <div id="dashboard-box" style="display:none;">
-        <div class="top-nav">
+        <div class="top-nav" style="display:flex; justify-content: space-between; align-items: center; padding-top:10px;">
+            <img src="kimmoksu_main_logo.png" alt="로고" class="nav-logo" onclick="location.reload()" style="cursor:pointer;">
+            
             <div style="position: relative;">
                 <button class="more-btn" onclick="toggleDropdown(event)">⋮</button>
                 <div id="myDropdown" class="dropdown-menu">
@@ -37,8 +39,8 @@
             </div>
         </div>
         
-        <div style="margin-bottom: 30px;">
-            <h3 id="displayUserName" style="margin:0; color:var(--primary);"></h3>
+        <div style="margin: 20px 0 30px 0;">
+            <h3 id="displayUserName" style="margin:0; color:var(--primary); font-size: 1.3rem;"></h3>
             <p style="font-size:0.85rem; color:#9ca3af; margin-top:5px;">현장 관리를 시작합니다.</p>
         </div>
 

@@ -10,25 +10,30 @@
     <script src="firebase-config.js"></script>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* 월별 현황 전용 스타일 */
-        .status-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-bottom: 20px; table-layout: fixed; }
-        .status-table th, .status-table td { border: 1px solid #4b5563; text-align: center; padding: 8px 2px; }
-        .status-table th { background: #2d3748; color: var(--primary); font-size: 0.7rem; }
-        
-        .cat-cell { width: 45px; font-weight: bold; background: #1a202c; font-size: 0.7rem; }
-        .name-cell { width: 70px; background: #2d3748; font-weight: bold; }
-        .day-cell { cursor: pointer; height: 35px; transition: 0.2s; -webkit-user-select: none; user-select: none; }
-        .day-cell:active { background: var(--primary); }
-        .day-cell.filled { color: var(--success); font-weight: bold; background: rgba(16, 185, 129, 0.1); }
-        
-        .total-cell { background: #1a202c; color: var(--primary); font-weight: bold; width: 50px; }
-        .cat-sum-row { background: #1a202c; font-weight: bold; }
-        
-        .info-row { margin-bottom: 15px; display: flex; gap: 8px; }
-        .info-row input { margin-bottom: 0; }
+        /* 엑셀 스타일 표 디자인 */
+        .team-section { margin-bottom: 30px; }
+        .team-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
+        .team-title { font-weight: bold; font-size: 1.1rem; color: var(--text); }
 
-        /* 긴 클릭 시 시각적 알림 */
-        .long-press-hint { font-size: 0.7rem; color: #9ca3af; margin-bottom: 10px; text-align: right; }
+        .excel-table { width: 100%; border-collapse: collapse; background: var(--card); margin-bottom: 5px; table-layout: fixed; }
+        .excel-table td { border: 1px solid #4b5563; text-align: center; height: 35px; font-size: 0.85rem; padding: 0; position: relative; }
+        
+        /* 이름 칸 */
+        .name-input { width: 100%; height: 100%; border: none; background: transparent; color: white; text-align: center; font-weight: bold; font-size: 0.9rem; }
+        
+        /* 날짜 숫자 행 */
+        .date-num { background: #2d3748; font-size: 0.75rem; font-weight: bold; }
+        .sun { color: #ff4d4d !important; } /* 일요일 레드 */
+        .sat { color: #4dadff !important; } /* 토요일 블루 */
+
+        /* 공수 입력 칸 */
+        .gongsu-cell { cursor: pointer; transition: 0.2s; -webkit-user-select: none; user-select: none; font-weight: bold; }
+        .gongsu-cell:active { background: var(--primary); }
+        .gongsu-cell.filled { color: var(--success); background: rgba(16, 185, 129, 0.1); }
+        
+        /* 합계 칸 */
+        .sum-cell { background: #1a202c; color: var(--primary); font-weight: bold; }
+        .team-total-bar { text-align: right; padding: 10px; font-size: 0.9rem; color: #9ca3af; background: rgba(255,255,255,0.03); border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -37,38 +42,34 @@
     
     <div class="card">
         <div class="section-title">📅 월별 현황 설정</div>
-        <div class="info-row">
-            <input type="month" id="logMonth" style="flex:1;">
-            <input type="text" id="siteName" placeholder="현장명" style="flex:1;">
+        <div style="display:flex; gap:10px;">
+            <input type="month" id="logMonth" style="flex:1; margin-bottom:0;">
+            <input type="text" id="siteName" placeholder="현장명" style="flex:1; margin-bottom:0;">
         </div>
-        <button class="btn-main" onclick="saveMonthlyLog()" style="background:var(--success);">서버에 저장하기</button>
+        <button class="btn-main" onclick="saveMonthlyLog()" style="background:var(--success); margin-top:15px;">서버에 저장하기</button>
     </div>
 
-    <div class="card" style="padding: 10px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <div class="section-title" style="margin-bottom:0;">👷 인원 명단</div>
-            <button onclick="addWorkerPrompt()" class="btn-circle">+</button>
+    <div id="team-container">
         </div>
-        <p class="long-press-hint">※ 클릭: 1공수 / 길게 클릭: 공수 직접 수정</p>
-        
-        <div id="table-container">
-            </div>
-    </div>
 
-    <div class="section-title">📂 불러오기 / 내역</div>
+    <div class="section-title" style="margin-top:40px;">📂 불러오기 / 내역</div>
     <div id="history-list"></div>
 </div>
 
 <script>
     let myEmail, myTeamId, editingId = null;
-    let workers = []; // { name, category, days: { "1": 1.0 ... } }
-    const categoryList = ["목공", "도장", "필름", "전기", "기타"];
+    // 초기 공정 리스트
+    let teamData = [
+        { teamName: "목공팀", workers: [] },
+        { font: "도장팀", teamName: "도장팀", workers: [] },
+        { teamName: "필름팀", workers: [] },
+        { teamName: "전기팀", workers: [] }
+    ];
 
-    // 초기 날짜 세팅
     document.getElementById('logMonth').value = new Date().toISOString().substring(0, 7);
 
     auth.onAuthStateChanged(async user => { 
-        if (user) { myEmail = user.email; await findTeam(); loadHistory(); } 
+        if (user) { myEmail = user.email; await findTeam(); loadHistory(); renderAllTeams(); } 
         else { location.href='index.html'; } 
     });
 
@@ -77,140 +78,137 @@
         if (!q.empty) { myTeamId = q.docs[0].id; }
     }
 
-    function addWorkerPrompt() {
-        const cat = prompt("공정을 선택하세요\n(1:목공, 2:도장, 3:필름, 4:전기, 5:기타)", "1");
-        if(!cat) return;
-        const name = prompt("작업자 이름을 입력하세요");
-        if(name) {
-            workers.push({ name, category: categoryList[parseInt(cat)-1] || "기타", days: {} });
-            renderTable();
-        }
+    // [핵심] 주말 체크 함수 (2026년 대응)
+    function getDayColorClass(year, month, day) {
+        const date = new Date(year, month - 1, day);
+        const dayOfWeek = date.getDay(); // 0:일, 6:토
+        if (dayOfWeek === 0) return 'sun';
+        if (dayOfWeek === 6) return 'sat';
+        return '';
     }
 
-    function renderTable() {
-        const month = document.getElementById('logMonth').value;
-        if(!month) return;
-        const lastDay = new Date(month.substring(0,4), month.substring(5,7), 0).getDate();
-        const container = document.getElementById('table-container');
-        container.innerHTML = "";
-
-        // 공정별로 정렬해서 보여주기
-        const grouped = {};
-        categoryList.forEach(c => grouped[c] = workers.filter(w => w.category === c));
-
-        let html = "";
+    function renderAllTeams() {
+        const container = document.getElementById('team-container');
+        const [year, month] = document.getElementById('logMonth').value.split('-').map(Number);
+        const lastDay = new Date(year, month, 0).getDate();
         
-        for(const cat in grouped) {
-            if(grouped[cat].length === 0) continue;
+        container.innerHTML = teamData.map((team, tIdx) => {
+            let teamTotal = 0;
+            const workerTables = team.workers.map((w, wIdx) => {
+                let pTotal = 0;
+                Object.values(w.days).forEach(v => pTotal += parseFloat(v || 0));
+                teamTotal += pTotal;
 
-            grouped[cat].forEach((worker, idx) => {
-                const wIdx = workers.indexOf(worker);
-                let personTotal = 0;
-                Object.values(worker.days).forEach(v => personTotal += parseFloat(v || 0));
+                return `
+                <table class="excel-table">
+                    <tr>
+                        <td rowspan="2" style="width:70px;">
+                            <input type="text" class="name-input" value="${w.name}" placeholder="이름" 
+                                   onchange="updateName(${tIdx}, ${wIdx}, this.value)">
+                        </td>
+                        ${renderDateRow(year, month, 1, 16)}
+                    </tr>
+                    <tr>
+                        ${renderDateRow(year, month, 17, 31, lastDay, true, tIdx, wIdx, pTotal)}
+                    </tr>
+                    <tr>
+                        <td colspan="16"></td>
+                        <td class="sum-cell" style="font-size:0.7rem;">계</td>
+                    </tr>
+                </table>`;
+            }).join('');
 
-                html += `<table class="status-table">`;
-                // 첫 줄: 1~15일
-                html += `<tr>
-                    <td rowspan="2" class="cat-cell">${idx === 0 ? cat : ''}</td>
-                    <td rowspan="2" class="name-cell">${worker.name}</td>
-                    ${renderDayCells(wIdx, 1, 15)}
-                    <td class="total-cell">${personTotal.toFixed(1)}</td>
-                </tr>`;
-                // 둘째 줄: 16~말일
-                html += `<tr>
-                    ${renderDayCells(wIdx, 16, lastDay)}
-                    ${lastDay < 31 ? `<td colspan="${31-lastDay}"></td>` : ''}
-                    <td class="total-cell" style="color:var(--success)">Total</td>
-                </tr>`;
-                html += `</table>`;
-            });
-
-            // 공정별 합계 계산
-            let catTotal = 0;
-            grouped[cat].forEach(w => Object.values(w.days).forEach(v => catTotal += parseFloat(v || 0)));
-            html += `<div style="text-align:right; font-size:0.8rem; color:var(--primary); margin:-15px 5px 20px 0;">💰 ${cat} 공정 총합: <b>${catTotal.toFixed(1)}</b></div>`;
-        }
+            return `
+            <div class="team-section">
+                <div class="team-header">
+                    <span class="team-title">${team.teamName} 인원 명단</span>
+                    <button class="btn-circle" onclick="addWorker(${tIdx})">+</button>
+                </div>
+                ${workerTables}
+                <div class="team-total-bar">${team.teamName} 합계 공수: <b>${teamTotal.toFixed(1)}</b></div>
+            </div>`;
+        }).join('');
         
-        container.innerHTML = html || "<p style='text-align:center; padding:20px; color:#666;'>인원을 추가해주세요.</p>";
         bindLongPress();
     }
 
-    function renderDayCells(wIdx, start, end) {
-        let h = "";
-        for(let d = start; d <= end; d++) {
-            const val = workers[wIdx].days[d] || "";
-            h += `<td class="day-cell ${val?'filled':''}" 
-                      data-w="${wIdx}" data-d="${d}" 
-                      onclick="handleCellClick(this)">${val}</td>`;
+    function renderDateRow(year, month, start, end, lastDay = 31, isGongsu = false, tIdx, wIdx, pTotal) {
+        let nums = "", cells = "";
+        for (let d = start; d <= end; d++) {
+            const colorClass = getDayColorClass(year, month, d);
+            if (!isGongsu) {
+                // 상단 날짜 숫자 행
+                nums += `<td class="date-num ${colorClass}">${d}</td>`;
+            } else {
+                // 하단 공수 입력 행
+                if (d > lastDay && d <= 31) {
+                    cells += `<td style="background:#1a202c;"></td>`; // 없는 날짜 (31일 등)
+                } else if (d === 32) { // '계' 자리 (논리적 위치)
+                    cells += `<td class="sum-cell">${pTotal.toFixed(1)}</td>`;
+                } else {
+                    const val = teamData[tIdx].workers[wIdx].days[d] || "";
+                    cells += `<td class="gongsu-cell ${val?'filled':''}" 
+                                  data-t="${tIdx}" data-w="${wIdx}" data-d="${d}" 
+                                  onclick="handleCellClick(this)">${val}</td>`;
+                }
+            }
         }
-        return h;
+        // 하단행의 마지막 '계' 칸 추가
+        if (isGongsu) cells += `<td class="sum-cell">${pTotal.toFixed(1)}</td>`;
+        return isGongsu ? cells : nums;
+    }
+
+    function addWorker(tIdx) {
+        teamData[tIdx].workers.push({ name: "", days: {} });
+        renderAllTeams();
+    }
+
+    function updateName(tIdx, wIdx, val) {
+        teamData[tIdx].workers[wIdx].name = val;
     }
 
     function handleCellClick(el) {
-        const wIdx = el.dataset.w;
-        const d = el.dataset.d;
-        const current = parseFloat(workers[wIdx].days[d] || 0);
-        workers[wIdx].days[d] = (current === 1 ? "" : 1);
-        renderTable();
+        const { t, w, d } = el.dataset;
+        const current = parseFloat(teamData[t].workers[w].days[d] || 0);
+        teamData[t].workers[w].days[d] = (current === 1 ? "" : 1);
+        renderAllTeams();
     }
 
     function bindLongPress() {
-        const cells = document.querySelectorAll('.day-cell');
-        cells.forEach(cell => {
+        document.querySelectorAll('.gongsu-cell').forEach(cell => {
             let timer;
-            cell.addEventListener('touchstart', (e) => {
-                timer = setTimeout(() => {
-                    const wIdx = cell.dataset.w;
-                    const d = cell.dataset.d;
-                    const input = prompt(`${workers[wIdx].name} - ${d}일 공수 입력\n(예: 0.5, 1.5, 2)`, workers[wIdx].days[d]);
-                    if(input !== null) {
-                        workers[wIdx].days[d] = input === "0" ? "" : input;
-                        renderTable();
-                    }
-                }, 800);
-            });
-            cell.addEventListener('touchend', () => clearTimeout(timer));
-            // PC 테스트용
-            cell.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                const wIdx = cell.dataset.w;
-                const d = cell.dataset.d;
-                const input = prompt(`${workers[wIdx].name} - ${d}일 공수 입력`, workers[wIdx].days[d]);
-                if(input !== null) {
-                    workers[wIdx].days[d] = input === "0" ? "" : input;
-                    renderTable();
-                }
-            });
+            const start = () => timer = setTimeout(() => {
+                const { t, w, d } = cell.dataset;
+                const input = prompt(`${teamData[t].workers[w].name || '작업자'} - ${d}일 공수 수정`, teamData[t].workers[w].days[d]);
+                if (input !== null) { teamData[t].workers[w].days[d] = input === "0" ? "" : input; renderAllTeams(); }
+            }, 800);
+            const end = () => clearTimeout(timer);
+            cell.ontouchstart = start; cell.ontouchend = end;
+            cell.onmousedown = start; cell.onmouseup = end;
         });
     }
 
     async function saveMonthlyLog() {
         const month = document.getElementById('logMonth').value;
         const site = document.getElementById('siteName').value.trim();
-        if(!site) return alert("현장명을 입력하세요.");
-        if(!myTeamId) return alert("팀 정보 없음");
-
+        if(!site) return alert("현장명 필수!");
         try {
-            const data = { teamId: myTeamId, month, site, workers, updatedAt: Date.now(), writer: myEmail };
-            if(editingId) await db.collection("monthly_logs").doc(editingId).set(data);
-            else await db.collection("monthly_logs").add(data);
-            alert("저장되었습니다.");
-            location.reload();
+            const finalData = { teamId: myTeamId, month, site, teamData, updatedAt: Date.now() };
+            if(editingId) await db.collection("monthly_logs").doc(editingId).set(finalData);
+            else await db.collection("monthly_logs").add(finalData);
+            alert("저장완료!"); location.reload();
         } catch(e) { alert(e.message); }
     }
 
     function loadHistory() {
-        db.collection("monthly_logs").where("teamId","==", myTeamId).orderBy("updatedAt","desc").limit(10).onSnapshot(ss => {
+        db.collection("monthly_logs").where("teamId","==", myTeamId).orderBy("updatedAt","desc").limit(5).onSnapshot(ss => {
             document.getElementById('history-list').innerHTML = ss.docs.map(doc => {
                 const d = doc.data();
-                return `<div class="history-item" style="display:flex; justify-content:space-between; align-items:center;">
+                return `<div class="history-item">
                     <div><b>${d.month}</b> | ${d.site}</div>
-                    <div style="display:flex; gap:5px;">
-                        <button class="btn-edit" onclick="editLog('${doc.id}')">불러오기</button>
-                        <button class="btn-del" onclick="deleteLog('${doc.id}')">삭제</button>
-                    </div>
+                    <button class="btn-edit" onclick="editLog('${doc.id}')">불러오기</button>
                 </div>`;
-            }).join('') || "내역이 없습니다.";
+            }).join('');
         });
     }
 
@@ -220,15 +218,12 @@
         editingId = id;
         document.getElementById('logMonth').value = d.month;
         document.getElementById('siteName').value = d.site;
-        workers = d.workers;
-        renderTable();
-        window.scrollTo(0,0);
-        alert("데이터를 불러왔습니다.");
+        teamData = d.teamData;
+        renderAllTeams();
+        alert("데이터 로드 완료");
     }
 
-    async function deleteLog(id) { if(confirm("정말 삭제할까요?")) await db.collection("monthly_logs").doc(id).delete(); }
-
-    document.getElementById('logMonth').onchange = renderTable;
+    document.getElementById('logMonth').onchange = renderAllTeams;
 </script>
 </body>
 </html>

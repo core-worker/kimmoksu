@@ -3,81 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>작업일보 테스트 - 김목수이야기</title>
+    <title>월별 근무 현황 - 김목수이야기</title>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js"></script>
     <link rel="stylesheet" href="style.css">
     <style>
-        .tabs { display: flex; gap: 5px; margin-bottom: 20px; }
-        .tab-btn { flex: 1; padding: 12px; background: var(--card); border-radius: 10px; border: none; color: #9ca3af; cursor: pointer; }
-        .tab-btn.active { background: var(--primary); color: white; }
+        /* 월별 현황 전용 스타일 */
+        .status-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-bottom: 20px; table-layout: fixed; }
+        .status-table th, .status-table td { border: 1px solid #4b5563; text-align: center; padding: 8px 2px; }
+        .status-table th { background: #2d3748; color: var(--primary); font-size: 0.7rem; }
         
-        .category-box { margin-bottom: 15px; border-bottom: 1px solid #374151; padding-bottom: 15px; }
-        .category-title { font-size: 0.9rem; color: var(--primary); font-weight: bold; margin-bottom: 10px; }
+        .cat-cell { width: 45px; font-weight: bold; background: #1a202c; font-size: 0.7rem; }
+        .name-cell { width: 70px; background: #2d3748; font-weight: bold; }
+        .day-cell { cursor: pointer; height: 35px; transition: 0.2s; -webkit-user-select: none; user-select: none; }
+        .day-cell:active { background: var(--primary); }
+        .day-cell.filled { color: var(--success); font-weight: bold; background: rgba(16, 185, 129, 0.1); }
         
-        .worker-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
-        .worker-row input { margin-bottom: 0; }
+        .total-cell { background: #1a202c; color: var(--primary); font-weight: bold; width: 50px; }
+        .cat-sum-row { background: #1a202c; font-weight: bold; }
         
-        /* 월별 현황판 스타일 */
-        .monthly-table-wrapper { overflow-x: auto; background: var(--card); border-radius: 12px; padding: 10px; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; color: var(--text); }
-        th, td { border: 1px solid #4b5563; padding: 5px; text-align: center; min-width: 25px; }
-        th:first-child, td:first-child { position: sticky; left: 0; background: var(--card); min-width: 60px; z-index: 2; }
-        .present { color: var(--success); font-weight: bold; }
+        .info-row { margin-bottom: 15px; display: flex; gap: 8px; }
+        .info-row input { margin-bottom: 0; }
+
+        /* 긴 클릭 시 시각적 알림 */
+        .long-press-hint { font-size: 0.7rem; color: #9ca3af; margin-bottom: 10px; text-align: right; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="btn-home" onclick="location.href='index.html'">🏠 메인으로</div>
     
-    <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('daily')">일별 일보</button>
-        <button class="tab-btn" onclick="switchTab('monthly')">월별 현황</button>
+    <div class="card">
+        <div class="section-title">📅 월별 현황 설정</div>
+        <div class="info-row">
+            <input type="month" id="logMonth" style="flex:1;">
+            <input type="text" id="siteName" placeholder="현장명" style="flex:1;">
+        </div>
+        <button class="btn-main" onclick="saveMonthlyLog()" style="background:var(--success);">서버에 저장하기</button>
     </div>
 
-    <div id="daily-tab">
-        <div class="card">
-            <div class="section-title">작업 정보</div>
-            <input type="date" id="workDate">
-            <input type="text" id="siteName" placeholder="현장명 입력 (예: 해운대 LCT)">
+    <div class="card" style="padding: 10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div class="section-title" style="margin-bottom:0;">👷 인원 명단</div>
+            <button onclick="addWorkerPrompt()" class="btn-circle">+</button>
         </div>
-
-        <div class="card">
-            <div class="section-title">출력 인원 등록 <button onclick="addWorkerRow()" class="btn-circle">+</button></div>
-            <div id="worker-input-list">
-                </div>
-            <button class="btn-main" onclick="saveDailyReport()">작업일보 저장</button>
-        </div>
-    </div>
-
-    <div id="monthly-tab" style="display:none;">
-        <div class="card">
-            <div class="section-title">월별 근무 현황 조회</div>
-            <div style="display:flex; gap:10px;">
-                <input type="month" id="searchMonth" style="flex:2;">
-                <button onclick="loadMonthlyData()" style="flex:1; background:var(--primary); color:white; border-radius:12px; margin-bottom:12px;">조회</button>
+        <p class="long-press-hint">※ 클릭: 1공수 / 길게 클릭: 공수 직접 수정</p>
+        
+        <div id="table-container">
             </div>
-            
-            <div class="monthly-table-wrapper">
-                <table id="monthly-table">
-                    </table>
-            </div>
-        </div>
     </div>
+
+    <div class="section-title">📂 불러오기 / 내역</div>
+    <div id="history-list"></div>
 </div>
 
 <script>
-    let myEmail, myTeamId;
-    const categories = ["목공", "도장", "필름", "전기", "기타"];
+    let myEmail, myTeamId, editingId = null;
+    let workers = []; // { name, category, days: { "1": 1.0 ... } }
+    const categoryList = ["목공", "도장", "필름", "전기", "기타"];
 
-    // 오늘 날짜 기본 세팅
-    document.getElementById('workDate').value = new Date().toISOString().substring(0, 10);
-    document.getElementById('searchMonth').value = new Date().toISOString().substring(0, 7);
+    // 초기 날짜 세팅
+    document.getElementById('logMonth').value = new Date().toISOString().substring(0, 7);
 
-    auth.onAuthStateChanged(user => { 
-        if (user) { myEmail = user.email; findTeam(); } 
+    auth.onAuthStateChanged(async user => { 
+        if (user) { myEmail = user.email; await findTeam(); loadHistory(); } 
         else { location.href='index.html'; } 
     });
 
@@ -86,93 +77,158 @@
         if (!q.empty) { myTeamId = q.docs[0].id; }
     }
 
-    function switchTab(tab) {
-        document.getElementById('daily-tab').style.display = tab === 'daily' ? 'block' : 'none';
-        document.getElementById('monthly-tab').style.display = tab === 'monthly' ? 'block' : 'none';
-        document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (tab === 'daily' ? 0 : 1) === i));
+    function addWorkerPrompt() {
+        const cat = prompt("공정을 선택하세요\n(1:목공, 2:도장, 3:필름, 4:전기, 5:기타)", "1");
+        if(!cat) return;
+        const name = prompt("작업자 이름을 입력하세요");
+        if(name) {
+            workers.push({ name, category: categoryList[parseInt(cat)-1] || "기타", days: {} });
+            renderTable();
+        }
     }
 
-    function addWorkerRow(cat = "목공", name = "") {
-        const div = document.createElement('div');
-        div.className = 'worker-row';
-        div.innerHTML = `
-            <select style="flex:1; margin-bottom:0; padding:8px;">${categories.map(c => `<option value="${c}" ${c===cat?'selected':''}>${c}</option>`).join('')}</select>
-            <input type="text" placeholder="이름" style="flex:2; margin-bottom:0; padding:8px;" value="${name}">
-            <button onclick="this.parentElement.remove()" style="background:none; color:var(--danger); border:none; font-size:1.2rem;">×</button>
-        `;
-        document.getElementById('worker-input-list').appendChild(div);
+    function renderTable() {
+        const month = document.getElementById('logMonth').value;
+        if(!month) return;
+        const lastDay = new Date(month.substring(0,4), month.substring(5,7), 0).getDate();
+        const container = document.getElementById('table-container');
+        container.innerHTML = "";
+
+        // 공정별로 정렬해서 보여주기
+        const grouped = {};
+        categoryList.forEach(c => grouped[c] = workers.filter(w => w.category === c));
+
+        let html = "";
+        
+        for(const cat in grouped) {
+            if(grouped[cat].length === 0) continue;
+
+            grouped[cat].forEach((worker, idx) => {
+                const wIdx = workers.indexOf(worker);
+                let personTotal = 0;
+                Object.values(worker.days).forEach(v => personTotal += parseFloat(v || 0));
+
+                html += `<table class="status-table">`;
+                // 첫 줄: 1~15일
+                html += `<tr>
+                    <td rowspan="2" class="cat-cell">${idx === 0 ? cat : ''}</td>
+                    <td rowspan="2" class="name-cell">${worker.name}</td>
+                    ${renderDayCells(wIdx, 1, 15)}
+                    <td class="total-cell">${personTotal.toFixed(1)}</td>
+                </tr>`;
+                // 둘째 줄: 16~말일
+                html += `<tr>
+                    ${renderDayCells(wIdx, 16, lastDay)}
+                    ${lastDay < 31 ? `<td colspan="${31-lastDay}"></td>` : ''}
+                    <td class="total-cell" style="color:var(--success)">Total</td>
+                </tr>`;
+                html += `</table>`;
+            });
+
+            // 공정별 합계 계산
+            let catTotal = 0;
+            grouped[cat].forEach(w => Object.values(w.days).forEach(v => catTotal += parseFloat(v || 0)));
+            html += `<div style="text-align:right; font-size:0.8rem; color:var(--primary); margin:-15px 5px 20px 0;">💰 ${cat} 공정 총합: <b>${catTotal.toFixed(1)}</b></div>`;
+        }
+        
+        container.innerHTML = html || "<p style='text-align:center; padding:20px; color:#666;'>인원을 추가해주세요.</p>";
+        bindLongPress();
     }
 
-    // 작업일보 저장
-    async function saveDailyReport() {
-        const date = document.getElementById('workDate').value;
+    function renderDayCells(wIdx, start, end) {
+        let h = "";
+        for(let d = start; d <= end; d++) {
+            const val = workers[wIdx].days[d] || "";
+            h += `<td class="day-cell ${val?'filled':''}" 
+                      data-w="${wIdx}" data-d="${d}" 
+                      onclick="handleCellClick(this)">${val}</td>`;
+        }
+        return h;
+    }
+
+    function handleCellClick(el) {
+        const wIdx = el.dataset.w;
+        const d = el.dataset.d;
+        const current = parseFloat(workers[wIdx].days[d] || 0);
+        workers[wIdx].days[d] = (current === 1 ? "" : 1);
+        renderTable();
+    }
+
+    function bindLongPress() {
+        const cells = document.querySelectorAll('.day-cell');
+        cells.forEach(cell => {
+            let timer;
+            cell.addEventListener('touchstart', (e) => {
+                timer = setTimeout(() => {
+                    const wIdx = cell.dataset.w;
+                    const d = cell.dataset.d;
+                    const input = prompt(`${workers[wIdx].name} - ${d}일 공수 입력\n(예: 0.5, 1.5, 2)`, workers[wIdx].days[d]);
+                    if(input !== null) {
+                        workers[wIdx].days[d] = input === "0" ? "" : input;
+                        renderTable();
+                    }
+                }, 800);
+            });
+            cell.addEventListener('touchend', () => clearTimeout(timer));
+            // PC 테스트용
+            cell.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                const wIdx = cell.dataset.w;
+                const d = cell.dataset.d;
+                const input = prompt(`${workers[wIdx].name} - ${d}일 공수 입력`, workers[wIdx].days[d]);
+                if(input !== null) {
+                    workers[wIdx].days[d] = input === "0" ? "" : input;
+                    renderTable();
+                }
+            });
+        });
+    }
+
+    async function saveMonthlyLog() {
+        const month = document.getElementById('logMonth').value;
         const site = document.getElementById('siteName').value.trim();
-        const rows = document.querySelectorAll('.worker-row');
-        
         if(!site) return alert("현장명을 입력하세요.");
-        
-        const workers = Array.from(rows).map(row => ({
-            category: row.querySelector('select').value,
-            name: row.querySelector('input').value.trim()
-        })).filter(w => w.name);
+        if(!myTeamId) return alert("팀 정보 없음");
 
         try {
-            // 저장 시 'teamId_site_date' 형식으로 문서 ID를 만들어 중복 방지
-            const docId = `${myTeamId}_${site}_${date}`;
-            await db.collection("daily_reports").doc(docId).set({
-                teamId: myTeamId, site, date, workers,
-                month: date.substring(0, 7), // 조회를 위해 월 정보 따로 저장
-                day: parseInt(date.substring(8, 10))
-            });
-            alert("저장되었습니다!");
+            const data = { teamId: myTeamId, month, site, workers, updatedAt: Date.now(), writer: myEmail };
+            if(editingId) await db.collection("monthly_logs").doc(editingId).set(data);
+            else await db.collection("monthly_logs").add(data);
+            alert("저장되었습니다.");
+            location.reload();
         } catch(e) { alert(e.message); }
     }
 
-    // 월별 데이터 조회 및 자동 기입 로직
-    async function loadMonthlyData() {
-        const month = document.getElementById('searchMonth').value;
-        if(!myTeamId) return alert("팀 정보가 없습니다.");
-
-        const q = await db.collection("daily_reports")
-                        .where("teamId", "==", myTeamId)
-                        .where("month", "==", month)
-                        .get();
-
-        const dataMap = {}; // { 이름: { 1: true, 5: true ... } }
-        const allDays = new Set();
-
-        q.forEach(doc => {
-            const d = doc.data();
-            d.workers.forEach(w => {
-                if(!dataMap[w.name]) dataMap[w.name] = {};
-                dataMap[w.name][d.day] = true;
-            });
+    function loadHistory() {
+        db.collection("monthly_logs").where("teamId","==", myTeamId).orderBy("updatedAt","desc").limit(10).onSnapshot(ss => {
+            document.getElementById('history-list').innerHTML = ss.docs.map(doc => {
+                const d = doc.data();
+                return `<div class="history-item" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div><b>${d.month}</b> | ${d.site}</div>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-edit" onclick="editLog('${doc.id}')">불러오기</button>
+                        <button class="btn-del" onclick="deleteLog('${doc.id}')">삭제</button>
+                    </div>
+                </div>`;
+            }).join('') || "내역이 없습니다.";
         });
-
-        renderMonthlyTable(dataMap, month);
     }
 
-    function renderMonthlyTable(dataMap, month) {
-        const lastDay = new Date(month.substring(0,4), month.substring(5,7), 0).getDate();
-        let html = `<thead><tr><th>이름</th>`;
-        for(let i=1; i<=lastDay; i++) html += `<th>${i}</th>`;
-        html += `</tr></thead><tbody>`;
-
-        const names = Object.keys(dataMap).sort();
-        names.forEach(name => {
-            html += `<tr><td>${name}</td>`;
-            for(let i=1; i<=lastDay; i++) {
-                html += `<td>${dataMap[name][i] ? '<span class="present">○</span>' : ''}</td>`;
-            }
-            html += `</tr>`;
-        });
-
-        html += `</tbody>`;
-        document.getElementById('monthly-table').innerHTML = html;
+    async function editLog(id) {
+        const doc = await db.collection("monthly_logs").doc(id).get();
+        const d = doc.data();
+        editingId = id;
+        document.getElementById('logMonth').value = d.month;
+        document.getElementById('siteName').value = d.site;
+        workers = d.workers;
+        renderTable();
+        window.scrollTo(0,0);
+        alert("데이터를 불러왔습니다.");
     }
 
-    // 기본 행 3개 미리 생성
-    for(let i=0; i<3; i++) addWorkerRow();
+    async function deleteLog(id) { if(confirm("정말 삭제할까요?")) await db.collection("monthly_logs").doc(id).delete(); }
+
+    document.getElementById('logMonth').onchange = renderTable;
 </script>
 </body>
 </html>

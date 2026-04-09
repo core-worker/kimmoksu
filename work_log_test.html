@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>연습용 작업일보 (양식최적화) - 김목수이야기</title>
+    <title>김목수이야기 - 스마트 일보 (연습장)</title>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
@@ -11,6 +11,7 @@
     <script src="firebase-config.js"></script>
     <link rel="stylesheet" href="style.css">
     <style>
+        /* 기존 스타일 동일 */
         .team-section { margin-bottom: 35px; }
         .team-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid var(--primary); padding-bottom: 8px; }
         .team-title { font-weight: bold; font-size: 1.1rem; color: var(--text); }
@@ -35,7 +36,7 @@
     <div class="btn-home" onclick="location.href='index.html'">🏠 메인으로</div>
     <div class="card">
         <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
-            <span>🧪 연습용 현황 설정</span>
+            <span>📅 현황 설정 및 내역</span>
             <button onclick="addTeam()" class="btn-circle" style="font-size:0.75rem; width:auto; padding:0 12px; border-radius:10px;">+ 팀 추가</button>
         </div>
         <div style="display:flex; gap:10px;">
@@ -50,6 +51,7 @@
 </div>
 
 <script>
+    // [기존 스크립트 로직 유지...]
     let myEmail, myTeamId, editingId = null, userNickname = "";
     let teamData = [{ teamName: "목공팀", workers: [] }, { teamName: "도장팀", workers: [] }];
 
@@ -139,7 +141,7 @@
     async function copyLog(id) { const doc = await db.collection("logs_test").doc(id).get(); const d = doc.data(); editingId = null; document.getElementById('logMonth').value = d.month; document.getElementById('siteName').value = d.site + " (복사)"; teamData = d.teamData; renderAllTeams(); window.scrollTo(0, 0); }
     async function deleteLog(id) { if(confirm("삭제?")) await db.collection("logs_test").doc(id).delete(); }
 
-    // [중요] 엑셀 양식 최적화 구현
+    // [최종 마감] 엑셀 양식 및 스타일 고도화
     async function exportToExcel(id) {
         const doc = await db.collection("logs_test").doc(id).get();
         if(!doc.exists) return;
@@ -148,22 +150,21 @@
         const lastDayNum = new Date(year, monthNum, 0).getDate();
 
         const wb = XLSX.utils.book_new();
-        // 엑셀 시트 데이터 초기화 (1~4행 비우기)
         const wsData = Array.from({ length: 4 }, () => Array(36).fill(""));
 
-        // 제목 및 정보 배치
-        wsData[0][0] = `${year}년 ${monthNum}월 작업 일보 (김목수이야기)`;
-        wsData[1][1] = "현장명 : " + data.site;
-        wsData[1][18] = `기간 : ${year}년 ${monthNum}월 1일 ~ ${monthNum}월 ${lastDayNum}일`;
-        wsData[1][34] = "작성자 : " + (data.writer || "");
+        // 1. 제목 및 상단 정보 (셀 병합 활용)
+        wsData[0][0] = `${year}년 ${monthNum}월 현장 작업 일보 (김목수이야기)`;
+        wsData[1][0] = `현장명: ${data.site}`;
+        wsData[1][12] = `기간: ${year}.${monthNum}.01 ~ ${monthNum}.${lastDayNum}`;
+        wsData[1][30] = `작성자: ${data.writer || ""}`;
 
-        // 4행 헤더 (NO, 공정, 이름, 1~31, 계, 비고)
+        // 2. 헤더 구성
         const headerRow = ["NO", "공정", "이 름"];
         for(let d=1; d<=31; d++) headerRow.push(d);
         headerRow.push("계", "비고");
         wsData[3] = headerRow;
 
-        let curR = 4; // 데이터 시작 행 (5행)
+        let curR = 4;
         let totalNo = 1;
 
         data.teamData.forEach(team => {
@@ -173,45 +174,48 @@
             team.workers.forEach(w => {
                 const row = Array(36).fill("");
                 row[0] = totalNo++;
-                row[1] = team.teamName; // B열: 공정명
-                row[2] = w.name;       // C열: 이름
-                
-                let pSum = 0;
-                for(let d=1; d<=31; d++) {
-                    const val = parseFloat(w.days[d] || 0);
-                    row[d+2] = val || ""; // D열부터 날짜별 공수
-                    pSum += val;
-                }
-                // AI열(34번 인덱스)에 합계 수식 적용
+                row[1] = team.teamName;
+                row[2] = w.name;
+                for(let d=1; d<=31; d++) { row[d+2] = parseFloat(w.days[d] || 0) || ""; }
                 row[34] = { t: 'n', f: `SUM(D${curR+1}:AH${curR+1})` };
                 wsData.push(row);
                 curR++;
             });
 
-            // 공정별 소계 행 추가
+            // 소계
             const sumRow = Array(36).fill("");
             sumRow[1] = team.teamName;
-            sumRow[2] = "소계";
+            sumRow[2] = "공정소계";
             sumRow[34] = { t: 'n', f: `SUM(AI${teamStartR}:AI${curR})` };
             wsData.push(sumRow);
-            curR++;
-            wsData.push(Array(36).fill("")); // 공정 간 빈 줄
-            curR++;
+            curR += 2; // 공정 간 간격
+            wsData.push(Array(36).fill("")); 
         });
 
         const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-        // [셀 병합] 제목 줄
-        ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 34 } }];
+        // [셀 병합 처리]
+        ws['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 35 } }, // 제목 병합
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 11 } }, // 현장명 구역
+            { s: { r: 1, c: 12 }, e: { r: 1, c: 29 } }, // 기간 구역
+            { s: { r: 1, c: 30 }, e: { r: 1, c: 35 } }  // 작성자 구역
+        ];
 
-        // [컬럼 너비 설정]
+        // [컬럼 너비 설정] 날짜 칸 절반 축소 (wch: 2.2)
         ws['!cols'] = [
-            { wch: 4 },  // NO
-            { wch: 10 }, // 공정
-            { wch: 10 }, // 이름
-            ...Array(31).fill({ wch: 3.5 }), // 날짜 1~31
-            { wch: 7 },  // 계
-            { wch: 12 }  // 비고
+            { wch: 4.5 }, // NO
+            { wch: 11 },  // 공정
+            { wch: 11 },  // 이름
+            ...Array(31).fill({ wch: 2.2 }), // 날짜 칸 팍 줄임
+            { wch: 7 },   // 계
+            { wch: 10 }   // 비고
+        ];
+
+        // [행 높이 설정] 제목 3배 키움 (hpt: 60)
+        ws['!rows'] = [
+            { hpt: 55 }, // 1행 제목 높이
+            { hpt: 25 }  // 2행 정보 높이
         ];
 
         XLSX.utils.book_append_sheet(wb, ws, "근무현황");

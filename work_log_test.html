@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>월별 근무 현황 - 김목수이야기</title>
+    <title>연습용 작업일보 - 김목수이야기</title>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js"></script>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* 기존 스타일 유지 */
+        /* 최신 디자인 그대로 유지 */
         .team-section { margin-bottom: 35px; }
         .team-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid var(--primary); padding-bottom: 8px; }
         .team-title { font-weight: bold; font-size: 1.1rem; color: var(--text); }
         .excel-table { width: 100%; border-collapse: collapse; background: var(--card); margin-bottom: 10px; table-layout: fixed; border: 2px solid #4b5563; }
         .excel-table td { border: 1px solid #4b5563; text-align: center; height: 38px; font-size: 0.85rem; padding: 0; }
         .name-cell { width: 75px; background: #1a202c; padding: 0 !important; }
-        .name-wrapper { display: flex; align-items: center; justify-content: center; height: 152px; width: 100%; }
+        .name-wrapper { display: flex; align-items: center; justify-content: center; height: 152px; width: 100%; flex-direction: column; }
         .name-input { width: 95%; border: none; background: transparent; color: white; text-align: center; font-weight: bold; font-size: 0.85rem; resize: none; box-sizing: border-box; word-break: break-all; overflow: hidden; outline: none; padding: 0; line-height: 1.3; }
         .date-num { background: #2d3748; font-size: 0.75rem; font-weight: bold; color: #d1d5db; }
         .sun { color: #ff4d4d !important; } 
@@ -27,22 +27,14 @@
         .gongsu-cell.filled { color: var(--success); background: rgba(16, 185, 129, 0.1); }
         .label-sum { background: #1a202c; color: var(--text); font-weight: bold; font-size: 0.8rem; }
         .val-sum { background: #1a202c; color: var(--primary); font-weight: bold; font-size: 0.9rem; }
-        .team-total-bar { text-align: right; padding: 12px; font-size: 0.95rem; color: #f3f4f6; background: rgba(59, 130, 246, 0.1); border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.2); }
+        .team-total-bar { text-align: right; padding: 12px; font-size: 0.95rem; color: #f3f4f6; background: rgba(59, 130, 246, 0.1); border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.2); margin-bottom: 5px; }
 
-        /* [새로 추가] 히스토리 카드 디자인 */
-        .history-card {
-            background: var(--card);
-            border-radius: 15px;
-            padding: 18px;
-            margin-bottom: 12px;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
+        .history-card { background: var(--card); border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); }
         .history-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
         .history-info { display: flex; flex-direction: column; gap: 4px; }
         .history-date { font-size: 0.8rem; color: var(--primary); font-weight: bold; }
         .history-site { font-size: 1.05rem; font-weight: bold; color: var(--text); }
         .history-btns { display: flex; gap: 8px; }
-        
         .btn-history { flex: 1; padding: 10px; border-radius: 10px; border: none; font-size: 0.85rem; font-weight: bold; cursor: pointer; color: white; }
         .btn-load { background: #4b5563; }
         .btn-excel { background: var(--success); }
@@ -54,17 +46,21 @@
     <div class="btn-home" onclick="location.href='index.html'">🏠 메인으로</div>
     
     <div class="card">
-        <div class="section-title">📅 월별 현황 설정</div>
+        <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>🧪 연습용 현황 설정</span>
+            <button onclick="addTeam()" class="btn-circle" style="font-size:0.75rem; width:auto; padding:0 12px; border-radius:10px;">+ 팀 추가</button>
+        </div>
         <div style="display:flex; gap:10px;">
             <input type="month" id="logMonth" style="flex:1; margin-bottom:0;">
-            <input type="text" id="siteName" placeholder="현장명" style="flex:1; margin-bottom:0;">
+            <input type="text" id="siteName" placeholder="연습용 현장명" style="flex:1; margin-bottom:0;">
         </div>
-        <button class="btn-main" onclick="saveMonthlyLog()" style="background:var(--success); margin-top:15px;">서버에 저장하기</button>
     </div>
 
     <div id="team-container"></div>
 
-    <div class="section-title" style="margin-top:40px; margin-bottom:15px;">📂 불러오기 / 내역</div>
+    <button class="btn-main" onclick="saveMonthlyLog()" style="background:var(--success); margin-bottom:30px;">연습 데이터 저장하기 📁</button>
+
+    <div class="section-title" style="margin-bottom:15px;">📂 연습용 불러오기 / 내역</div>
     <div id="history-list"></div>
 </div>
 
@@ -72,9 +68,7 @@
     let myEmail, myTeamId, editingId = null;
     let teamData = [
         { teamName: "목공팀", workers: [] },
-        { teamName: "도장팀", workers: [] },
-        { teamName: "필름팀", workers: [] },
-        { teamName: "전기팀", workers: [] }
+        { teamName: "도장팀", workers: [] }
     ];
 
     document.getElementById('logMonth').value = new Date().toISOString().substring(0, 7);
@@ -114,6 +108,7 @@
                         <td rowspan="4" class="name-cell">
                             <div class="name-wrapper">
                                 <textarea class="name-input" placeholder="이름" onchange="updateName(${tIdx}, ${wIdx}, this.value)">${w.name}</textarea>
+                                <button onclick="removeWorker(${tIdx}, ${wIdx})" style="background:#991b1b; color:white; border:none; border-radius:5px; font-size:0.65rem; padding:3px 8px; cursor:pointer; margin-top:5px;">삭제</button>
                             </div>
                         </td>
                         ${loopDays(year, month, 1, 16, 'date')}
@@ -160,8 +155,15 @@
         return html;
     }
 
+    function addTeam() {
+        const name = prompt("테스트할 팀 이름을 입력하세요");
+        if(name) { teamData.push({ teamName: name, workers: [] }); renderAllTeams(); }
+    }
+
     function addWorker(tIdx) { teamData[tIdx].workers.push({ name: "", days: {} }); renderAllTeams(); }
+    function removeWorker(tIdx, wIdx) { teamData[tIdx].workers.splice(wIdx, 1); renderAllTeams(); }
     function updateName(tIdx, wIdx, val) { teamData[tIdx].workers[wIdx].name = val; }
+    
     function handleCellClick(el) {
         const { t, w, d } = el.dataset;
         const current = parseFloat(teamData[t].workers[w].days[d] || 0);
@@ -174,7 +176,7 @@
             let timer;
             const start = () => timer = setTimeout(() => {
                 const { t, w, d } = cell.dataset;
-                const input = prompt(`${teamData[t].workers[w].name || '작업자'} - ${d}일 공수 수정`, teamData[t].workers[w].days[d]);
+                const input = prompt(`공수 수정`, teamData[t].workers[w].days[d]);
                 if (input !== null) { teamData[t].workers[w].days[d] = input === "0" ? "" : input; renderAllTeams(); }
             }, 700);
             cell.onmousedown = cell.ontouchstart = start;
@@ -182,37 +184,37 @@
         });
     }
 
+    // [중요] 연습용 박스(logs_test) 사용
     async function saveMonthlyLog() {
         const month = document.getElementById('logMonth').value;
         const site = document.getElementById('siteName').value.trim();
-        if(!site) return alert("현장명을 입력하세요.");
+        if(!site) return alert("연습용 현장명을 입력하세요.");
         try {
             const data = { teamId: myTeamId, month, site, teamData, updatedAt: Date.now() };
             if(editingId) await db.collection("logs_test").doc(editingId).set(data);
             else await db.collection("logs_test").add(data);
-            alert("저장되었습니다."); location.reload();
+            alert("연습 데이터 저장 성공!"); location.reload();
         } catch(e) { alert(e.message); }
     }
 
     function loadHistory() {
-        db.collection("logs_test").where("teamId","==", myTeamId).orderBy("updatedAt","desc").limit(10).onSnapshot(ss => {
+        db.collection("logs_test").where("teamId","==", myTeamId).orderBy("updatedAt","desc").limit(5).onSnapshot(ss => {
             document.getElementById('history-list').innerHTML = ss.docs.map(doc => {
                 const d = doc.data();
                 return `
                 <div class="history-card">
                     <div class="history-header">
                         <div class="history-info">
-                            <span class="history-date">${d.month}</span>
+                            <span class="history-date">TEST: ${d.month}</span>
                             <span class="history-site">${d.site}</span>
                         </div>
                     </div>
                     <div class="history-btns">
                         <button class="btn-history btn-load" onclick="editLog('${doc.id}')">불러오기</button>
-                        <button class="btn-history btn-excel" onclick="exportToExcel('${doc.id}')">엑셀 저장</button>
                         <button class="btn-history btn-delete" onclick="deleteLog('${doc.id}')">삭제</button>
                     </div>
                 </div>`;
-            }).join('');
+            }).join('') || "연습 내역이 없습니다.";
         });
     }
 
@@ -223,15 +225,9 @@
         document.getElementById('siteName').value = d.site;
         teamData = d.teamData; renderAllTeams();
         window.scrollTo(0, 0);
-        alert("데이터를 불러왔습니다.");
     }
 
-    async function deleteLog(id) { if(confirm("정말 삭제할까요?")) await db.collection("logs_test").doc(id).delete(); }
-    
-    // [임시] 엑셀 저장 기능 (UI만 구현)
-    function exportToExcel(id) {
-        alert("엑셀 저장 기능은 곧 업데이트될 예정입니다. (경영지원팀용)");
-    }
+    async function deleteLog(id) { if(confirm("연습 데이터 삭제?")) await db.collection("logs_test").doc(id).delete(); }
 
     document.getElementById('logMonth').onchange = renderAllTeams;
 </script>

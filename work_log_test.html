@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>연습용 작업일보 (엑셀 포함) - 김목수이야기</title>
+    <title>연습용 작업일보 (양식최적화) - 김목수이야기</title>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
@@ -16,27 +16,18 @@
         .team-title { font-weight: bold; font-size: 1.1rem; color: var(--text); }
         .excel-table { width: 100%; border-collapse: collapse; background: var(--card); margin-bottom: 10px; table-layout: fixed; border: 2px solid #4b5563; }
         .excel-table td { border: 1px solid #4b5563; text-align: center; height: 38px; font-size: 0.85rem; padding: 0; }
-        .name-cell { width: 75px; background: #1a202c; padding: 0 !important; }
+        .name-cell { width: 75px; background: #1a202c; }
         .name-wrapper { display: flex; align-items: center; justify-content: center; height: 152px; width: 100%; flex-direction: column; }
-        .name-input { width: 95%; border: none; background: transparent; color: white; text-align: center; font-weight: bold; font-size: 0.85rem; resize: none; box-sizing: border-box; word-break: break-all; overflow: hidden; outline: none; padding: 0; line-height: 1.3; }
+        .name-input { width: 95%; border: none; background: transparent; color: white; text-align: center; font-weight: bold; font-size: 0.85rem; resize: none; outline: none; }
         .date-num { background: #2d3748; font-size: 0.75rem; font-weight: bold; color: #d1d5db; }
-        .sun { color: #ff4d4d !important; } 
-        .sat { color: #4dadff !important; }
-        .gongsu-cell { cursor: pointer; transition: 0.1s; font-weight: bold; font-size: 0.9rem; }
+        .sun { color: #ff4d4d !important; } .sat { color: #4dadff !important; }
+        .gongsu-cell { cursor: pointer; font-weight: bold; font-size: 0.9rem; }
         .gongsu-cell.filled { color: var(--success); background: rgba(16, 185, 129, 0.1); }
-        .label-sum { background: #1a202c; color: var(--text); font-weight: bold; font-size: 0.8rem; }
-        .val-sum { background: #1a202c; color: var(--primary); font-weight: bold; font-size: 0.9rem; }
-        .team-total-bar { text-align: right; padding: 12px; font-size: 0.95rem; color: #f3f4f6; background: rgba(59, 130, 246, 0.1); border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.2); margin-bottom: 5px; }
+        .team-total-bar { text-align: right; padding: 12px; font-size: 0.95rem; color: #f3f4f6; background: rgba(59, 130, 246, 0.1); border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.2); }
         .history-card { background: var(--card); border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); position: relative; }
-        .history-header { display: flex; flex-direction: column; gap: 4px; padding-right: 40px; margin-bottom: 15px; }
-        .history-date { font-size: 0.8rem; color: var(--primary); font-weight: bold; }
-        .history-site { font-size: 1.05rem; font-weight: bold; color: var(--text); }
-        .btn-card-del { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #9ca3af; font-size: 1.2rem; cursor: pointer; }
-        .history-btns { display: flex; gap: 6px; }
+        .history-btns { display: flex; gap: 6px; margin-top: 15px; }
         .btn-history { flex: 1; padding: 10px 0; border-radius: 10px; border: none; font-size: 0.8rem; font-weight: bold; cursor: pointer; color: white; }
-        .btn-edit { background: #4b5563; }
-        .btn-copy { background: #3b82f6; }
-        .btn-excel-save { background: var(--success); }
+        .btn-edit { background: #4b5563; } .btn-copy { background: #3b82f6; } .btn-excel-save { background: var(--success); }
     </style>
 </head>
 <body>
@@ -92,13 +83,12 @@
                 <table class="excel-table">
                     <tr><td rowspan="4" class="name-cell"><div class="name-wrapper"><textarea class="name-input" onchange="updateName(${tIdx}, ${wIdx}, this.value)">${w.name}</textarea><button onclick="removeWorker(${tIdx}, ${wIdx})" style="background:#991b1b; color:white; border:none; border-radius:5px; font-size:0.65rem; padding:3px 8px; cursor:pointer; margin-top:5px;">삭제</button></div></td>${loopDays(year, month, 1, 16, 'date')}</tr>
                     <tr>${loopDays(year, month, 1, 16, 'input', tIdx, wIdx)}</tr>
-                    <tr>${loopDays(year, month, 17, 31, 'date', 0, 0, lastDay)}<td class="label-sum">계</td></tr>
-                    <tr>${loopDays(year, month, 17, 31, 'input', tIdx, wIdx, lastDay)}<td class="val-sum">${pSum % 1 === 0 ? pSum : pSum.toFixed(1)}</td></tr>
+                    <tr>${loopDays(year, month, 17, 31, 'date', 0, 0, lastDay)}<td class="label-sum" style="background:#1a202c; color:white;">계</td></tr>
+                    <tr>${loopDays(year, month, 17, 31, 'input', tIdx, wIdx, lastDay)}<td class="val-sum" style="color:var(--primary); font-weight:bold;">${pSum % 1 === 0 ? pSum : pSum.toFixed(1)}</td></tr>
                 </table>`;
             }).join('');
-            return `<div class="team-section"><div class="team-header"><span class="team-title">${team.teamName} 인원 명단</span><button class="btn-circle" onclick="addWorker(${tIdx})">+</button></div>${tables}<div class="team-total-bar">${team.teamName} 합계 공수: <b>${teamTotal % 1 === 0 ? teamTotal : teamTotal.toFixed(1)}</b></div></div>`;
+            return `<div class="team-section"><div class="team-header"><span class="team-title">${team.teamName}</span><button class="btn-circle" onclick="addWorker(${tIdx})">+</button></div>${tables}<div class="team-total-bar">${team.teamName} 합계 공수: <b>${teamTotal % 1 === 0 ? teamTotal : teamTotal.toFixed(1)}</b></div></div>`;
         }).join('');
-        bindLongPress();
     }
 
     function loopDays(y, m, start, end, type, tIdx, wIdx, lastDay = 31) {
@@ -122,20 +112,7 @@
     function addWorker(tIdx) { teamData[tIdx].workers.push({ name: "", days: {} }); renderAllTeams(); }
     function removeWorker(tIdx, wIdx) { teamData[tIdx].workers.splice(wIdx, 1); renderAllTeams(); }
     function updateName(tIdx, wIdx, val) { teamData[tIdx].workers[wIdx].name = val; }
-    function handleCellClick(el, t, w, d) { const current = parseFloat(teamData[t].workers[w].days[d] || 0); teamData[t].workers[w].days[d] = (current === 1 ? "" : 1); renderAllTeams(); }
-    function bindLongPress() {
-        document.querySelectorAll('.gongsu-cell').forEach(cell => {
-            let timer;
-            const start = () => timer = setTimeout(() => {
-                const input = prompt(`공수 직접 수정`, cell.innerText);
-                if (input !== null) { 
-                    // 롱클릭 시 데이터 업데이트를 위해 셀의 정보를 다시 가져와야 함 (간략화를 위해 인덱스 생략, 실제 구동 확인 필요)
-                    alert("직접 수정은 연습장에서 확인하세요.");
-                }
-            }, 700);
-            cell.onmousedown = cell.ontouchstart = start; cell.onmouseup = cell.ontouchend = () => clearTimeout(timer);
-        });
-    }
+    function handleCellClick(el, t, w, d) { const current = parseFloat(teamData[t].workers[w].days[d] || 0); teamData[t].workers[w].days[d] = (current === 1 ? "" : 1.0); renderAllTeams(); }
 
     async function saveMonthlyLog() {
         const month = document.getElementById('logMonth').value;
@@ -145,7 +122,7 @@
             const data = { teamId: myTeamId, month, site, teamData, updatedAt: Date.now(), writer: userNickname };
             if(editingId) await db.collection("logs_test").doc(editingId).set(data);
             else await db.collection("logs_test").add(data);
-            alert("저장 성공!"); location.reload();
+            alert("저장되었습니다!"); location.reload();
         } catch(e) { alert(e.message); }
     }
 
@@ -153,7 +130,7 @@
         db.collection("logs_test").where("teamId","==", myTeamId).orderBy("updatedAt","desc").limit(10).onSnapshot(ss => {
             document.getElementById('history-list').innerHTML = ss.docs.map(doc => {
                 const d = doc.data();
-                return `<div class="history-card"><button class="btn-card-del" onclick="deleteLog('${doc.id}')">×</button><div class="history-header"><span class="history-date">${d.month}</span><span class="history-site">${d.site}</span></div><div class="history-btns"><button class="btn-history btn-edit" onclick="editLog('${doc.id}')">수정하기</button><button class="btn-history btn-copy" onclick="copyLog('${doc.id}')">복사</button><button class="btn-history btn-excel-save" onclick="exportToExcel('${doc.id}')">엑셀 저장</button></div></div>`;
+                return `<div class="history-card"><button style="position:absolute; top:15px; right:15px; background:none; border:none; color:#666; font-size:1.2rem;" onclick="deleteLog('${doc.id}')">×</button><div><span style="color:var(--primary); font-size:0.8rem; font-weight:bold;">${d.month}</span><br><b style="font-size:1.1rem; color:white;">${d.site}</b></div><div class="history-btns"><button class="btn-history btn-edit" onclick="editLog('${doc.id}')">수정하기</button><button class="btn-history btn-copy" onclick="copyLog('${doc.id}')">복사</button><button class="btn-history btn-excel-save" onclick="exportToExcel('${doc.id}')">엑셀 저장</button></div></div>`;
             }).join('') || "내역 없음";
         });
     }
@@ -162,63 +139,86 @@
     async function copyLog(id) { const doc = await db.collection("logs_test").doc(id).get(); const d = doc.data(); editingId = null; document.getElementById('logMonth').value = d.month; document.getElementById('siteName').value = d.site + " (복사)"; teamData = d.teamData; renderAllTeams(); window.scrollTo(0, 0); }
     async function deleteLog(id) { if(confirm("삭제?")) await db.collection("logs_test").doc(id).delete(); }
 
-    // [핵심] 엑셀 저장 기능 구현
+    // [중요] 엑셀 양식 최적화 구현
     async function exportToExcel(id) {
         const doc = await db.collection("logs_test").doc(id).get();
         if(!doc.exists) return;
         const data = doc.data();
         const [year, monthNum] = data.month.split('-');
-        
-        // 1. 엑셀 워크북 생성
+        const lastDayNum = new Date(year, monthNum, 0).getDate();
+
         const wb = XLSX.utils.book_new();
-        const wsData = [];
+        // 엑셀 시트 데이터 초기화 (1~4행 비우기)
+        const wsData = Array.from({ length: 4 }, () => Array(36).fill(""));
 
-        // 2. 헤더 구성 (1~2행)
-        wsData.push([`${year}년 협력업체 근무 현황`, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", `작성자: ${data.writer}`]);
-        wsData.push(["NO", "공정", "이 름", `현장명 : ${data.site}`, "", "", "", "", "", "", "", "", "", "", "", "", "", "", `기간 : ${monthNum}월 1일 ~ ${monthNum}월 말일`, "", "", "", "", "", "", "", "", "", "", "", "계", "비고"]);
-        wsData.push([]); // 빈 줄 (디자인용)
-        
-        // 3. 날짜 행 (4행)
-        const dateRow = ["", "", ""];
-        for(let i=1; i<=31; i++) dateRow.push(i);
-        wsData.push(dateRow);
+        // 제목 및 정보 배치
+        wsData[0][0] = `${year}년 ${monthNum}월 작업 일보 (김목수이야기)`;
+        wsData[1][1] = "현장명 : " + data.site;
+        wsData[1][18] = `기간 : ${year}년 ${monthNum}월 1일 ~ ${monthNum}월 ${lastDayNum}일`;
+        wsData[1][34] = "작성자 : " + (data.writer || "");
 
-        // 4. 데이터 영역 (5행부터)
-        let currentRow = 5;
-        data.teamData.forEach((team) => {
+        // 4행 헤더 (NO, 공정, 이름, 1~31, 계, 비고)
+        const headerRow = ["NO", "공정", "이 름"];
+        for(let d=1; d<=31; d++) headerRow.push(d);
+        headerRow.push("계", "비고");
+        wsData[3] = headerRow;
+
+        let curR = 4; // 데이터 시작 행 (5행)
+        let totalNo = 1;
+
+        data.teamData.forEach(team => {
             if(team.workers.length === 0) return;
-            
-            let teamStartRow = currentRow;
-            team.workers.forEach((w, idx) => {
-                const row = [idx + 1, team.teamName, w.name];
+            let teamStartR = curR + 1;
+
+            team.workers.forEach(w => {
+                const row = Array(36).fill("");
+                row[0] = totalNo++;
+                row[1] = team.teamName; // B열: 공정명
+                row[2] = w.name;       // C열: 이름
+                
                 let pSum = 0;
                 for(let d=1; d<=31; d++) {
                     const val = parseFloat(w.days[d] || 0);
-                    row.push(val || "");
+                    row[d+2] = val || ""; // D열부터 날짜별 공수
                     pSum += val;
                 }
-                row.push(pSum); // 개인 합계
+                // AI열(34번 인덱스)에 합계 수식 적용
+                row[34] = { t: 'n', f: `SUM(D${curR+1}:AH${curR+1})` };
                 wsData.push(row);
-                currentRow++;
+                curR++;
             });
 
-            // 공정별 빈 줄 + 공정 합계 수식
-            const blankRow = ["", team.teamName + " 합계", ""];
-            // 엑셀 수식 (D열부터 AH열까지 세로 합계)
-            wsData.push(blankRow);
-            currentRow++;
+            // 공정별 소계 행 추가
+            const sumRow = Array(36).fill("");
+            sumRow[1] = team.teamName;
+            sumRow[2] = "소계";
+            sumRow[34] = { t: 'n', f: `SUM(AI${teamStartR}:AI${curR})` };
+            wsData.push(sumRow);
+            curR++;
+            wsData.push(Array(36).fill("")); // 공정 간 빈 줄
+            curR++;
         });
 
-        // 5. 시트 생성 및 파일 다운로드
         const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+        // [셀 병합] 제목 줄
+        ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 34 } }];
+
+        // [컬럼 너비 설정]
+        ws['!cols'] = [
+            { wch: 4 },  // NO
+            { wch: 10 }, // 공정
+            { wch: 10 }, // 이름
+            ...Array(31).fill({ wch: 3.5 }), // 날짜 1~31
+            { wch: 7 },  // 계
+            { wch: 12 }  // 비고
+        ];
+
         XLSX.utils.book_append_sheet(wb, ws, "근무현황");
-        
-        const fileName = `${data.site}_${monthNum}월_${data.writer}.xlsx`;
-        XLSX.writeFile(wb, fileName);
+        XLSX.writeFile(wb, `${data.site}_${monthNum}월_${data.writer}.xlsx`);
     }
 
     document.getElementById('logMonth').onchange = renderAllTeams;
 </script>
 </body>
 </html>
-

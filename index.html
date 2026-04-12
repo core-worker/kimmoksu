@@ -113,21 +113,19 @@
             <div class="nav-link active" onclick="showPage('home', this)"><i class="bi bi-house-door"></i> 홈</div>
             <div class="nav-link" onclick="showPage('worklog', this)"><i class="bi bi-journal-check"></i> 작업일보</div>
             <div class="nav-link" onclick="showPage('t5', this)"><i class="bi bi-calculator"></i> T5 계산기</div>
+            <div class="nav-link" onclick="showPage('team', this)"><i class="bi bi-people"></i> 팀원 관리</div>
+            <div class="nav-link" onclick="showPage('profile', this)"><i class="bi bi-person-gear"></i> 내 정보 수정</div>
         </div>
-        <div class="p-4 border-top border-secondary border-opacity-10 dropup mt-auto">
-            <div class="d-flex align-items-center dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+        
+        <div class="p-4 border-top border-secondary border-opacity-10 mt-auto">
+            <div class="d-flex align-items-center mb-2">
                 <i class="bi bi-person-circle fs-3 me-3" style="color:var(--primary-accent);"></i>
                 <div class="flex-grow-1 overflow-hidden">
                     <div id="userNickDisplay" class="fw-bold text-truncate">사용자</div>
                     <div class="small text-secondary" style="font-size:0.7rem;">Kimmoksu Pro</div>
                 </div>
             </div>
-            <ul class="dropdown-menu dropdown-menu-dark shadow w-100 mb-2 border-secondary">
-                <li><a class="dropdown-item py-2" href="profile.html"><i class="bi bi-gear me-2"></i>내 정보 수정</a></li>
-                <li><a class="dropdown-item py-2" href="team.html"><i class="bi bi-people me-2"></i>팀원 관리</a></li>
-                <li><hr class="dropdown-divider border-secondary opacity-50"></li>
-                <li><a class="dropdown-item py-2 text-danger" href="#" onclick="handleLogout()"><i class="bi bi-box-arrow-right me-2"></i>로그아웃</a></li>
-            </ul>
+            <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="handleLogout()">로그아웃</button>
         </div>
     </nav>
 
@@ -215,6 +213,38 @@
             <h6 class="fw-bold mt-4 mb-3"><i class="bi bi-card-text me-2"></i>팀 공유 히스토리</h6>
             <div id="t5-history-list"></div>
         </section>
+
+        <section id="page-team" class="page-section">
+            <h3 class="fw-bold mb-4">팀원 및 조직 관리</h3>
+            <div class="t5-card">
+                <h6 class="fw-bold mb-3">팀 고유 ID</h6>
+                <div class="d-flex gap-2">
+                    <input type="text" id="displayTeamId" class="form-control t5-input-dark" readonly>
+                    <button class="t5-btn-small" onclick="copyText(document.getElementById('displayTeamId').value)">복사</button>
+                </div>
+                <p class="small text-secondary mt-2">이 ID를 팀원들에게 공유하면 한 현장을 같이 관리할 수 있습니다.</p>
+            </div>
+            <div class="t5-card">
+                <h6 class="fw-bold mb-3">현재 소속 팀원</h6>
+                <div id="member-list" class="list-group list-group-flush">
+                    </div>
+            </div>
+        </section>
+
+        <section id="page-profile" class="page-section">
+            <h3 class="fw-bold mb-4">내 정보 수정</h3>
+            <div class="t5-card">
+                <div class="mb-3">
+                    <label class="form-label small text-secondary">닉네임</label>
+                    <input type="text" id="editNickname" class="form-control t5-input-dark">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label small text-secondary">이메일 (변경 불가)</label>
+                    <input type="text" id="editEmail" class="form-control t5-input-dark" readonly>
+                </div>
+                <button class="t5-btn-primary" onclick="updateProfile()">저장하기</button>
+            </div>
+        </section>
     </main>
 
     <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
@@ -232,12 +262,20 @@
     ];
 
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('sidebarOverlay').classList.toggle('active'); }
+    
     function showPage(pageId, el) {
         document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
         document.getElementById('page-' + pageId).classList.add('active');
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         el.classList.add('active');
         if (window.innerWidth <= 768) toggleSidebar();
+
+        // 페이지별 데이터 로드
+        if(pageId === 'team') loadTeamMembers();
+        if(pageId === 'profile') {
+            document.getElementById('editNickname').value = userNickname;
+            document.getElementById('editEmail').value = myEmail;
+        }
     }
 
     auth.onAuthStateChanged(async user => {
@@ -248,9 +286,32 @@
             document.getElementById('userNickDisplay').innerText = userNickname;
             document.getElementById('welcomeMsg').innerText = `${userNickname}님, 반갑습니다!`;
             const q = await db.collection("teams").where("members", "array-contains", myEmail).get();
-            if (!q.empty) { myTeamId = q.docs[0].id; loadHistory(); loadT5History(); renderAllTeams(); }
+            if (!q.empty) { 
+                myTeamId = q.docs[0].id; 
+                document.getElementById('displayTeamId').value = myTeamId;
+                loadHistory(); loadT5History(); renderAllTeams(); 
+            }
         } else { document.getElementById('auth-overlay').style.display = 'flex'; }
     });
+
+    /* --- [팀원 관리 및 프로필 로직] --- */
+    async function loadTeamMembers() {
+        if(!myTeamId) return;
+        const doc = await db.collection("teams").doc(myTeamId).get();
+        const members = doc.data().members;
+        const container = document.getElementById('member-list');
+        container.innerHTML = members.map(m => `<div class="list-group-item bg-transparent text-white border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center"><span>${m}</span><span class="badge bg-secondary">Member</span></div>`).join('');
+    }
+
+    async function updateProfile() {
+        const newNick = document.getElementById('editNickname').value.trim();
+        if(!newNick) return alert("닉네임을 입력하세요.");
+        await db.collection("users").doc(myEmail).update({ nickname: newNick });
+        alert("정보가 수정되었습니다. 새로고침 후 반영됩니다.");
+        location.reload();
+    }
+
+    function copyText(text) { navigator.clipboard.writeText(text); alert("복사되었습니다."); }
 
     /* --- [작업일보 로직] --- */
     function renderAllTeams() {
@@ -283,8 +344,8 @@
                     const dateObj = new Date(y, m - 1, d);
                     const dayOfWeek = dateObj.getDay();
                     let color = "";
-                    if (dayOfWeek === 0) color = "color: #ef4444;"; // 일요일
-                    else if (dayOfWeek === 6) color = "color: #5c7cfa;"; // 토요일
+                    if (dayOfWeek === 0) color = "color: #ef4444;"; 
+                    else if (dayOfWeek === 6) color = "color: #5c7cfa;"; 
                     html += `<td style="${color}">${d}</td>`;
                 }
             } else { 

@@ -31,8 +31,11 @@
 
         body { background-color: var(--bg-deep); color: #f8fafc; font-family: 'Pretendard', sans-serif; margin: 0; overflow: hidden; }
 
-        .app-wrapper { display: flex; height: 100vh; width: 100vw; }
-        .sidebar { width: 260px; background-color: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; transition: 0.3s; z-index: 1000; }
+        .app-wrapper { display: flex; height: 100vh; width: 100vw; position: relative; }
+        
+        /* 사이드바 기본 세팅 (PC) */
+        .sidebar { width: 260px; height: 100vh; background-color: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1050; }
+        
         .main-container { flex: 1; overflow-y: auto; background-color: var(--bg-deep); padding-bottom: 50px; }
 
         .nav-link { color: #94a3b8; padding: 14px 20px; margin: 4px 15px; border-radius: 12px; transition: 0.3s; cursor: pointer; display: flex; align-items: center; text-decoration: none; }
@@ -43,22 +46,34 @@
         .page-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* T5 계산기 & 카드 스타일 */
+        /* 모바일 대응 (사이드바 숨김 & 오버레이) */
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1040; backdrop-filter: blur(2px); transition: 0.3s; opacity: 0; }
+        .sidebar-overlay.active { display: block; opacity: 1; }
+        
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-100%); } /* 기본적으로 왼쪽으로 숨김 */
+            .sidebar.active { transform: translateX(0); } /* 버튼 누르면 나옴 */
+            .page-section { padding: 20px 15px; } /* 모바일에서는 여백을 조금 줄여서 화면 넓게 */
+            .mobile-menu-btn { display: flex !important; } /* 모바일에서만 메뉴 버튼 보이기 */
+        }
+
+        .mobile-menu-btn { display: none; position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary-accent); color: white; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1030; border: none; font-size: 1.8rem; cursor: pointer; transition: 0.2s; }
+        .mobile-menu-btn:active { transform: scale(0.9); }
+
+        /* 기타 스타일 (T5, 작업일보 등 기존 동일) */
         .t5-card { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .t5-input-dark { background: #1e222d !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; }
         .t5-input-dark:focus { border-color: var(--primary-accent) !important; box-shadow: none !important; }
         .t5-btn-primary { background: var(--primary-accent); border: none; color: white; border-radius: 10px; padding: 14px; font-weight: bold; width: 100%; transition: 0.2s; }
         .t5-btn-primary:active { transform: scale(0.98); }
         .t5-btn-small { background: rgba(255,255,255,0.1); border: none; color: #ced4da; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; transition: 0.2s; }
-        .t5-btn-small:hover { background: rgba(255,255,255,0.2); }
         
         .history-card { background: var(--card-bg); border-radius: 16px; padding: 18px; margin-bottom: 12px; position: relative; }
         .history-author { position: absolute; top: 18px; right: 18px; font-size: 0.8rem; color: #8b95a1; display: flex; align-items: center; }
         .history-author i { color: #845ef7; margin-right: 4px; }
 
-        /* 작업일보 스타일 */
         .excel-table { width: 100%; border-collapse: collapse; background: var(--card-bg); margin-bottom: 10px; table-layout: fixed; border: 2px solid #4b5563; }
-        .excel-table td { border: 1px solid #4b5563; text-align: center; height: 38px; font-size: 0.85rem; color: white; }
+        .excel-table td { border: 1px solid #4b5563; text-align: center; height: 38px; font-size: 0.85rem; color: white; padding: 0; }
         .date-row td { height: 22px !important; background: #1e222d; font-size: 0.75rem; color: #94a3b8; }
         .name-cell { width: 75px; background: #181b24 !important; font-weight: bold; }
         .gongsu-cell { cursor: pointer; font-weight: bold; -webkit-user-select: none; user-select: none; }
@@ -85,7 +100,9 @@
 </div>
 
 <div class="app-wrapper">
-    <nav class="sidebar">
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <nav class="sidebar" id="sidebar">
         <div class="p-4 text-center border-bottom border-secondary border-opacity-10">
             <img src="kimmoksu_main_logo.png" alt="로고" style="max-width: 140px; cursor: pointer;" onclick="location.reload()">
         </div>
@@ -150,35 +167,32 @@
 
         <section id="page-t5" class="page-section">
             <h5 class="mb-4" style="color:var(--primary-accent);"><i class="bi bi-caret-right-fill"></i> 김목수이야기</h5>
-            
             <div class="t5-card d-flex justify-content-between align-items-center">
                 <h6 class="fw-bold m-0">제품 규격 설정</h6>
                 <button class="t5-btn-small rounded-circle px-2" onclick="alert('규격 추가 설정은 준비중입니다.')">+</button>
             </div>
-
             <div class="t5-card">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="fw-bold m-0">실측 길이 입력 (mm)</h6>
                     <button class="t5-btn-small" onclick="addT5Row()">+ 추가</button>
                 </div>
-                
                 <input type="text" id="t5-site-title" class="form-control t5-input-dark mb-3" placeholder="현장/부위 명칭 (예: 일신이온)">
-                
                 <div id="t5-input-container">
                     <div class="row g-2 mb-2 t5-row-item">
                         <div class="col-6"><input type="text" class="form-control t5-input-dark t5-section-name" placeholder="구간 (예: 거실)"></div>
                         <div class="col-6"><input type="number" class="form-control t5-input-dark t5-length-val" placeholder="길이"></div>
                     </div>
                 </div>
-                
                 <button class="t5-btn-primary mt-3" onclick="calculateAndSaveT5()">1. 계산하기</button>
             </div>
-
             <h6 class="fw-bold mt-5 mb-3"><i class="bi bi-card-text me-2"></i>팀 공유 히스토리</h6>
-            <div id="t5-history-list">
-                </div>
+            <div id="t5-history-list"></div>
         </section>
     </main>
+
+    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -195,11 +209,23 @@
         { teamName: "필름팀", workers: [] }
     ];
 
+    // [수정됨] 모바일 사이드바 토글 및 자동 닫힘 기능
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('sidebarOverlay').classList.toggle('active');
+    }
+
     function showPage(pageId, el) {
         document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
         document.getElementById('page-' + pageId).classList.add('active');
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         el.classList.add('active');
+
+        // 모바일 화면일 경우, 메뉴 이동 후 사이드바 자동 닫기
+        if (window.innerWidth <= 768) {
+            document.getElementById('sidebar').classList.remove('active');
+            document.getElementById('sidebarOverlay').classList.remove('active');
+        }
     }
 
     auth.onAuthStateChanged(async user => {
@@ -256,7 +282,7 @@
                 </div>
             </div>
         </div>`; }).join('') || '<p class="text-secondary small ms-2">기록이 없습니다.</p>'; }); 
-    } // <-- 여기가 에러의 원인이었던 곳입니다! 작은따옴표로 완벽 수정 완료
+    }
     
     async function editLog(id) { const doc = await db.collection("monthly_logs").doc(id).get(); const d = doc.data(); editingId = id; document.getElementById('logMonth').value = d.month; document.getElementById('siteName').value = d.site; teamData = d.teamData; showPage('worklog', document.querySelectorAll('.nav-link')[1]); renderAllTeams(); window.scrollTo(0,0); }
     
@@ -300,13 +326,7 @@
         lengths.forEach(l => { if(result[l] > 0) resultArr.push(`${l} - ${result[l]}개`); });
         const resultStr = resultArr.join(' / ');
 
-        const t5Data = {
-            teamId: myTeamId,
-            siteName: site,
-            resultText: resultStr,
-            writer: userNickname,
-            createdAt: Date.now()
-        };
+        const t5Data = { teamId: myTeamId, siteName: site, resultText: resultStr, writer: userNickname, createdAt: Date.now() };
 
         try {
             await db.collection("t5_logs").add(t5Data);
@@ -329,7 +349,7 @@
                         <button class="t5-btn-primary py-2 fs-6 rounded-3" style="flex:1; background:var(--danger-btn);" onclick="deleteT5Log('${doc.id}')">내역 삭제</button>
                     </div>
                 </div>`;
-            }).join('') || '<p class="text-secondary small ms-2">저장된 T5 산출 내역이 없습니다.</p>'; // <-- 여기도 확실하게 작은따옴표로 처리!
+            }).join('') || '<p class="text-secondary small ms-2">저장된 T5 산출 내역이 없습니다.</p>';
         });
     }
 

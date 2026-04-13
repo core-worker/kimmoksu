@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>종합 상황판 V4 - 김목수이야기</title>
+    <title>종합 상황판 V5 - 김목수이야기</title>
     
     <link rel="icon" href="favicon.png" type="image/png">
     <link rel="apple-touch-icon" href="favicon.png">
@@ -56,10 +56,21 @@
         .status-table td { background: #1e222d; padding: 12px 10px; font-size: 0.88rem; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
         .status-table tr:hover td { background: #252a36; }
         
-        .mobile-site-card { background: #1e222d; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); }
-        .mobile-site-card .label { font-size: 0.72rem; color: #94a3b8; margin-bottom: 2px; }
-        .mobile-site-card .value { font-size: 0.92rem; color: #f8fafc; margin-bottom: 8px; font-weight: 500; }
-
+        /* [V5 모바일 카드 전용 스타일] */
+        .mobile-site-card { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .mobile-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .mobile-card-title { font-size: 1.05rem; font-weight: 700; color: var(--primary-accent); margin: 0; }
+        .mobile-card-date { font-size: 0.75rem; color: #94a3b8; font-weight: 600; }
+        
+        .mobile-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; background: rgba(0,0,0,0.25); padding: 10px 5px; border-radius: 8px; }
+        .mobile-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: center; background: rgba(0,0,0,0.25); padding: 10px 5px; border-radius: 8px; }
+        .mobile-grid-label { font-size: 0.65rem; color: #94a3b8; margin-bottom: 3px; }
+        .mobile-grid-val { font-size: 0.85rem; color: #f8fafc; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .mobile-etc-btn { font-size: 0.75rem; color: #adb5bd; cursor: pointer; text-align: center; padding-top: 10px; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); transition: 0.2s; }
+        .mobile-etc-btn:hover { color: white; }
+        .mobile-etc-content { font-size: 0.85rem; color: #ced4da; padding: 12px; background: #131722; border-radius: 8px; margin-top: 8px; white-space: pre-wrap; }
+        
         .input-dark { background: #1e222d !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; font-size: 0.9rem !important; }
         .input-dark::placeholder { color: #555 !important; }
 
@@ -117,7 +128,7 @@
         <section id="page-status" class="page-section">
             <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary border-opacity-25 pb-3">
                 <h3 class="fw-bold m-0">종합 상황판 관리</h3>
-                </div>
+            </div>
 
             <div class="t5-card mb-5">
                 <div class="d-flex justify-content-between align-items-center">
@@ -263,6 +274,8 @@
 
         document.getElementById('all-status-containers').innerHTML = sections.map(sec => {
             const items = data.filter(d => d.status === sec.key);
+            
+            // [PC 표]
             let tableRows = items.length === 0 ? `<tr><td colspan="10" class="text-secondary py-4">등록된 데이터가 없습니다.</td></tr>` : items.map(item => `
                 <tr>
                     <td class="fw-bold" style="color:var(--primary-accent);">${item.siteName}</td>
@@ -276,17 +289,90 @@
                 </tr>
             `).join('');
 
-            let cards = items.length === 0 ? `<p class="text-center text-secondary py-3 small">내역 없음</p>` : items.map(item => `
-                <div class="mobile-site-card" onclick="openEditModal('${item.id}')">
-                    <div class="d-flex justify-content-between align-items-center mb-2"><h6 class="fw-bold m-0">${item.siteName}</h6><i class="bi bi-chevron-right text-secondary"></i></div>
-                    <div class="row g-2">
-                        <div class="col-6"><div class="label">일정 1</div><div class="value">${item.date1 || '-'}</div></div>
-                        <div class="col-6"><div class="label">일정 2</div><div class="value">${item.date2 || '-'}</div></div>
-                    </div>
-                </div>
-            `).join('');
+            // [모바일 카드 - V5 최적화 레이아웃]
+            let cards = items.length === 0 ? `<p class="text-center text-secondary py-3 small" style="background:#1e222d; border-radius:12px;">등록된 데이터가 없습니다.</p>` : items.map(item => {
+                const btnHTML = `
+                    <div>
+                        <button class="btn btn-sm text-primary p-1" onclick="openEditModal('${item.id}')"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn btn-sm text-danger p-1" onclick="deleteSite('${item.id}')"><i class="bi bi-trash3"></i></button>
+                    </div>`;
+                
+                let etcHTML = '';
+                if(item.etc) {
+                    if(sec.key === 'pre-design') {
+                        etcHTML = `<div class="text-secondary small mt-2 text-truncate">${item.etc}</div>`;
+                    } else {
+                        const cid = `etc-${item.id}`;
+                        etcHTML = `
+                        <div class="mobile-etc-btn" data-bs-toggle="collapse" data-bs-target="#${cid}">기타 메모 확인 <i class="bi bi-chevron-down"></i></div>
+                        <div class="collapse" id="${cid}"><div class="mobile-etc-content">${item.etc}</div></div>`;
+                    }
+                }
 
-            // [수정 1] 각 섹션 타이틀 우측에 전용 추가 버튼 배치
+                if(sec.key === 'ongoing') {
+                    return `
+                    <div class="mobile-site-card">
+                        <div class="mobile-card-header">
+                            <h6 class="mobile-card-title">${item.siteName}</h6>
+                            <div class="d-flex align-items-center">
+                                <span class="mobile-card-date me-3">${item.date1 || '-'} ~ ${item.date2 || '-'}</span>
+                                ${btnHTML}
+                            </div>
+                        </div>
+                        <div class="mobile-grid-3">
+                            <div><div class="mobile-grid-label">담당소장</div><div class="mobile-grid-val">${item.site_manager || '-'}</div></div>
+                            <div><div class="mobile-grid-label">디자이너</div><div class="mobile-grid-val">${item.designer || '-'}</div></div>
+                            <div><div class="mobile-grid-label">싸인담당</div><div class="mobile-grid-val">${item.designer_sign || '-'}</div></div>
+                        </div>
+                        ${etcHTML}
+                    </div>`;
+                } else if(sec.key === 'scheduled') {
+                    return `
+                    <div class="mobile-site-card">
+                        <div class="mobile-card-header">
+                            <h6 class="mobile-card-title">${item.siteName}</h6>
+                            <div class="d-flex align-items-center">
+                                <span class="mobile-card-date me-3">예상소장: <span class="text-white">${item.site_manager || '-'}</span></span>
+                                ${btnHTML}
+                            </div>
+                        </div>
+                        <div class="text-center" style="background: rgba(0,0,0,0.25); padding: 10px; border-radius: 8px; font-size: 0.85rem;">
+                            <span class="text-secondary me-1">착공예정</span> <span class="text-white fw-bold me-3">${item.date1 || '-'}</span>
+                            <span class="text-secondary me-1">준공예정</span> <span class="text-white fw-bold">${item.date2 || '-'}</span>
+                        </div>
+                        ${etcHTML}
+                    </div>`;
+                } else if(sec.key === 'designing') {
+                    return `
+                    <div class="mobile-site-card">
+                        <div class="mobile-card-header">
+                            <h6 class="mobile-card-title">${item.siteName}</h6>
+                            <div class="d-flex align-items-center">
+                                <span class="mobile-card-date me-3">디자이너: <span class="text-white">${item.designer || '-'}</span></span>
+                                ${btnHTML}
+                            </div>
+                        </div>
+                        <div class="mobile-grid-2">
+                            <div><div class="mobile-grid-label">디자인 마감일</div><div class="mobile-grid-val">${item.date1 || '-'}</div></div>
+                            <div><div class="mobile-grid-label">착공 예정일</div><div class="mobile-grid-val">${item.date2 || '-'}</div></div>
+                        </div>
+                        ${etcHTML}
+                    </div>`;
+                } else {
+                    return `
+                    <div class="mobile-site-card">
+                        <div class="mobile-card-header mb-1">
+                            <h6 class="mobile-card-title">${item.siteName}</h6>
+                            <div class="d-flex align-items-center">
+                                <span class="mobile-card-date me-3">마감: <span class="text-white">${item.date1 || '-'}</span></span>
+                                ${btnHTML}
+                            </div>
+                        </div>
+                        ${etcHTML}
+                    </div>`;
+                }
+            }).join('');
+
             return `<div class="mb-5">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold m-0"><i class="bi ${sec.icon} me-2 text-primary"></i>${sec.title} <span class="badge rounded-pill bg-dark ms-2" style="font-size:0.7rem;">${items.length}건</span></h5>
@@ -299,8 +385,6 @@
     }
 
     /* --- 모달 제어 로직 --- */
-    
-    // [수정 1] 파라미터로 특정 상태(targetStatus)를 받아서 팝업을 띄움
     function openAddModal(targetStatus = 'ongoing') {
         editingId = null; 
         document.getElementById('modalTitle').innerText = "신규 현장 등록";
@@ -325,15 +409,12 @@
         siteModal.show();
     }
 
-    // [수정 2] 사용자가 팝업에서 상태를 '직접' 변경했을 때 날짜/담당자를 비우는 함수
     function handleStatusChange(val) {
-        // 현장명(f_siteName)과 메모(f_etc)는 유지하고 날짜/담당자만 초기화
         document.getElementById('f_date1').value = '';
         document.getElementById('f_date2').value = '';
         document.getElementById('f_site_manager').value = '';
         document.getElementById('f_designer').value = '';
         document.getElementById('f_designer_sign').value = '';
-        
         toggleFormFields(val);
     }
 
@@ -364,6 +445,10 @@
         if(editingId) await db.collection("site_status").doc(editingId).update(data);
         else await db.collection("site_status").add({ ...data, createdAt: Date.now() });
         siteModal.hide();
+    }
+    
+    async function deleteSite(id) {
+        if(confirm("이 현장을 삭제하시겠습니까?")) await db.collection("site_status").doc(id).delete();
     }
 
     async function handleAuth() {

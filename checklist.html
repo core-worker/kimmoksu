@@ -17,100 +17,182 @@
         :root {
             --bg-deep: #131722; --card-bg: #2a2e39;
             --primary-accent: #5c7cfa; --danger-btn: #e03131;
+            --success-btn: #0ca678;
         }
         body { background-color: var(--bg-deep); color: #f8fafc; font-family: 'Pretendard', sans-serif; padding-top: 20px; }
         .container { max-width: 600px; }
         
-        .header-box { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; }
+        .t5-card { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .input-dark { background: #1e222d !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; }
+        .input-dark::placeholder { color: #8b95a1 !important; }
+        .btn-primary-custom { background: var(--primary-accent); border: none; color: white; border-radius: 8px; transition: 0.2s; cursor: pointer; }
+        
+        .header-box { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
         .writer-badge { background: rgba(92, 124, 250, 0.2); color: var(--primary-accent); padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
 
-        .t5-card { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .input-dark { background: #1e222d !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; }
-        
-        /* 체크리스트 아이템 스타일 */
+        /* 프로그레스 바 */
+        .progress-container { background: #1e222d; border-radius: 10px; height: 22px; overflow: hidden; position: relative; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05); }
+        .progress-fill { background: var(--primary-accent); height: 100%; width: 0%; transition: width 0.4s ease-out; }
+        .progress-text { position: absolute; width: 100%; text-align: center; top: 1px; font-size: 0.75rem; font-weight: bold; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+
+        /* 체크리스트 아이템 */
         .check-item { 
             display: flex; align-items: center; padding: 15px; border-radius: 12px; 
             background: #1e222d; margin-bottom: 10px; transition: 0.3s; border: 1px solid rgba(255,255,255,0.05);
         }
-        .check-item.completed { 
-            opacity: 0.4; background: #131722; filter: grayscale(0.5); 
-        }
-        .check-item.completed .item-text { text-decoration: line-through; }
+        .check-item.completed { opacity: 0.4; background: #131722; filter: grayscale(0.5); }
+        .check-item.completed .item-text { text-decoration: line-through; color: #8b95a1; }
 
-        .custom-check { width: 24px; height: 24px; cursor: pointer; border-radius: 6px; border: 2px solid var(--primary-accent); appearance: none; position: relative; margin-right: 15px; flex-shrink: 0; }
+        .custom-check { width: 24px; height: 24px; cursor: pointer; border-radius: 6px; border: 2px solid var(--primary-accent); appearance: none; position: relative; margin-right: 15px; flex-shrink: 0; background: transparent; }
         .custom-check:checked { background-color: var(--primary-accent); }
         .custom-check:checked::after { content: '✔'; position: absolute; color: white; font-size: 14px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 
         .item-text { flex-grow: 1; font-size: 1rem; border: none; background: transparent; color: white; outline: none; }
-        .btn-del { color: #555; cursor: pointer; padding: 5px; transition: 0.2s; }
+        .btn-del { color: #555; cursor: pointer; padding: 5px 10px; transition: 0.2s; font-size: 1.2rem; }
         .btn-del:hover { color: var(--danger-btn); }
 
-        .sticky-bottom-input { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-deep); padding: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .sticky-bottom-input { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-deep); padding: 15px; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; }
+        
+        .site-chip { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #ced4da; padding: 4px 10px; border-radius: 15px; font-size: 0.75rem; cursor: pointer; margin-right: 5px; margin-bottom: 5px; display: inline-block; }
+        .site-chip:hover { background: rgba(92, 124, 250, 0.3); border-color: var(--primary-accent); color: white; }
     </style>
 </head>
 <body>
 
 <div class="container pb-5">
-    <div class="header-box">
-        <div>
-            <h4 class="fw-bold m-0" id="displaySiteName">현장 로딩 중...</h4>
-            <p class="small text-secondary mt-1">마감 펀치리스트</p>
+    
+    <div class="t5-card">
+        <h6 class="fw-bold mb-3"><i class="bi bi-search me-2"></i>현장 불러오기 / 생성</h6>
+        <div class="d-flex gap-2 mb-2">
+            <input type="text" id="searchSiteInput" class="form-control input-dark py-2" placeholder="현장명을 입력하세요">
+            <button class="btn-primary-custom px-3 fw-bold" onclick="loadSiteData()">불러오기</button>
         </div>
-        <div class="writer-badge" id="displayWriter">작성자</div>
+        <div id="recent-sites-container" class="mt-2">
+            </div>
     </div>
 
-    <div id="checklist-container">
+    <div id="main-content-area" style="display: none;">
+        <div class="header-box">
+            <div>
+                <h4 class="fw-bold m-0" id="displaySiteName" style="color:var(--primary-accent);">현장명</h4>
+                <p class="small text-secondary mt-1 m-0">마감 펀치리스트</p>
+            </div>
+            <div class="writer-badge" id="displayWriter">작성자</div>
         </div>
+
+        <div class="progress-container">
+            <div id="progressBar" class="progress-fill"></div>
+            <div id="progressText" class="progress-text">0% (0/0)</div>
+        </div>
+
+        <div id="checklist-container" class="mt-4">
+            </div>
+    </div>
     
     <div style="height: 100px;"></div>
 </div>
 
-<div class="sticky-bottom-input">
+<div class="sticky-bottom-input" id="bottom-input-area" style="display: none;">
     <div class="container">
-        <div class="input-group">
+        <div class="d-flex gap-2">
             <input type="text" id="newTaskInput" class="form-control input-dark py-2" placeholder="새로운 마감 항목 입력...">
-            <button class="btn btn-primary px-4" onclick="addTask()">추가</button>
+            <button class="btn-primary-custom px-3 fw-bold" onclick="addTask()"><i class="bi bi-plus-lg"></i></button>
         </div>
     </div>
 </div>
 
 <script>
-    let myEmail, userNickname, currentSiteId;
-    
-    // URL에서 현장명을 가져오거나 로컬스토리지 활용 (테스트용으로 '진영현장' 세팅)
-    const siteTitle = localStorage.getItem('currentSite') || "미지정 현장";
-    document.getElementById('displaySiteName').innerText = siteTitle;
+    let myEmail, userNickname;
+    let currentSite = "";
+    let unsubscribe = null; // 파이어베이스 리스너 관리용
 
+    // 로그인 체크
     auth.onAuthStateChanged(async user => {
         if (user) {
             myEmail = user.email;
             const uDoc = await db.collection("users").doc(myEmail).get();
             userNickname = uDoc.exists ? uDoc.data().nickname : "관리자";
             document.getElementById('displayWriter').innerText = userNickname;
-            loadChecklist();
+            loadRecentSites(); // 최근 현장 버튼들 불러오기
         } else {
-            alert("로그인이 필요합니다.");
+            alert("로그인이 필요합니다. 메인 화면으로 이동합니다.");
             location.href = "index.html";
         }
     });
 
-    // 리스트 불러오기 (정렬 로직 포함)
-    function loadChecklist() {
-        db.collection("punch_lists")
-          .where("siteName", "==", siteTitle)
-          .orderBy("createdAt", "asc")
-          .onSnapshot(ss => {
-            let items = ss.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // 1. 최근 현장 목록 불러오기 (중복 제거)
+    function loadRecentSites() {
+        db.collection("punch_lists").orderBy("createdAt", "desc").limit(30).get().then(qs => {
+            let sites = new Set();
+            qs.forEach(doc => { if(doc.data().siteName) sites.add(doc.data().siteName); });
             
-            // 핵심: 완료되지 않은 것(false)이 위로, 완료된 것(true)이 아래로 정렬
-            items.sort((a, b) => a.done - b.done);
-            
-            renderList(items);
+            const container = document.getElementById('recent-sites-container');
+            container.innerHTML = Array.from(sites).slice(0, 5).map(site => 
+                `<span class="site-chip" onclick="loadSiteData('${site}')">${site}</span>`
+            ).join('');
         });
     }
 
+    // 2. 특정 현장 불러오기 (리스너 연결)
+    function loadSiteData(siteParam) {
+        const targetSite = siteParam || document.getElementById('searchSiteInput').value.trim();
+        if(!targetSite) return alert("불러올 현장명을 입력하세요.");
+        
+        currentSite = targetSite;
+        document.getElementById('searchSiteInput').value = currentSite;
+        document.getElementById('displaySiteName').innerText = currentSite;
+        
+        // 화면 보이기
+        document.getElementById('main-content-area').style.display = 'block';
+        document.getElementById('bottom-input-area').style.display = 'block';
+
+        // 기존에 켜져있던 실시간 연결 끄기
+        if(unsubscribe) unsubscribe();
+
+        // 새 현장 실시간 연결
+        unsubscribe = db.collection("punch_lists")
+            .where("siteName", "==", currentSite)
+            .onSnapshot(ss => {
+                let items = ss.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // 프로그레스 바 계산
+                updateProgressBar(items);
+
+                // 정렬: 안 끝난 것 먼저 -> 끝난 것 -> 생성순
+                items.sort((a, b) => {
+                    if (a.done === b.done) return b.createdAt - a.createdAt; // 최신글 위로
+                    return a.done ? 1 : -1; // 체크된 것(true)은 무조건 아래로(1)
+                });
+                
+                renderList(items);
+            });
+    }
+
+    // 3. 프로그레스 바 업데이트 로직
+    function updateProgressBar(items) {
+        const total = items.length;
+        const doneCount = items.filter(item => item.done).length;
+        const pct = total === 0 ? 0 : Math.round((doneCount / total) * 100);
+
+        document.getElementById('progressBar').style.width = pct + '%';
+        document.getElementById('progressText').innerText = total === 0 ? '항목을 추가해주세요' : `${pct}% 완료 (${doneCount}/${total})`;
+        
+        // 100% 달성 시 색상 변경 (초록색)
+        if(pct === 100 && total > 0) {
+            document.getElementById('progressBar').style.background = 'var(--success-btn)';
+        } else {
+            document.getElementById('progressBar').style.background = 'var(--primary-accent)';
+        }
+    }
+
+    // 4. 화면 렌더링
     function renderList(items) {
         const container = document.getElementById('checklist-container');
+        if(items.length === 0) {
+            container.innerHTML = '<p class="text-center text-secondary mt-5">등록된 마감 항목이 없습니다.</p>';
+            return;
+        }
+
         container.innerHTML = items.map(item => `
             <div class="check-item ${item.done ? 'completed' : ''}">
                 <input type="checkbox" class="custom-check" ${item.done ? 'checked' : ''} 
@@ -123,12 +205,13 @@
         `).join('');
     }
 
+    // 5. 항목 추가
     async function addTask() {
         const text = document.getElementById('newTaskInput').value.trim();
         if(!text) return;
         
         await db.collection("punch_lists").add({
-            siteName: siteTitle,
+            siteName: currentSite,
             text: text,
             done: false,
             writer: userNickname,
@@ -138,6 +221,7 @@
         document.getElementById('newTaskInput').value = '';
     }
 
+    // 6. 상태 토글, 텍스트 수정, 삭제
     async function toggleTask(id, currentStatus) {
         await db.collection("punch_lists").doc(id).update({ done: !currentStatus });
     }

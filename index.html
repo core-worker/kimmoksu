@@ -31,7 +31,6 @@
         
         .sidebar { width: 260px; height: 100dvh; background-color: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1050; overflow-y: auto; flex-shrink: 0; }
         
-        /* [수정 8] 스크롤바 우측 끝 정렬을 위한 구조 변경 */
         .main-container { flex: 1; overflow-y: auto; background-color: var(--bg-deep); width: 100%; }
         .page-section { display: none; animation: fadeIn 0.3s ease-out; padding: 30px; max-width: 1400px; margin: 0 auto; width: 100%; padding-bottom: 80px; }
         .page-section.active { display: block; }
@@ -160,6 +159,7 @@
     </nav>
 
     <main class="main-container">
+        
         <section id="page-home" class="page-section active">
             <h2 id="welcomeMsg" class="fw-bold mb-4">반갑습니다!</h2>
             <div class="row g-3 mb-4">
@@ -211,11 +211,15 @@
             <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary border-opacity-25 pb-3">
                 <h3 class="fw-bold m-0">종합 상황판 관리</h3>
             </div>
+
             <div class="t5-card mb-5">
                 <div class="d-flex justify-content-between align-items-center">
                     <h6 class="fw-bold m-0"><i class="bi bi-gear-fill me-2 text-secondary"></i>공지사항 관리</h6>
-                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#noticeManagerCollapse">관리창 열기/접기</button>
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#noticeManagerCollapse">
+                        관리창 열기/접기
+                    </button>
                 </div>
+                
                 <div class="collapse mt-3" id="noticeManagerCollapse">
                     <div class="d-flex gap-2 mb-4 border-top border-secondary border-opacity-10 pt-3">
                         <input type="text" id="newNoticeInput" class="form-control input-dark py-2" placeholder="새 공지 입력 후 추가 버튼이나 엔터를 누르세요" onkeypress="if(event.keyCode===13) addNotice()">
@@ -224,6 +228,7 @@
                     <div id="notice-list-container"></div>
                 </div>
             </div>
+
             <div id="all-status-containers"></div>
         </section>
 
@@ -436,7 +441,7 @@
 
     let myEmail, myTeamId, userNickname = "관리자";
     let isLoginMode = true;
-    let myRole = "member"; // owner(에디터), admin(관리자), member(팀원)
+    let myRole = "member"; 
     
     let editingId = null;
     let teamData = [ { teamName: "목공팀", workers: [] }, { teamName: "도장팀", workers: [] }, { teamName: "전기팀", workers: [] }, { teamName: "필름팀", workers: [] } ];
@@ -444,7 +449,7 @@
     let currentSite = "";
     let punchListListener = null;
     let punchDetailListener = null;
-    let globalPunchItems = []; // 필터링을 위한 전역 변수
+    let globalPunchItems = []; 
     let activePunchFilter = "전체";
 
     let t5EditingId = null; let calculatedData = null;
@@ -484,15 +489,14 @@
                 const tDoc = q.docs[0]; myTeamId = tDoc.id; 
                 const tData = tDoc.data();
                 
-                // 권한 식별
-                if(tData.owner === myEmail) myRole = "owner";
+                // [마스터 권한 강제 부여] 소장님 이메일 무조건 에디터 처리
+                if(tData.owner === myEmail || myEmail === "idong2300@naver.com") myRole = "owner";
                 else if(tData.admins && tData.admins.includes(myEmail)) myRole = "admin";
                 else myRole = "member";
 
                 let roleText = myRole === "owner" ? "에디터 (최고권한)" : (myRole === "admin" ? "관리자" : "팀원");
                 document.getElementById('userRoleDisplay').innerText = roleText;
 
-                // 초대 코드 부여 (없으면 생성 - 에디터 권한일때만)
                 if(!tData.inviteCode && myRole === "owner") {
                     const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
                     await db.collection("teams").doc(myTeamId).update({ inviteCode: newCode });
@@ -609,7 +613,6 @@
         db.collection("monthly_logs").where("teamId","==", myTeamId).orderBy("updatedAt","desc").limit(10).onSnapshot(ss => { 
             document.getElementById('history-list').innerHTML = ss.docs.map(doc => { 
                 const d = doc.data(); const isOwner = (d.writer === userNickname); 
-                // [수정 1] 버튼 순서 변경: 수정 - 복사 - 엑셀 - 삭제
                 let buttonsHTML = isOwner ? `<button class="t5-btn-small bg-secondary text-white" onclick="editLog('${doc.id}')">수정</button>` : '';
                 buttonsHTML += `<button class="t5-btn-small" style="background:var(--primary-accent); color:white;" onclick="copyLog('${doc.id}')">복사</button><button class="t5-btn-small bg-success text-white" onclick="exportToExcel('${doc.id}')">엑셀</button>`;
                 if(isOwner) buttonsHTML += `<button class="t5-btn-small bg-danger text-white" onclick="deleteLog('${doc.id}')">삭제</button>`;
@@ -654,8 +657,7 @@
 
     function openDetailView(siteName) {
         currentSite = siteName; document.getElementById('view-list').style.display = 'none'; document.getElementById('view-detail').style.display = 'block';
-        document.getElementById('detailSiteName').innerText = siteName;
-        activePunchFilter = "전체"; // 필터 초기화
+        document.getElementById('detailSiteName').innerText = siteName; activePunchFilter = "전체";
         history.pushState({ page: 'checklist_detail', site: siteName }, "", `#checklist_detail`);
         loadDetailChecklist(siteName);
     }
@@ -666,7 +668,6 @@
         if(pushHist) history.pushState({ page: 'checklist' }, "", `#checklist`);
     }
 
-    // [수정 2] 펀치리스트 제목 일괄 수정 로직
     async function editPunchlistTitle() {
         const newTitle = prompt("새로운 현장명을 입력하세요", currentSite);
         if(!newTitle || newTitle === currentSite) return;
@@ -675,7 +676,7 @@
         alert("현장명이 일괄 수정되었습니다.");
         document.getElementById('detailSiteName').innerText = newTitle; currentSite = newTitle;
         history.replaceState({ page: 'checklist_detail', site: newTitle }, "", `#checklist_detail`);
-        loadDetailChecklist(newTitle); // 재로드
+        loadDetailChecklist(newTitle); 
     }
 
     function loadDetailChecklist(siteName) {
@@ -683,20 +684,17 @@
         punchDetailListener = db.collection("punch_lists").where("teamId", "==", myTeamId).where("siteName", "==", siteName).onSnapshot(ss => {
                 globalPunchItems = ss.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 globalPunchItems.sort((a, b) => { if (a.done === b.done) return b.createdAt - a.createdAt; return a.done ? 1 : -1; });
-                renderPunchFilterAndList(); // [수정 9] 필터 버튼 렌더링 호출
+                renderPunchFilterAndList(); 
             });
     }
 
-    // [수정 9] 작성자 필터 렌더링 및 필터링 적용 리스트 렌더링
     function renderPunchFilterAndList() {
         const writers = ["전체", ...new Set(globalPunchItems.map(i => i.writer))];
         document.getElementById('punch-filter-container').innerHTML = writers.map(w => `
-            <button class="btn btn-sm ${w === activePunchFilter ? 'btn-primary' : 'btn-outline-secondary border-secondary text-secondary'} rounded-pill px-3" onclick="setPunchFilter('${w}')">${w}</button>
+            <button class="btn btn-sm ${w === activePunchFilter ? 'btn-primary' : 'btn-outline-secondary border-secondary text-secondary'} rounded-pill px-3 text-nowrap" onclick="setPunchFilter('${w}')">${w}</button>
         `).join('');
 
         const filteredItems = activePunchFilter === "전체" ? globalPunchItems : globalPunchItems.filter(i => i.writer === activePunchFilter);
-        
-        // 상단 진행률 업데이트 (필터 기준이 아닌 전체 기준 유지)
         const total = globalPunchItems.length; const doneCount = globalPunchItems.filter(i => i.done).length; const pct = total === 0 ? 0 : Math.round((doneCount / total) * 100);
         document.getElementById('detailProgressText').innerText = total === 0 ? "0% (0/0)" : `${pct}% (${doneCount}/${total})`;
         document.getElementById('detailProgressBar').style.width = pct + '%'; document.getElementById('detailProgressBar').style.background = pct === 100 ? 'var(--success-btn)' : 'var(--primary-accent)';
@@ -708,7 +706,7 @@
 
     function renderDetailList(items) {
         const container = document.getElementById('checklist-container');
-        if(items.length === 0) return container.innerHTML = '<div class="text-center p-5 text-secondary"><p>해당 작성자의 마감 항목이 없습니다.</p></div>';
+        if(items.length === 0) return container.innerHTML = '<div class="text-center p-5 text-secondary"><p>마감 항목이 없습니다.</p></div>';
         container.innerHTML = items.map(item => `
             <div class="check-item ${item.done ? 'completed' : ''}">
                 <input type="checkbox" class="custom-check" ${item.done ? 'checked' : ''} onclick="togglePunchTask('${item.id}', ${item.done})">
@@ -763,10 +761,9 @@
         db.collection("t5_logs").where("teamId","==", myTeamId).orderBy("updatedAt","desc").limit(20).onSnapshot(ss => {
             document.getElementById('t5-history-list').innerHTML = ss.docs.map(doc => {
                 const d = doc.data(); const isOwner = (d.writer === userNickname); 
-                // [수정 1] 버튼 순서 변경: 수정 - 복사 - 발주복사 - 삭제
                 let modifyBtns = isOwner ? `<button class="t5-btn-small bg-secondary text-white" style="flex:1;" onclick="editT5Log('${doc.id}')">수정</button>` : '';
                 modifyBtns += `<button class="t5-btn-small bg-primary text-white" style="flex:1;" onclick="copyAndNewT5Log('${doc.id}')">복사</button>
-                               <button class="t5-btn-small bg-success text-white" style="flex:1;" onclick="copyT5Order('${d.siteName}', '${d.resultText}')">발주용텍스트</button>`;
+                               <button class="t5-btn-small bg-success text-white" style="flex:1;" onclick="copyT5Order('${d.siteName}', '${d.resultText}')">발주용</button>`;
                 if(isOwner) modifyBtns += `<button class="t5-btn-small bg-danger text-white" style="flex:1;" onclick="deleteT5Log('${doc.id}')">삭제</button>`;
                 
                 return `<div class="history-card"><div class="history-author"><i class="bi bi-person-fill"></i> ${d.writer}</div><h6 class="fw-bold text-white mb-2">${d.siteName}</h6><p class="text-secondary small mb-3">${d.resultText}</p><div class="d-flex gap-2 flex-wrap">${modifyBtns}</div></div>`;
@@ -787,7 +784,6 @@
         else { document.getElementById('no-team-section').style.display = 'block'; document.getElementById('has-team-section').style.display = 'none'; }
     }
 
-    // [수정 7] 참가 코드로 접속하도록 변경 (초대코드)
     async function joinTeam() {
         const code = document.getElementById('joinTeamId').value.trim().toUpperCase(); if(!code) return alert("6자리 참가 코드를 입력해주세요.");
         try {
@@ -811,7 +807,6 @@
         }
     }
 
-    // [수정 7] 참가 코드 재발급
     async function regenerateInviteCode() {
         if(confirm("새 코드를 발급하면 기존 코드는 즉시 무효화됩니다. 계속하시겠습니까?")) {
             const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -821,18 +816,17 @@
         }
     }
 
-    // [수정 3, 4, 6] 팀원 목록 조회 및 권한 관리 (이름+이메일)
     async function loadTeamMembers() {
         if(!myTeamId) return;
         const tDoc = await db.collection("teams").doc(myTeamId).get();
         const tData = tDoc.data();
         const members = tData.members || [];
         
-        // 에디터/관리자 UI 표시
-        if(myRole === "owner" || myRole === "admin") document.getElementById('btnRegenCode').style.display = 'block';
+        if(myRole === "owner" || myRole === "admin") document.getElementById('btnRegenCode').style.display = 'inline-block';
+        else document.getElementById('btnRegenCode').style.display = 'none';
+
         document.getElementById('displayTeamId').value = tData.inviteCode || '발급필요';
 
-        // Promise.all로 모든 유저의 닉네임을 병렬로 긁어옴
         const memberPromises = members.map(async mEmail => {
             let nick = "이름미상";
             try { const uDoc = await db.collection("users").doc(mEmail).get(); if(uDoc.exists) nick = uDoc.data().nickname; } catch(e){}
@@ -842,18 +836,19 @@
 
         document.getElementById('member-list').innerHTML = memberData.map(m => {
             let badge = "", actionBtn = "";
-            if(tData.owner === m.email) badge = `<span class="badge bg-warning text-dark ms-2">에디터(최고권한)</span>`;
-            else if(tData.admins && tData.admins.includes(m.email)) {
-                badge = `<span class="badge bg-primary ms-2">관리자</span>`;
+            let isOwner = (tData.owner === m.email || m.email === "idong2300@naver.com");
+            let isAdmin = (tData.admins && tData.admins.includes(m.email));
+
+            if(isOwner) badge = `<span class="badge bg-warning text-dark">에디터</span>`;
+            else if(isAdmin) {
+                badge = `<span class="badge bg-primary">관리자</span>`;
                 if(myRole === "owner") {
                     actionBtn = `<button class="btn btn-sm btn-outline-secondary py-0 me-2" onclick="toggleAdmin('${m.email}', false)">관리자 해제</button>
                                  <button class="btn btn-sm btn-outline-danger py-0" onclick="kickMember('${m.email}')">삭제</button>`;
-                } else if(myRole === "admin" && myEmail === m.email) {
-                     // 본인 탈퇴? (일단 생략)
                 }
             }
             else {
-                badge = `<span class="badge bg-secondary ms-2">팀원</span>`;
+                badge = `<span class="badge bg-secondary">팀원</span>`;
                 if(myRole === "owner") {
                     actionBtn = `<button class="btn btn-sm btn-outline-info py-0 me-2" onclick="toggleAdmin('${m.email}', true)">관리자 임명</button>
                                  <button class="btn btn-sm btn-outline-danger py-0" onclick="kickMember('${m.email}')">삭제</button>`;
@@ -863,13 +858,14 @@
             }
 
             return `<div class="list-group-item bg-transparent text-white border-secondary border-opacity-25 py-3 d-flex flex-column gap-2 flex-md-row justify-content-md-between align-items-md-center">
-                <div><span class="fw-bold">${m.nick}</span> <span class="small text-secondary">(${m.email})</span> ${badge}</div>
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    ${badge} <span class="fw-bold">${m.nick}</span> <span class="small text-secondary">(${m.email})</span>
+                </div>
                 <div class="text-end">${actionBtn}</div>
             </div>`;
         }).join('');
     }
 
-    // [수정 4] 팀원 삭제(추방) 기능
     async function kickMember(targetEmail) {
         if(confirm(`${targetEmail}님을 팀에서 정말 내보내시겠습니까?`)) {
             const tDoc = await db.collection("teams").doc(myTeamId).get();
@@ -880,7 +876,6 @@
         }
     }
 
-    // [수정 6] 관리자 임명/해제
     async function toggleAdmin(targetEmail, isPromoting) {
         const tDoc = await db.collection("teams").doc(myTeamId).get();
         let admins = tDoc.data().admins || [];
@@ -895,7 +890,6 @@
         await db.collection("users").doc(myEmail).update({ nickname: newNick }); alert("수정되었습니다. 새로고침 후 반영됩니다."); location.reload();
     }
 
-    // [수정 5] 비밀번호 변경
     async function changePassword() {
         const pw = document.getElementById('newPasswordInput').value;
         if(pw.length < 6) return alert("비밀번호는 6자리 이상이어야 합니다.");

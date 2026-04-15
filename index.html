@@ -14,6 +14,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
@@ -21,18 +22,13 @@
     <script src="firebase-config.js"></script>
 
     <style>
-        :root {
-            --bg-deep: #131722; --sidebar-bg: #1e222d; --card-bg: #2a2e39;
-            --primary-accent: #5c7cfa; --danger-btn: #e03131; --success-btn: #0ca678;
-        }
-
+        :root { --bg-deep: #131722; --sidebar-bg: #1e222d; --card-bg: #2a2e39; --primary-accent: #5c7cfa; --success-btn: #0ca678; --danger-btn: #e03131; }
         body { background-color: var(--bg-deep); color: #f8fafc; font-family: 'Pretendard', sans-serif; margin: 0; overflow: hidden; }
         .app-wrapper { display: flex; height: 100vh; height: 100dvh; width: 100vw; position: relative; }
         
         .sidebar { width: 260px; height: 100dvh; background-color: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1050; overflow-y: auto; flex-shrink: 0; }
-        
         .main-container { flex: 1; overflow-y: auto; background-color: var(--bg-deep); width: 100%; }
-        .page-section { display: none; animation: fadeIn 0.3s ease-out; padding: 30px; max-width: 1400px; margin: 0 auto; width: 100%; padding-bottom: 80px; }
+        .page-section { display: none; animation: fadeIn 0.2s ease-out; padding: 30px; max-width: 1400px; margin: 0 auto; width: 100%; padding-bottom: 80px; }
         .page-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -47,33 +43,36 @@
             .sidebar.active { transform: translateX(0); } 
             .page-section { padding: 20px 15px; padding-bottom: 100px; } 
             .mobile-menu-btn { display: flex !important; } 
+            .mobile-col-6 { width: 50% !important; padding: 5px !important; }
+            .compact-card { padding: 15px 10px !important; margin-bottom: 0 !important; }
+            .compact-card i { font-size: 2rem !important; margin-bottom: 10px !important; }
+            .compact-card h6 { font-size: 0.9rem !important; }
+            .compact-card p { display: none; }
         }
 
         .mobile-menu-btn { display: none; position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary-accent); color: white; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1030; border: none; font-size: 1.8rem; cursor: pointer; }
 
-        .t5-card { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; }
-        .input-dark { background: #1e222d !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; font-size: 0.95rem !important;}
+        .t5-card { background: var(--card-bg); border-radius: 16px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; }
+        .input-dark { background: #1e222d !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; font-size: 0.95rem !important; }
         .input-dark::placeholder { color: #8b95a1 !important; opacity: 1 !important; }
         .t5-btn-primary { background: var(--primary-accent); border: none; color: white; border-radius: 10px; padding: 14px; font-weight: bold; width: 100%; transition: 0.2s; cursor: pointer; }
         .t5-btn-small { background: rgba(255,255,255,0.1); border: none; color: #ced4da; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; transition: 0.2s; cursor: pointer; }
-        .btn-primary-custom { background: var(--primary-accent); border: none; color: white; border-radius: 8px; transition: 0.2s; cursor: pointer; font-weight: bold; }
 
-        /* 상황판 CSS */
-        .notice-preview { color: #ced4da; line-height: 1.8; font-size: 0.95rem; }
-        .notice-item { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--primary-accent); }
-        .status-table { width: 100%; border-collapse: separate; border-spacing: 0 4px; table-layout: fixed; }
-        .status-table th { color: #94a3b8; font-weight: 600; font-size: 0.82rem; padding: 12px 10px; border-bottom: 2px solid rgba(255,255,255,0.05); text-align: center; white-space: nowrap; }
-        .status-table td { background: #1e222d; padding: 12px 10px; font-size: 0.88rem; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .mobile-site-card { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
-        .mobile-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-        .mobile-card-title { font-size: 1.05rem; font-weight: 700; color: var(--primary-accent); margin: 0; }
-        .mobile-card-date { font-size: 0.75rem; color: #94a3b8; font-weight: 600; }
-        .mobile-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; background: rgba(0,0,0,0.25); padding: 10px 5px; border-radius: 8px; }
-        .mobile-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: center; background: rgba(0,0,0,0.25); padding: 10px 5px; border-radius: 8px; }
-        .mobile-grid-label { font-size: 0.65rem; color: #94a3b8; margin-bottom: 3px; }
-        .mobile-grid-val { font-size: 0.85rem; color: #f8fafc; font-weight: bold; }
-        .mobile-etc-btn { font-size: 0.75rem; color: #adb5bd; cursor: pointer; text-align: center; padding-top: 10px; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
-        .mobile-etc-content { font-size: 0.85rem; color: #ced4da; padding: 12px; background: #131722; border-radius: 8px; margin-top: 8px; white-space: pre-wrap; }
+        .board-list { max-height: 250px; overflow-y: auto; padding-right: 5px; }
+        .board-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid var(--primary-accent); font-size: 0.9rem; }
+
+        /* 공정표 CSS */
+        .gantt-container { overflow-x: auto; background: #1e222d; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .gantt-table { margin: 0; white-space: nowrap; font-size: 0.75rem; border-collapse: separate; border-spacing: 0; }
+        .gantt-table th { padding: 5px 2px !important; font-weight: 600; color: #94a3b8; }
+        .gantt-table td { border: 1px solid rgba(255,255,255,0.05); padding: 2px !important; text-align: center; vertical-align: middle; }
+        .gantt-task-col { position: sticky; left: 0; background: var(--card-bg) !important; z-index: 10; min-width: 90px; text-align: left !important; border-right: 2px solid var(--primary-accent) !important; padding-left: 10px !important; }
+        .gantt-cell { cursor: pointer; min-width: 22px; transition: 0.1s; }
+        .gantt-cell:hover { background-color: rgba(255,255,255,0.1); }
+        .day-sat { background-color: rgba(92, 124, 250, 0.08) !important; color: #5c7cfa; }
+        .day-sun { background-color: rgba(224, 49, 49, 0.08) !important; color: #e03131; }
+        .gantt-active { background-color: var(--primary-accent) !important; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2); }
+        .task-editable { background: transparent; border: none; color: #0dcaf0; font-weight: bold; width: 100%; outline: none; font-size: 0.75rem; }
 
         /* 작업일보 CSS */
         .excel-table { width: 100%; border-collapse: collapse; background: var(--card-bg); margin-bottom: 10px; table-layout: fixed; border: 2px solid #4b5563; }
@@ -102,11 +101,15 @@
         .progress-container { background: #131722; border-radius: 10px; height: 16px; overflow: hidden; position: relative; margin-top: 8px; }
         .progress-fill { background: var(--primary-accent); height: 100%; width: 0%; transition: width 0.4s ease-out; }
 
-        /* T5 계산기 CSS */
+        /* T5 CSS */
         #t5-temp-result { background: #1c212d; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; margin-bottom: 20px; display: none; }
         .res-gap { color: #fcc419; font-weight: bold; font-size: 0.85rem; }
         .history-card { background: var(--card-bg); border-radius: 16px; padding: 18px; margin-bottom: 12px; position: relative; }
-        .history-author { position: absolute; top: 18px; right: 18px; font-size: 0.8rem; color: #8b95a1; }
+
+        /* 메모장 CSS */
+        .memo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .memo-card { background: #fff9db; color: #333; padding: 15px; border-radius: 8px; box-shadow: 2px 4px 10px rgba(0,0,0,0.1); position: relative; }
+        .memo-card.shared { background: #e3f2fd; border-left: 4px solid #5c7cfa; }
 
         #addTaskModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s; }
         .modal-box { background: var(--card-bg); padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -114,10 +117,9 @@
         #auth-overlay { position: fixed; inset: 0; background: var(--bg-deep); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .login-card { background: var(--card-bg); padding: 40px; border-radius: 24px; width: 100%; max-width: 380px; text-align: center; }
         
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg-deep); }
-        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -135,22 +137,24 @@
 </div>
 
 <div class="app-wrapper">
-    <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
     <nav class="sidebar" id="sidebar">
-        <div class="p-4 text-center border-bottom border-secondary border-opacity-10 mt-2">
+        <div class="p-4 text-center border-bottom border-secondary border-opacity-10">
             <img src="kimmoksu_main_logo.png" alt="로고" style="max-width: 140px; cursor: pointer;" onclick="location.reload()">
         </div>
         <div class="flex-grow-1 mt-3">
-            <div class="nav-link active" onclick="showPage('home', this)"><i class="bi bi-house-door"></i> 홈</div>
-            <div class="nav-link" onclick="showPage('status', this)"><i class="bi bi-calendar-check"></i> 종합 상황판</div>
-            <div class="nav-link" onclick="showPage('worklog', this)"><i class="bi bi-journal-check"></i> 작업일보</div>
-            <div class="nav-link" onclick="showPage('checklist', this)"><i class="bi bi-ui-checks"></i> 마감 체크리스트</div>
+            <div class="nav-link active" onclick="showPage('home', this)"><i class="bi bi-house-door"></i> 홈 메인</div>
+            <div class="nav-link" onclick="showPage('board', this)"><i class="bi bi-gear-wide-connected"></i> 종합 상황판 관리</div>
+            <div class="nav-link" onclick="showPage('gantt', this)"><i class="bi bi-calendar3"></i> 공정표 & 추가공사</div>
+            <div class="nav-link" onclick="showPage('worklog', this)"><i class="bi bi-journal-text"></i> 작업일보</div>
+            <div class="nav-link" onclick="showPage('punch', this)"><i class="bi bi-ui-checks"></i> 펀치리스트</div>
             <div class="nav-link" onclick="showPage('t5', this)"><i class="bi bi-calculator"></i> T5 계산기</div>
+            <div class="nav-link" onclick="showPage('memo', this)"><i class="bi bi-stickies"></i> 팀 메모장</div>
+            <div class="nav-link" onclick="showPage('leave', this)"><i class="bi bi-calendar2-check"></i> 연차 관리</div>
             <div class="nav-link" onclick="showPage('team', this)"><i class="bi bi-people"></i> 팀원 관리</div>
             <div class="nav-link" onclick="showPage('profile', this)"><i class="bi bi-person-gear"></i> 내 정보 수정</div>
         </div>
-        
         <div class="p-4 border-top border-secondary border-opacity-10 mt-auto">
             <div class="d-flex align-items-center mb-2">
                 <i class="bi bi-person-circle fs-3 me-3" style="color:var(--primary-accent);"></i>
@@ -166,75 +170,155 @@
     <main class="main-container">
         
         <section id="page-home" class="page-section active">
-            <h2 id="welcomeMsg" class="fw-bold mb-4">반갑습니다!</h2>
+            <h3 class="fw-bold mb-4">현장 종합 요약</h3>
+            
             <div class="row g-3 mb-4">
-                <div class="col-12">
-                    <div class="t5-card m-0" style="cursor: pointer;" onclick="showPage('status', document.querySelectorAll('.nav-link')[1])">
+                <div class="col-12 col-md-8">
+                    <div class="t5-card h-100 mb-0">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="fw-bold m-0"><i class="bi bi-megaphone-fill me-2 text-warning"></i>공지사항</h5>
-                            <span class="small text-secondary">자세히 보기 <i class="bi bi-chevron-right"></i></span>
+                            <h5 class="fw-bold text-warning m-0"><i class="bi bi-bell-fill me-2"></i>공지사항</h5>
+                            <button class="btn btn-sm btn-outline-secondary py-0" onclick="showPage('board', document.querySelectorAll('.nav-link')[1])">관리</button>
                         </div>
-                        <div id="mainNoticeDisplay" class="notice-preview">공지사항을 불러오는 중...</div>
+                        <div class="board-list" id="home-notice-list"></div>
                     </div>
                 </div>
-                
-                <div class="col-12">
-                    <div class="t5-card m-0 h-100 text-center py-5" onclick="showPage('status', document.querySelectorAll('.nav-link')[1])" style="cursor: pointer;">
-                        <i class="bi bi-grid-3x3-gap-fill fs-1 mb-3 d-block text-primary"></i>
-                        <h4 class="fw-bold">김목수이야기 종합 상황판</h4>
-                        <p class="text-secondary small m-0">전체 현장의 공정 단계를 한눈에 관리합니다.</p>
+                <div class="col-12 col-md-4">
+                    <div class="t5-card h-100 mb-0">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold text-info m-0"><i class="bi bi-chat-dots-fill me-2"></i>최근 전달내용</h6>
+                            <button class="btn btn-sm btn-outline-secondary py-0" onclick="showPage('board', document.querySelectorAll('.nav-link')[1])">관리</button>
+                        </div>
+                        <div class="board-list" id="home-msg-list"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="row g-3">
-                <div class="col-12 col-md-4" onclick="showPage('worklog', document.querySelectorAll('.nav-link')[2])">
-                    <div class="t5-card h-100 cursor-pointer text-center py-5">
-                        <i class="bi bi-pencil-square fs-1 mb-3 d-block" style="color:var(--primary-accent);"></i>
-                        <h5 class="fw-bold">작업일보 작성</h5>
-                        <p class="text-secondary small m-0">공수 기록 및 엑셀 변환</p>
+            <div class="row g-3 row-cols-2 row-cols-md-3">
+                <div class="col mobile-col-6" onclick="showPage('gantt', document.querySelectorAll('.nav-link')[2])">
+                    <div class="t5-card compact-card h-100 cursor-pointer text-center">
+                        <i class="bi bi-bar-chart-steps fs-1 d-block mb-3 text-primary"></i>
+                        <h6 class="fw-bold m-0">공정표 & 추가</h6>
+                        <p class="small text-secondary mt-2 mb-0">일정 및 비용 정산</p>
                     </div>
                 </div>
-                <div class="col-12 col-md-4" onclick="showPage('checklist', document.querySelectorAll('.nav-link')[3])">
-                    <div class="t5-card h-100 cursor-pointer text-center py-5">
-                        <i class="bi bi-ui-checks fs-1 mb-3 d-block" style="color:var(--success-btn);"></i>
-                        <h5 class="fw-bold">마감 펀치리스트</h5>
-                        <p class="text-secondary small m-0">진행률 및 팀원 공유</p>
+                <div class="col mobile-col-6" onclick="showPage('worklog', document.querySelectorAll('.nav-link')[3])">
+                    <div class="t5-card compact-card h-100 cursor-pointer text-center">
+                        <i class="bi bi-journal-text fs-1 d-block mb-3 text-success"></i>
+                        <h6 class="fw-bold m-0">작업일보</h6>
+                        <p class="small text-secondary mt-2 mb-0">공수 기록 / 엑셀</p>
                     </div>
                 </div>
-                <div class="col-12 col-md-4" onclick="showPage('t5', document.querySelectorAll('.nav-link')[4])">
-                    <div class="t5-card h-100 cursor-pointer text-center py-5">
-                        <i class="bi bi-lightbulb fs-1 mb-3 d-block text-warning"></i>
-                        <h5 class="fw-bold">T5 계산기</h5>
-                        <p class="text-secondary small m-0">물량 산출 및 팀 공유</p>
+                <div class="col mobile-col-6" onclick="showPage('punch', document.querySelectorAll('.nav-link')[4])">
+                    <div class="t5-card compact-card h-100 cursor-pointer text-center">
+                        <i class="bi bi-ui-checks fs-1 d-block mb-3 text-danger"></i>
+                        <h6 class="fw-bold m-0">펀치리스트</h6>
+                        <p class="small text-secondary mt-2 mb-0">마감 진행률 체크</p>
+                    </div>
+                </div>
+                <div class="col mobile-col-6" onclick="showPage('t5', document.querySelectorAll('.nav-link')[5])">
+                    <div class="t5-card compact-card h-100 cursor-pointer text-center">
+                        <i class="bi bi-calculator fs-1 d-block mb-3 text-warning"></i>
+                        <h6 class="fw-bold m-0">T5 계산기</h6>
+                        <p class="small text-secondary mt-2 mb-0">발주 물량 산출</p>
+                    </div>
+                </div>
+                <div class="col mobile-col-6" onclick="showPage('memo', document.querySelectorAll('.nav-link')[6])">
+                    <div class="t5-card compact-card h-100 cursor-pointer text-center">
+                        <i class="bi bi-stickies fs-1 d-block mb-3" style="color: #e67e22;"></i>
+                        <h6 class="fw-bold m-0">메모장</h6>
+                        <p class="small text-secondary mt-2 mb-0">개인/팀 포스트잇</p>
+                    </div>
+                </div>
+                <div class="col mobile-col-6" onclick="showPage('leave', document.querySelectorAll('.nav-link')[7])">
+                    <div class="t5-card compact-card h-100 cursor-pointer text-center">
+                        <i class="bi bi-calendar2-check fs-1 d-block mb-3" style="color: #9b59b6;"></i>
+                        <h6 class="fw-bold m-0">연차 관리</h6>
+                        <p class="small text-secondary mt-2 mb-0">휴가 캘린더 현황</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section id="page-status" class="page-section">
-            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary border-opacity-25 pb-3">
-                <h3 class="fw-bold m-0">종합 상황판 관리</h3>
+        <section id="page-board" class="page-section">
+            <h3 class="fw-bold mb-4">종합 상황판 관리</h3>
+            <div class="row g-4">
+                <div class="col-12 col-md-8">
+                    <div class="t5-card h-100">
+                        <h6 class="fw-bold mb-3 text-warning"><i class="bi bi-bell-fill me-2"></i>공지사항 추가/삭제</h6>
+                        <div class="d-flex gap-2 mb-4">
+                            <input type="text" id="input-notice" class="form-control input-dark" placeholder="새 공지 입력" onkeypress="if(event.keyCode===13) addBoardItem('notice')">
+                            <button class="btn btn-primary px-3 fw-bold text-nowrap" onclick="addBoardItem('notice')">추가</button>
+                        </div>
+                        <div id="manage-notice-list"></div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="t5-card h-100">
+                        <h6 class="fw-bold mb-3 text-info"><i class="bi bi-chat-dots-fill me-2"></i>회의 전달내용 추가/삭제</h6>
+                        <div class="d-flex gap-2 mb-4">
+                            <input type="text" id="input-memo" class="form-control input-dark" placeholder="새 전달 입력" onkeypress="if(event.keyCode===13) addBoardItem('memo')">
+                            <button class="btn btn-primary px-3 fw-bold text-nowrap" onclick="addBoardItem('memo')">추가</button>
+                        </div>
+                        <div id="manage-memo-list"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-gantt" class="page-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold m-0">현장 공정 & 추가 내역</h3>
+                <button class="btn btn-primary fw-bold" onclick="createNewProject()">+ 신규 공정표 생성</button>
             </div>
 
-            <div class="t5-card mb-5">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold m-0"><i class="bi bi-gear-fill me-2 text-secondary"></i>공지사항 관리</h6>
-                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#noticeManagerCollapse">
-                        관리창 열기/접기
-                    </button>
+            <div class="t5-card" id="ganttDashboard" style="display: none;">
+                <div class="row g-2 mb-4 align-items-center">
+                    <div class="col-md-5">
+                        <input type="text" id="ganttSiteName" class="form-control input-dark fs-5 fw-bold text-warning" placeholder="현장명을 입력하세요 (예: 일강이앤아이)">
+                    </div>
+                    <div class="col-md-7 text-md-end">
+                        <button class="btn btn-sm btn-info me-1 px-3 fw-bold text-white" onclick="captureGantt()"><i class="bi bi-camera"></i> 캡처/공유</button>
+                        <button class="btn btn-sm btn-success me-1 px-3 fw-bold" onclick="saveGantt()">💾 현재 상태 저장</button>
+                        <button class="btn btn-sm btn-outline-danger px-3" onclick="deleteGantt()">초기화/삭제</button>
+                    </div>
                 </div>
                 
-                <div class="collapse mt-3" id="noticeManagerCollapse">
-                    <div class="d-flex gap-2 mb-4 border-top border-secondary border-opacity-10 pt-3">
-                        <input type="text" id="newNoticeInput" class="form-control input-dark py-2" placeholder="새 공지 입력 후 추가 버튼이나 엔터를 누르세요" onkeypress="if(event.keyCode===13) addNotice()">
-                        <button class="btn btn-primary fw-bold px-4 text-nowrap" onclick="addNotice()">추가</button>
+                <h6 class="fw-bold mt-2 mb-3 text-primary"><i class="bi bi-bar-chart-steps me-2"></i>실전 공정표 (Gantt)</h6>
+                <div id="captureArea" style="background-color: #2a2e39; padding: 10px; border-radius: 12px;">
+                    <div class="gantt-container mb-2">
+                        <table class="table table-dark table-bordered gantt-table" id="ganttTable"></table>
                     </div>
-                    <div id="notice-list-container"></div>
+                </div>
+                <div class="d-flex justify-content-between mb-5 mt-2">
+                    <button class="btn btn-sm btn-outline-info" onclick="addGanttTaskRow()">+ 공종(행) 추가</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="addGanttDate()">일정 1일 연장 <i class="bi bi-arrow-right"></i></button>
+                </div>
+
+                <hr class="border-secondary opacity-25">
+
+                <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+                    <h6 class="fw-bold text-warning m-0"><i class="bi bi-cash-coin me-2"></i>추가 공사 내역</h6>
+                    <button class="btn btn-sm btn-outline-warning" onclick="addExtraCostRow()">+ 내역 추가</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark table-sm align-middle text-center" style="font-size:0.85rem;">
+                        <thead class="text-secondary">
+                            <tr><th>지시일자</th><th style="width: 30%;">내용</th><th>추가 금액(원)</th><th>진행</th><th>계산서</th><th>비고</th><th></th></tr>
+                        </thead>
+                        <tbody id="extraCostBody"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="2" class="text-end fw-bold text-secondary py-3">총 추가 공사대금 :</td>
+                                <td class="text-warning fw-bold fs-5 py-3" id="extraTotalSum">0</td>
+                                <td colspan="4"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
             </div>
 
-            <div id="all-status-containers"></div>
+            <h5 class="fw-bold mt-5 mb-3"><i class="bi bi-archive me-2"></i>저장된 현장 목록</h5>
+            <div id="saved-gantt-list" class="row g-3"></div>
         </section>
 
         <section id="page-worklog" class="page-section">
@@ -252,7 +336,7 @@
             <div id="history-list" class="row g-3"></div>
         </section>
 
-        <section id="page-checklist" class="page-section">
+        <section id="page-punch" class="page-section">
             <div id="view-list">
                 <h3 class="fw-bold mb-4">마감 펀치리스트</h3>
                 <div class="t5-card">
@@ -260,12 +344,10 @@
                         <input type="text" id="searchSiteInput" class="form-control input-dark py-2" placeholder="현장명을 입력하세요">
                         <button class="btn-primary-custom px-4 flex-shrink-0 text-nowrap" onclick="createOrLoadSite()">생성</button>
                     </div>
-                    <p class="small text-secondary mt-2 mb-0 ms-1">* 새로운 현장명을 치고 '생성'을 누르면 방이 개설됩니다.</p>
                 </div>
-                
                 <div class="d-flex justify-content-between align-items-center mt-5 mb-3 flex-wrap gap-2">
                     <h5 class="fw-bold m-0 text-nowrap"><i class="bi bi-archive me-2"></i>최근 진행 현장</h5>
-                    <div id="punch-card-filter" class="d-flex gap-2 overflow-auto pb-1" style="flex-wrap: nowrap; -webkit-overflow-scrolling: touch;"></div>
+                    <div id="punch-card-filter" class="d-flex gap-2 overflow-auto pb-1" style="flex-wrap: nowrap;"></div>
                 </div>
                 <div id="punch-history-list" class="row g-3"></div>
             </div>
@@ -281,17 +363,12 @@
                     </div>
                     <button class="round-add-btn" onclick="openPunchAddModal()"><i class="bi bi-plus-lg"></i></button>
                 </div>
-
                 <div class="d-flex justify-content-between align-items-end mb-2 px-1">
                     <span class="small fw-bold text-white">마감 달성률</span>
                     <span class="small text-secondary" id="detailProgressText">0% (0/0)</span>
                 </div>
-                <div class="progress-container mb-3" style="height: 6px;">
-                    <div id="detailProgressBar" class="progress-fill"></div>
-                </div>
-
+                <div class="progress-container mb-3"><div id="detailProgressBar" class="progress-fill"></div></div>
                 <div id="punch-filter-container" class="mb-3 d-flex gap-2 overflow-auto pb-2 border-bottom border-secondary border-opacity-25"></div>
-
                 <div id="checklist-container"></div>
             </div>
         </section>
@@ -343,18 +420,67 @@
             <div id="t5-history-list"></div>
         </section>
 
+        <section id="page-memo" class="page-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold m-0">팀 & 개인 메모장</h3>
+                <button class="btn btn-primary fw-bold" onclick="addMemo()">+ 새 메모 작성</button>
+            </div>
+            <ul class="nav nav-pills mb-4 border-bottom border-secondary border-opacity-25 pb-2" id="memoTabs">
+                <li class="nav-item"><button class="nav-link active py-1 px-3" onclick="switchMemoTab('private')">내 메모</button></li>
+                <li class="nav-item"><button class="nav-link py-1 px-3" onclick="switchMemoTab('shared')">팀 공유 보드</button></li>
+            </ul>
+            <div class="memo-grid" id="memoContainer"></div>
+        </section>
+
+        <section id="page-leave" class="page-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold m-0">팀원 연차 관리</h3>
+                <button class="btn btn-success fw-bold" onclick="addLeaveRecord()">+ 휴가 신청</button>
+            </div>
+            
+            <div class="t5-card border border-warning border-opacity-50" id="leaveAdminPanel" style="display:none;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-warning m-0"><i class="bi bi-gear me-2"></i>[관리자용] 팀원 연차 설정</h6>
+                    <button class="btn btn-sm btn-outline-warning py-0" onclick="saveLeaveSettings()">설정 저장</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark table-sm align-middle text-center mb-0">
+                        <thead class="text-secondary">
+                            <tr><th>이름</th><th>입사일</th><th>기본 부여</th></tr>
+                        </thead>
+                        <tbody id="leaveAdminBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="t5-card">
+                <h6 class="fw-bold mb-3"><i class="bi bi-person-check me-2"></i>우리팀 연차 현황</h6>
+                <div class="table-responsive">
+                    <table class="table table-dark table-sm align-middle text-center mb-0">
+                        <thead class="text-secondary">
+                            <tr><th>이름</th><th>올해 부여</th><th>사용</th><th>잔여</th></tr>
+                        </thead>
+                        <tbody id="leaveStatusBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <h6 class="fw-bold mt-5 mb-3 text-white"><i class="bi bi-calendar-check me-2"></i>최근 휴가 내역</h6>
+            <div class="t5-card p-3">
+                <div id="leaveHistoryList"></div>
+            </div>
+        </section>
+
         <section id="page-team" class="page-section">
             <h3 class="fw-bold mb-4">팀원 및 조직 관리</h3>
             <div id="no-team-section" style="display:none;">
                 <div class="t5-card">
-                    <h6 class="fw-bold mb-3" style="color:var(--primary-accent);">새로운 팀 합류</h6>
-                    <p class="small text-secondary mb-3">전달받은 6자리 참가 코드를 입력하면 기존 현장을 함께 관리할 수 있습니다.</p>
+                    <h6 class="fw-bold mb-3 text-primary">새로운 팀 합류</h6>
                     <input type="text" id="joinTeamId" class="form-control input-dark mb-3 text-uppercase" placeholder="참가 코드 6자리 입력">
                     <button class="t5-btn-primary py-2" onclick="joinTeam()">팀 합류하기</button>
                     <hr class="border-secondary opacity-50 my-4">
                     <h6 class="fw-bold mb-3 text-warning">새로운 팀 만들기</h6>
-                    <p class="small text-secondary mb-3">내가 최고 책임자(에디터)가 되어 새로운 팀 공간을 개설합니다.</p>
-                    <button class="t5-btn-small w-100 py-3 border border-secondary" onclick="createTeam()">+ 새로운 내 팀 개설하기</button>
+                    <button class="t5-btn-small w-100 py-3 border border-secondary" onclick="createTeam()">+ 내 팀 개설하기</button>
                 </div>
             </div>
             <div id="has-team-section" style="display:none;">
@@ -365,7 +491,6 @@
                         <button class="btn btn-secondary text-nowrap fw-bold" id="btnRegenCode" style="display:none;" onclick="regenerateInviteCode()">재발급</button>
                         <button class="t5-btn-small fw-bold" onclick="copyText(document.getElementById('displayTeamId').value)">복사</button>
                     </div>
-                    <p class="small text-secondary mt-2">이 코드를 팀원들에게 공유하세요. (재발급 시 이전 코드는 즉시 폐기됩니다)</p>
                 </div>
                 <div class="t5-card">
                     <h6 class="fw-bold mb-3">현재 소속 팀원</h6>
@@ -382,63 +507,30 @@
                     <input type="text" id="editNickname" class="form-control input-dark">
                 </div>
                 <div class="mb-4">
-                    <label class="form-label small text-secondary">이메일 (변경 불가)</label>
+                    <label class="form-label small text-secondary">이메일</label>
                     <input type="text" id="editEmail" class="form-control input-dark" readonly>
                 </div>
-                <button class="t5-btn-primary mb-4" onclick="updateProfile()">정보 저장하기</button>
-                
+                <button class="t5-btn-primary mb-4" onclick="updateProfile()">저장하기</button>
                 <div class="border-top border-secondary border-opacity-25 pt-4 mt-2">
-                    <h6 class="fw-bold mb-3 text-warning"><i class="bi bi-shield-lock me-2"></i>비밀번호 변경</h6>
-                    <input type="password" id="newPasswordInput" class="form-control input-dark mb-3" placeholder="새로운 비밀번호 입력 (6자리 이상)">
+                    <h6 class="fw-bold mb-3 text-warning">비밀번호 변경</h6>
+                    <input type="password" id="newPasswordInput" class="form-control input-dark mb-3" placeholder="새 비밀번호 입력">
                     <button class="btn btn-outline-warning w-100 py-2 fw-bold" onclick="changePassword()">비밀번호 변경</button>
-                    <p class="small text-secondary mt-2 m-0">* 보안을 위해 최근에 로그인한 상태여야 변경이 가능합니다.</p>
                 </div>
             </div>
         </section>
+
     </main>
 
-    <button class="mobile-menu-btn" onclick="openSidebar()"><i class="bi bi-list"></i></button>
-</div>
-
-<div class="modal fade" id="siteModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="background: var(--card-bg); border-radius: 20px;">
-            <div class="modal-body p-4">
-                <h5 class="fw-bold mb-4" id="modalTitle">현장 데이터 입력</h5>
-                <div class="row g-3" id="siteForm">
-                    <div class="col-12">
-                        <label class="small text-secondary mb-1">진행 단계 (변경 시 날짜/담당자는 초기화됩니다)</label>
-                        <select id="f_status" class="form-select input-dark" onchange="handleStatusChange(this.value)">
-                            <option value="ongoing">공사 진행 중</option>
-                            <option value="scheduled">공사 착공 예정</option>
-                            <option value="designing">디자인 진행 중</option>
-                            <option value="pre-design">디자인 예정</option>
-                        </select>
-                    </div>
-                    <div class="col-12"><input type="text" id="f_siteName" class="form-control input-dark fw-bold" placeholder="상호명 / 현장 명칭 (필수 입력)"></div>
-                    <div class="col-6"><input type="text" id="f_date1" class="form-control input-dark"></div>
-                    <div class="col-6"><input type="text" id="f_date2" class="form-control input-dark"></div>
-                    <div class="col-6"><input type="text" id="f_site_manager" class="form-control input-dark" placeholder="담당 현장소장"></div>
-                    <div class="col-6"><input type="text" id="f_designer" class="form-control input-dark" placeholder="담당 디자이너"></div>
-                    <div id="ongoing_only" class="col-12"><input type="text" id="f_designer_sign" class="form-control input-dark" placeholder="싸인(간판) 담당 디자이너"></div>
-                    <div class="col-12"><textarea id="f_etc" class="form-control input-dark" rows="3" placeholder="기타 특이사항 및 메모"></textarea></div>
-                </div>
-                <div class="d-flex gap-2 mt-4">
-                    <button class="btn btn-secondary w-50 py-2 fw-bold" style="background:#4b5563; border:none;" data-bs-dismiss="modal">취소</button>
-                    <button class="btn btn-primary w-50 py-2 fw-bold" onclick="saveSiteData()">저장하기</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
 </div>
 
 <div id="addTaskModal">
     <div class="modal-box">
         <h5 class="fw-bold mb-3">새로운 마감 항목</h5>
-        <textarea id="newTaskInput" class="form-control input-dark py-3 mb-4 auto-resize-textarea" rows="1" placeholder="예: 거실 걸레받이 실리콘 마감" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'"></textarea>
+        <textarea id="newTaskInput" class="form-control input-dark py-3 mb-4 auto-resize-textarea" rows="1" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'"></textarea>
         <div class="d-flex gap-2">
-            <button class="btn btn-secondary py-2 w-50 fw-bold" style="background:#4b5563; border:none;" onclick="closePunchAddModal()">취소</button>
-            <button class="btn btn-primary py-2 w-50 fw-bold" style="background:var(--primary-accent); border:none;" onclick="saveNewPunchTask()">추가</button>
+            <button class="btn btn-secondary py-2 w-50 fw-bold" onclick="closePunchAddModal()">취소</button>
+            <button class="btn btn-primary py-2 w-50 fw-bold" onclick="saveNewPunchTask()">추가</button>
         </div>
     </div>
 </div>
@@ -446,50 +538,38 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
-
+    // ----------------------------------------------------
+    // 글로벌 변수 및 초기화
+    // ----------------------------------------------------
     let myEmail, myTeamId, userNickname = "관리자";
-    let isLoginMode = true;
-    let myRole = "member"; 
+    let isLoginMode = true; let myRole = "member"; 
     
-    let editingId = null;
-    let teamData = [ { teamName: "목공팀", workers: [] }, { teamName: "도장팀", workers: [] }, { teamName: "전기팀", workers: [] }, { teamName: "필름팀", workers: [] } ];
-
-    let currentSite = "";
-    let punchListListener = null;
-    let punchDetailListener = null;
-    
-    let globalPunchSites = []; 
-    let activePunchCardFilter = "전체";
-    let globalPunchItems = []; 
-    let activePunchFilter = "전체";
-
-    let t5EditingId = null; let calculatedData = null;
-    let siteEditingId = null; let siteModal;
-
-    document.addEventListener("DOMContentLoaded", function() { siteModal = new bootstrap.Modal(document.getElementById('siteModal')); });
-
-    function openSidebar() { document.getElementById('sidebar').classList.add('active'); document.getElementById('sidebarOverlay').classList.add('active'); }
-    function closeSidebar() { document.getElementById('sidebar').classList.remove('active'); document.getElementById('sidebarOverlay').classList.remove('active'); }
-
-    window.onload = () => { if(!history.state) history.replaceState({page: 'home'}, "", "#home"); };
-    window.addEventListener('popstate', (e) => {
-        if (currentSite !== "" && document.getElementById('view-detail').style.display === 'block') goBackToPunchList(false); 
-        else if (e.state && e.state.page) internalShowPage(e.state.page, document.querySelector(`.nav-link[onclick*="'${e.state.page}'"]`) || document.querySelectorAll('.nav-link')[0]);
-        else internalShowPage('home', document.querySelectorAll('.nav-link')[0]);
-    });
-
-    function showPage(pageId, el) { internalShowPage(pageId, el); history.pushState({ page: pageId }, "", `#${pageId}`); }
-
-    function internalShowPage(pageId, el) {
-        document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active')); document.getElementById('page-' + pageId).classList.add('active');
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active')); if(el) el.classList.add('active');
-        closeSidebar();
+    // UI & Navigation
+    function showPage(pageId, el) {
+        document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-' + pageId).classList.add('active');
+        if(el) { document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active')); el.classList.add('active'); }
+        document.getElementById('sidebar').classList.remove('active');
+        document.getElementById('sidebarOverlay').classList.remove('active');
+        
         if(pageId === 'team') checkTeamUI();
         if(pageId === 'profile') { document.getElementById('editNickname').value = userNickname; document.getElementById('editEmail').value = myEmail; }
         if(pageId === 'checklist') { goBackToPunchList(false); loadPunchSummaryCards(); }
     }
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('sidebarOverlay').classList.toggle('active');
+    }
+    window.onload = () => { if(!history.state) history.replaceState({page: 'home'}, "", "#home"); };
+    window.addEventListener('popstate', (e) => {
+        if (currentSite !== "" && document.getElementById('view-detail').style.display === 'block') goBackToPunchList(false); 
+        else if (e.state && e.state.page) showPage(e.state.page, document.querySelector(`.nav-link[onclick*="'${e.state.page}'"]`));
+        else showPage('home');
+    });
 
+    // ----------------------------------------------------
+    // Auth & Firebase Load
+    // ----------------------------------------------------
     auth.onAuthStateChanged(async user => {
         if (user) {
             myEmail = user.email; document.getElementById('auth-overlay').style.display = 'none';
@@ -498,484 +578,261 @@
             
             const q = await db.collection("teams").where("members", "array-contains", myEmail).get();
             if (!q.empty) { 
-                const tDoc = q.docs[0]; myTeamId = tDoc.id; 
-                const tData = tDoc.data();
-                
+                const tDoc = q.docs[0]; myTeamId = tDoc.id; const tData = tDoc.data();
                 if(tData.owner === myEmail || myEmail === "idong2300@naver.com") myRole = "owner";
                 else if(tData.admins && tData.admins.includes(myEmail)) myRole = "admin";
                 else myRole = "member";
+                document.getElementById('userRoleDisplay').innerText = myRole === "owner" ? "에디터 (최고권한)" : (myRole === "admin" ? "관리자" : "팀원");
 
-                let roleText = myRole === "owner" ? "에디터 (최고권한)" : (myRole === "admin" ? "관리자" : "팀원");
-                document.getElementById('userRoleDisplay').innerText = roleText;
-
-                if(!tData.inviteCode && myRole === "owner") {
-                    const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-                    await db.collection("teams").doc(myTeamId).update({ inviteCode: newCode });
-                }
-
-                loadHistory(); loadT5History(); renderAllTeams(); loadNotices(); loadAllStatusData();
+                // Initialize all modules
+                loadBoard();
+                loadGanttList();
+                loadWorklogs();
+                loadPunchSummaryCards();
+                loadT5History();
+                loadMemos();
+                loadLeaveData(tData);
             }
             checkTeamUI(); 
         } else { document.getElementById('auth-overlay').style.display = 'flex'; }
     });
 
-    /* =========================================
-       [모듈 1] 종합 상황판 & 공지사항
-    ========================================= */
-    function loadNotices() {
-        db.collection("notices").where("teamId", "==", myTeamId).orderBy("createdAt", "desc").onSnapshot(ss => {
-            const notices = ss.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            document.getElementById('mainNoticeDisplay').innerHTML = notices.length === 0 ? "등록된 공지가 없습니다." : notices.slice(0, 5).map(n => `• ${n.text}`).join('<br>');
-            document.getElementById('notice-list-container').innerHTML = notices.map(n => `
-                <div class="notice-item">
-                    <span class="notice-text">${n.text}</span>
-                    <div class="dropdown">
-                        <button class="btn btn-sm text-secondary border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark">
-                            <li><a class="dropdown-item text-primary" href="#" onclick="editNotice('${n.id}', '${n.text.replace(/'/g, "\\'")}')">수정</a></li>
-                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteNotice('${n.id}')">삭제</a></li>
-                        </ul>
-                    </div>
-                </div>
-            `).join('');
-        });
-    }
-    async function addNotice() { const input = document.getElementById('newNoticeInput'); if(!input.value.trim()) return; await db.collection("notices").add({ teamId: myTeamId, text: input.value.trim(), writer: userNickname, createdAt: Date.now() }); input.value = ''; }
-    async function editNotice(id, oldText) { const newText = prompt("수정할 내용을 입력하세요", oldText); if(newText) await db.collection("notices").doc(id).update({ text: newText.trim() }); }
-    async function deleteNotice(id) { if(confirm("삭제하시겠습니까?")) await db.collection("notices").doc(id).delete(); }
-
-    function loadAllStatusData() {
-        db.collection("site_status").where("teamId", "==", myTeamId).onSnapshot(ss => {
-            const data = ss.docs.map(doc => ({ id: doc.id, ...doc.data() })); data.sort((a,b) => a.createdAt - b.createdAt); renderAllSections(data);
-        });
-    }
-    function renderAllSections(data) {
-        const sections = [
-            { key: 'ongoing', icon: 'bi-tools', title: '공사 진행 중', h: '<tr><th style="width:18%;">현장명</th><th style="width:12%;">착공일</th><th style="width:12%;">예정준공일</th><th style="width:12%;">소장</th><th style="width:12%;">디자이너</th><th style="width:12%;">싸인</th><th>비고</th><th style="width:60px;"></th></tr>' },
-            { key: 'scheduled', icon: 'bi-calendar-event', title: '공사 착공 예정', h: '<tr><th style="width:20%;">상호명</th><th style="width:15%;">착공예정</th><th style="width:15%;">준공예정</th><th style="width:15%;">예상소장</th><th>비고</th><th style="width:60px;"></th></tr>' },
-            { key: 'designing', icon: 'bi-palette', title: '디자인 진행 중', h: '<tr><th style="width:20%;">상호명</th><th style="width:15%;">디자인마감</th><th style="width:15%;">착공예정</th><th style="width:15%;">디자이너</th><th>비고</th><th style="width:60px;"></th></tr>' },
-            { key: 'pre-design', icon: 'bi-pencil-square', title: '디자인 예정', h: '<tr><th style="width:25%;">상호명</th><th style="width:20%;">마감시기</th><th>비고</th><th style="width:60px;"></th></tr>' }
-        ];
-        document.getElementById('all-status-containers').innerHTML = sections.map(sec => {
-            const items = data.filter(d => d.status === sec.key);
-            let tableRows = items.length === 0 ? `<tr><td colspan="10" class="text-secondary py-4">등록된 데이터가 없습니다.</td></tr>` : items.map(item => `
-                <tr>
-                    <td class="fw-bold" style="color:var(--primary-accent);">${item.siteName}</td>
-                    <td>${item.date1 || '-'}</td>
-                    ${sec.key !== 'pre-design' ? `<td>${item.date2 || '-'}</td>` : ''}
-                    ${sec.key === 'ongoing' ? `<td>${item.site_manager || '-'}</td><td>${item.designer || '-'}</td><td>${item.designer_sign || '-'}</td>` : ''}
-                    ${sec.key === 'scheduled' ? `<td>${item.site_manager || '-'}</td>` : ''}
-                    ${sec.key === 'designing' ? `<td>${item.designer || '-'}</td>` : ''}
-                    <td class="text-secondary text-start ps-3">${item.etc || '-'}</td>
-                    <td><i class="bi bi-pencil-square text-primary cursor-pointer" onclick="openSiteEditModal('${item.id}')"></i></td>
-                </tr>
-            `).join('');
-            let cards = items.length === 0 ? `<p class="text-center text-secondary py-3 small" style="background:#1e222d; border-radius:12px;">등록된 데이터가 없습니다.</p>` : items.map(item => {
-                const btnHTML = `<div><button class="btn btn-sm text-primary p-1" onclick="openSiteEditModal('${item.id}')"><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm text-danger p-1" onclick="deleteSite('${item.id}')"><i class="bi bi-trash3"></i></button></div>`;
-                let etcHTML = '';
-                if(item.etc) {
-                    if(sec.key === 'pre-design') etcHTML = `<div class="text-secondary small mt-2 text-truncate">${item.etc}</div>`;
-                    else { const cid = `etc-${item.id}`; etcHTML = `<div class="mobile-etc-btn" data-bs-toggle="collapse" data-bs-target="#${cid}">기타 메모 확인 <i class="bi bi-chevron-down"></i></div><div class="collapse" id="${cid}"><div class="mobile-etc-content">${item.etc}</div></div>`; }
-                }
-                if(sec.key === 'ongoing') {
-                    return `<div class="mobile-site-card"><div class="mobile-card-header"><h6 class="mobile-card-title">${item.siteName}</h6><div class="d-flex align-items-center"><span class="mobile-card-date me-3">${item.date1 || '-'} ~ ${item.date2 || '-'}</span>${btnHTML}</div></div><div class="mobile-grid-3"><div><div class="mobile-grid-label">담당소장</div><div class="mobile-grid-val">${item.site_manager || '-'}</div></div><div><div class="mobile-grid-label">디자이너</div><div class="mobile-grid-val">${item.designer || '-'}</div></div><div><div class="mobile-grid-label">싸인담당</div><div class="mobile-grid-val">${item.designer_sign || '-'}</div></div></div>${etcHTML}</div>`;
-                } else if(sec.key === 'scheduled') {
-                    return `<div class="mobile-site-card"><div class="mobile-card-header"><h6 class="mobile-card-title">${item.siteName}</h6><div class="d-flex align-items-center"><span class="mobile-card-date me-3">예상소장: <span class="text-white">${item.site_manager || '-'}</span></span>${btnHTML}</div></div><div class="text-center" style="background: rgba(0,0,0,0.25); padding: 10px; border-radius: 8px; font-size: 0.85rem;"><span class="text-secondary me-1">착공예정</span> <span class="text-white fw-bold me-3">${item.date1 || '-'}</span><span class="text-secondary me-1">준공예정</span> <span class="text-white fw-bold">${item.date2 || '-'}</span></div>${etcHTML}</div>`;
-                } else if(sec.key === 'designing') {
-                    return `<div class="mobile-site-card"><div class="mobile-card-header"><h6 class="mobile-card-title">${item.siteName}</h6><div class="d-flex align-items-center"><span class="mobile-card-date me-3">디자이너: <span class="text-white">${item.designer || '-'}</span></span>${btnHTML}</div></div><div class="mobile-grid-2"><div><div class="mobile-grid-label">디자인 마감일</div><div class="mobile-grid-val">${item.date1 || '-'}</div></div><div><div class="mobile-grid-label">착공 예정일</div><div class="mobile-grid-val">${item.date2 || '-'}</div></div></div>${etcHTML}</div>`;
-                } else {
-                    return `<div class="mobile-site-card"><div class="mobile-card-header mb-1"><h6 class="mobile-card-title">${item.siteName}</h6><div class="d-flex align-items-center"><span class="mobile-card-date me-3">마감: <span class="text-white">${item.date1 || '-'}</span></span>${btnHTML}</div></div>${etcHTML}</div>`;
-                }
-            }).join('');
-            return `<div class="mb-5"><div class="d-flex justify-content-between align-items-center mb-3"><h5 class="fw-bold m-0"><i class="bi ${sec.icon} me-2 text-primary"></i>${sec.title} <span class="badge rounded-pill bg-dark ms-2" style="font-size:0.7rem;">${items.length}건</span></h5><button class="btn btn-sm btn-outline-success px-3 fw-bold" onclick="openSiteAddModal('${sec.key}')">+ 추가</button></div><div class="d-none d-md-block t5-card p-0 overflow-hidden"><table class="status-table"><thead>${sec.h}</thead><tbody>${tableRows}</tbody></table></div><div class="d-md-none">${cards}</div></div>`;
-        }).join('');
-    }
-
-    function openSiteAddModal(targetStatus = 'ongoing') { siteEditingId = null; document.getElementById('modalTitle').innerText = "신규 현장 등록"; document.getElementById('siteForm').querySelectorAll('input, textarea').forEach(i => i.value = ''); document.getElementById('f_status').value = targetStatus; toggleSiteFormFields(targetStatus); siteModal.show(); }
-    async function openSiteEditModal(id) { siteEditingId = id; document.getElementById('modalTitle').innerText = "데이터 수정 및 단계 변경"; const d = (await db.collection("site_status").doc(id).get()).data(); document.getElementById('f_status').value = d.status; document.getElementById('f_siteName').value = d.siteName; document.getElementById('f_date1').value = d.date1 || ''; document.getElementById('f_date2').value = d.date2 || ''; document.getElementById('f_site_manager').value = d.site_manager || ''; document.getElementById('f_designer').value = d.designer || ''; document.getElementById('f_designer_sign').value = d.designer_sign || ''; document.getElementById('f_etc').value = d.etc || ''; toggleSiteFormFields(d.status); siteModal.show(); }
-    function handleStatusChange(val) { document.getElementById('f_date1').value = ''; document.getElementById('f_date2').value = ''; document.getElementById('f_site_manager').value = ''; document.getElementById('f_designer').value = ''; document.getElementById('f_designer_sign').value = ''; toggleSiteFormFields(val); }
-    function toggleSiteFormFields(val) { const d1 = document.getElementById('f_date1'), d2 = document.getElementById('f_date2'), siteM = document.getElementById('f_site_manager'), desM = document.getElementById('f_designer'), signM = document.getElementById('ongoing_only'); if(val === 'ongoing') { d1.placeholder = "착공일"; d2.placeholder = "준공예정일"; siteM.parentElement.style.display = 'block'; desM.parentElement.style.display = 'block'; signM.style.display = 'block'; } else if(val === 'scheduled') { d1.placeholder = "착공예정"; d2.placeholder = "준공예정"; siteM.parentElement.style.display = 'block'; desM.parentElement.style.display = 'none'; signM.style.display = 'none'; } else if(val === 'designing') { d1.placeholder = "디자인마감"; d2.placeholder = "착공예정"; siteM.parentElement.style.display = 'none'; desM.parentElement.style.display = 'block'; signM.style.display = 'none'; } else { d1.placeholder = "마감시기 (예: 4월 말)"; d2.style.display = 'none'; siteM.parentElement.style.display = 'none'; desM.parentElement.style.display = 'none'; signM.style.display = 'none'; } }
-    async function saveSiteData() { const data = { teamId: myTeamId, status: document.getElementById('f_status').value, siteName: document.getElementById('f_siteName').value.trim(), date1: document.getElementById('f_date1').value, date2: document.getElementById('f_date2').value, site_manager: document.getElementById('f_site_manager').value, designer: document.getElementById('f_designer').value, designer_sign: document.getElementById('f_designer_sign').value, etc: document.getElementById('f_etc').value, updatedAt: Date.now() }; if(!data.siteName) return alert("현장명을 입력해주세요."); if(siteEditingId) await db.collection("site_status").doc(siteEditingId).update(data); else await db.collection("site_status").add({ ...data, createdAt: Date.now() }); siteModal.hide(); }
-    async function deleteSite(id) { if(confirm("삭제하시겠습니까?")) await db.collection("site_status").doc(id).delete(); }
-
-    /* =========================================
-       [모듈 2] 작업일보 (개방형 스마트 이름표 적용)
-    ========================================= */
-    function renderAllTeams() {
-        const container = document.getElementById('team-container'); const monthVal = document.getElementById('logMonth').value || "2026-04"; const [year, month] = monthVal.split('-').map(Number); const lastDay = new Date(year, month, 0).getDate();
-        container.innerHTML = teamData.map((team, tIdx) => {
-            let teamTotal = 0; const tables = team.workers.map((w, wIdx) => {
-                let pSum = 0; Object.values(w.days).forEach(v => pSum += parseFloat(v || 0)); teamTotal += pSum;
-                return `<table class="excel-table"><tr class="date-row"><td rowspan="4" class="name-cell"><input type="text" class="name-input" value="${w.name}" onchange="updateWorkerName(${tIdx}, ${wIdx}, this.value)" placeholder="이름입력"><br><button onclick="removeWorker(${tIdx}, ${wIdx})" class="btn btn-danger btn-sm p-0 px-2 mt-2" style="font-size:0.6rem;">삭제</button></td>${loopDays(year, month, 1, 16, 'date')}</tr><tr>${loopDays(year, month, 1, 16, 'input', tIdx, wIdx)}</tr><tr class="date-row">${loopDays(year, month, 17, 31, 'date', 0, 0, lastDay)}<td style="background:#1e222d;">계</td></tr><tr>${loopDays(year, month, 17, 31, 'input', tIdx, wIdx, lastDay)}<td class="fw-bold" style="color:var(--primary-accent);">${pSum % 1 === 0 ? pSum : pSum.toFixed(1)}</td></tr></table>`;
-            }).join('');
-            return `<div class="mb-5"><div class="d-flex justify-content-between align-items-center mb-2"><h6 class="m-0 fw-bold">${team.teamName}</h6><button onclick="addWorker(${tIdx})" class="t5-btn-small px-3">+</button></div>${tables}<div class="text-end small text-secondary">공정 소계: <b>${teamTotal.toFixed(1)}</b></div></div>`;
-        }).join(''); bindLongPress();
-    }
-    function loopDays(y, m, start, end, type, tIdx, wIdx, lastDay = 31) { let html = ""; for (let d = start; d <= end; d++) { const isInvalid = d > lastDay; if (type === 'date') { if (isInvalid) html += `<td></td>`; else { const dayOfWeek = new Date(y, m - 1, d).getDay(); let color = (dayOfWeek === 0) ? "color: #ef4444;" : (dayOfWeek === 6) ? "color: #5c7cfa;" : ""; html += `<td style="${color}">${d}</td>`; } } else { if (isInvalid) html += `<td style="background:#131722;"></td>`; else { const val = teamData[tIdx].workers[wIdx].days[d] || ""; let c = (val) ? (parseFloat(val)>2 ? "g-red" : parseFloat(val)>1 ? "g-yellow" : "g-green") : ""; html += `<td class="gongsu-cell ${c}" data-t="${tIdx}" data-w="${wIdx}" data-d="${d}" onclick="handleCellClick(this)">${val}</td>`; } } } return html; }
-    function handleCellClick(el) { const { t, w, d } = el.dataset; teamData[t].workers[w].days[d] = (teamData[t].workers[w].days[d] == 1 ? "" : 1); renderAllTeams(); }
-    function bindLongPress() { document.querySelectorAll('.gongsu-cell').forEach(cell => { let timer; cell.onmousedown = cell.ontouchstart = () => timer = setTimeout(() => { const { t, w, d } = cell.dataset; const input = prompt(`${teamData[t].workers[w].name || '작업자'} - ${d}일 공수`, teamData[t].workers[w].days[d]); if (input !== null) { teamData[t].workers[w].days[d] = input; renderAllTeams(); } }, 700); cell.onmouseup = cell.ontouchend = () => clearTimeout(timer); }); }
-    function addTeam() { const n = prompt("공정명"); if(n) { teamData.push({teamName:n, workers:[]}); renderAllTeams(); } }
-    function addWorker(tIdx) { teamData[tIdx].workers.push({name:"", days:{}}); renderAllTeams(); }
-    function updateWorkerName(tIdx, wIdx, val) { teamData[tIdx].workers[wIdx].name = val; }
-    function removeWorker(tIdx, wIdx) { if(confirm("삭제?")) { teamData[tIdx].workers.splice(wIdx, 1); renderAllTeams(); } }
-    
-    // [수정: 개방형 데이터 업데이트 로직]
-    async function saveMonthlyLog() { 
-        const month = document.getElementById('logMonth').value, site = document.getElementById('siteName').value.trim(); 
-        if(!site) return alert("현장명 필수!"); 
-        
-        if(editingId) {
-            const data = { month, site, teamData, updatedAt: Date.now(), lastModifier: userNickname }; 
-            await db.collection("monthly_logs").doc(editingId).update(data); 
-        } else {
-            const data = { teamId: myTeamId, month, site, teamData, updatedAt: Date.now(), originalWriter: userNickname, writer: userNickname }; 
-            await db.collection("monthly_logs").add(data); 
-        }
-        alert("저장 완료"); location.reload(); 
-    }
-    
-    // [수정: 개방형 버튼 & 스마트 이름표 렌더링 로직]
-    function loadHistory() { 
-        db.collection("monthly_logs").where("teamId","==", myTeamId).orderBy("updatedAt","desc").limit(10).onSnapshot(ss => { 
-            document.getElementById('history-list').innerHTML = ss.docs.map(doc => { 
-                const d = doc.data(); 
-                
-                // 투명 망토(권한 체크) 제거 -> 모두에게 개방
-                let buttonsHTML = `<button class="t5-btn-small bg-secondary text-white" onclick="editLog('${doc.id}')">수정</button>
-                                   <button class="t5-btn-small" style="background:var(--primary-accent); color:white;" onclick="copyLog('${doc.id}')">복사</button>
-                                   <button class="t5-btn-small bg-success text-white" onclick="exportToExcel('${doc.id}')">엑셀</button>
-                                   <button class="t5-btn-small bg-danger text-white" onclick="deleteLog('${doc.id}')">삭제</button>`;
-
-                // 스마트 이름표 로직
-                let origWriter = d.originalWriter || d.writer || '관리자';
-                let writerDisplay = `작성: ${origWriter}`;
-                if (d.lastModifier && d.lastModifier !== origWriter) {
-                    writerDisplay += ` / 최근수정: ${d.lastModifier}`;
-                }
-
-                return `<div class="col-md-6"><div class="t5-card p-3 d-flex justify-content-between align-items-center m-0"><div><small style="color:var(--primary-accent);">${d.month}</small><br><b class="fs-6">${d.site}</b><br><span class="small text-secondary" style="font-size:0.7rem;"><i class="bi bi-person-fill"></i> ${writerDisplay}</span></div><div class="d-flex gap-1 flex-wrap justify-content-end" style="max-width: 60%;">${buttonsHTML}</div></div></div>`; 
-            }).join('') || '<p class="text-secondary small ms-2">기록 없음</p>'; 
-        }); 
-    }
-    
-    async function editLog(id) { const d = (await db.collection("monthly_logs").doc(id).get()).data(); editingId = id; document.getElementById('logMonth').value = d.month; document.getElementById('siteName').value = d.site; teamData = d.teamData; showPage('worklog', document.querySelectorAll('.nav-link')[2]); renderAllTeams(); window.scrollTo({ top: 0, behavior: 'smooth' });}
-    async function copyLog(id) { const d = (await db.collection("monthly_logs").doc(id).get()).data(); editingId = null; document.getElementById('logMonth').value = d.month; document.getElementById('siteName').value = d.site + " (복사)"; teamData = d.teamData; showPage('worklog', document.querySelectorAll('.nav-link')[2]); renderAllTeams(); alert("데이터가 복사되었습니다."); window.scrollTo({ top: 0, behavior: 'smooth' });}
-    async function deleteLog(id) { if(confirm("이 작업일보를 완전히 삭제할까요?")) { await db.collection("monthly_logs").doc(id).delete(); alert("삭제되었습니다."); } }
-
-    /* =========================================
-       [모듈 3] 마감 펀치리스트
-    ========================================= */
-    function loadPunchSummaryCards() {
-        if(!myTeamId) return;
-        if(punchListListener) punchListListener(); 
-        punchListListener = db.collection("punch_lists").where("teamId", "==", myTeamId).onSnapshot(ss => {
-                let sitesData = {}; ss.docs.forEach(doc => { const d = doc.data(); if(!sitesData[d.siteName]) sitesData[d.siteName] = { total: 0, done: 0, lastAt: 0, writer: d.writer }; sitesData[d.siteName].total++; if(d.done) sitesData[d.siteName].done++; if(d.createdAt > sitesData[d.siteName].lastAt) { sitesData[d.siteName].lastAt = d.createdAt; sitesData[d.siteName].writer = d.writer; } });
-                globalPunchSites = Object.keys(sitesData).map(key => ({ name: key, ...sitesData[key] })).sort((a, b) => b.lastAt - a.lastAt);
-                renderPunchCardFilterAndList();
-            });
-    }
-
-    function renderPunchCardFilterAndList() {
-        const writers = ["전체", ...new Set(globalPunchSites.map(s => s.writer).filter(Boolean))];
-        document.getElementById('punch-card-filter').innerHTML = writers.map(w => `
-            <button class="btn btn-sm ${w === activePunchCardFilter ? 'btn-primary' : 'btn-outline-secondary border-secondary text-secondary'} rounded-pill px-3 text-nowrap" onclick="setPunchCardFilter('${w}')">${w}</button>
-        `).join('');
-
-        const filteredSites = activePunchCardFilter === "전체" ? globalPunchSites : globalPunchSites.filter(s => s.writer === activePunchCardFilter);
-        renderPunchSummaryCards(filteredSites);
-    }
-
-    function setPunchCardFilter(writer) {
-        activePunchCardFilter = writer;
-        renderPunchCardFilterAndList();
-    }
-
-    function renderPunchSummaryCards(sites) {
-        const container = document.getElementById('punch-history-list');
-        if(sites.length === 0) return container.innerHTML = '<p class="text-secondary small ms-2">해당 작업자의 마감 현장이 없습니다.</p>';
-        container.innerHTML = sites.map(s => {
-            const pct = s.total === 0 ? 0 : Math.round((s.done / s.total) * 100); const barColor = pct === 100 ? 'var(--success-btn)' : 'var(--primary-accent)';
-            return `<div class="col-md-6 col-lg-4"><div class="summary-card" onclick="openDetailView('${s.name}')"><button class="summary-del-btn" onclick="event.stopPropagation(); deleteEntirePunchSite('${s.name}')"><i class="bi bi-trash3-fill"></i> 삭제</button><h6 class="fw-bold text-white mb-1">${s.name}</h6><p class="small text-secondary mb-3"><i class="bi bi-person-fill"></i> 최근 작업: ${s.writer}</p><div class="d-flex justify-content-between align-items-end mb-1"><span class="small" style="color:#adb5bd; font-size:0.75rem;">진행률 ${pct}%</span><span class="small text-secondary" style="font-size:0.7rem;">${s.done} / ${s.total}</span></div><div class="progress-container"><div class="progress-fill" style="width: ${pct}%; background: ${barColor};"></div></div></div></div>`;
-        }).join('');
-    }
-
-    async function deleteEntirePunchSite(siteName) {
-        if(confirm(`정말 '${siteName}' 현장의 체크리스트를 통째로 삭제하시겠습니까?`)) {
-            const qs = await db.collection("punch_lists").where("teamId", "==", myTeamId).where("siteName", "==", siteName).get();
-            const batch = db.batch(); qs.forEach(doc => batch.delete(doc.ref)); await batch.commit();
-        }
-    }
-
-    function createOrLoadSite() { const val = document.getElementById('searchSiteInput').value.trim(); if(!val) return alert("현장명을 입력해주세요."); openDetailView(val); }
-
-    function openDetailView(siteName) {
-        currentSite = siteName; document.getElementById('view-list').style.display = 'none'; document.getElementById('view-detail').style.display = 'block';
-        document.getElementById('detailSiteName').innerText = siteName; activePunchFilter = "전체";
-        history.pushState({ page: 'checklist_detail', site: siteName }, "", `#checklist_detail`);
-        loadDetailChecklist(siteName);
-    }
-
-    function goBackToPunchList(pushHist = true) {
-        if(punchDetailListener) punchDetailListener(); currentSite = ""; document.getElementById('searchSiteInput').value = "";
-        document.getElementById('view-detail').style.display = 'none'; document.getElementById('view-list').style.display = 'block';
-        if(pushHist) history.pushState({ page: 'checklist' }, "", `#checklist`);
-    }
-
-    async function editPunchlistTitle() {
-        const newTitle = prompt("새로운 현장명을 입력하세요", currentSite);
-        if(!newTitle || newTitle === currentSite) return;
-        const qs = await db.collection("punch_lists").where("teamId", "==", myTeamId).where("siteName", "==", currentSite).get();
-        const batch = db.batch(); qs.forEach(doc => batch.update(doc.ref, {siteName: newTitle})); await batch.commit();
-        alert("현장명이 일괄 수정되었습니다.");
-        document.getElementById('detailSiteName').innerText = newTitle; currentSite = newTitle;
-        history.replaceState({ page: 'checklist_detail', site: newTitle }, "", `#checklist_detail`);
-        loadDetailChecklist(newTitle); 
-    }
-
-    function loadDetailChecklist(siteName) {
-        if(punchDetailListener) punchDetailListener();
-        punchDetailListener = db.collection("punch_lists").where("teamId", "==", myTeamId).where("siteName", "==", siteName).onSnapshot(ss => {
-                globalPunchItems = ss.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                globalPunchItems.sort((a, b) => { if (a.done === b.done) return b.createdAt - a.createdAt; return a.done ? 1 : -1; });
-                renderPunchFilterAndList(); 
-            });
-    }
-
-    function renderPunchFilterAndList() {
-        const writers = ["전체", ...new Set(globalPunchItems.map(i => i.writer))];
-        document.getElementById('punch-filter-container').innerHTML = writers.map(w => `
-            <button class="btn btn-sm ${w === activePunchFilter ? 'btn-primary' : 'btn-outline-secondary border-secondary text-secondary'} rounded-pill px-3 text-nowrap" onclick="setPunchFilter('${w}')">${w}</button>
-        `).join('');
-
-        const filteredItems = activePunchFilter === "전체" ? globalPunchItems : globalPunchItems.filter(i => i.writer === activePunchFilter);
-        const total = globalPunchItems.length; const doneCount = globalPunchItems.filter(i => i.done).length; const pct = total === 0 ? 0 : Math.round((doneCount / total) * 100);
-        document.getElementById('detailProgressText').innerText = total === 0 ? "0% (0/0)" : `${pct}% (${doneCount}/${total})`;
-        document.getElementById('detailProgressBar').style.width = pct + '%'; document.getElementById('detailProgressBar').style.background = pct === 100 ? 'var(--success-btn)' : 'var(--primary-accent)';
-
-        renderDetailList(filteredItems);
-    }
-
-    function setPunchFilter(writer) { activePunchFilter = writer; renderPunchFilterAndList(); }
-
-    function renderDetailList(items) {
-        const container = document.getElementById('checklist-container');
-        if(items.length === 0) return container.innerHTML = '<div class="text-center p-5 text-secondary"><p>마감 항목이 없습니다.</p></div>';
-        container.innerHTML = items.map(item => `
-            <div class="check-item ${item.done ? 'completed' : ''}">
-                <input type="checkbox" class="custom-check" ${item.done ? 'checked' : ''} onclick="togglePunchTask('${item.id}', ${item.done})">
-                <textarea class="item-text-area" rows="1" onchange="updatePunchText('${item.id}', this.value)" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'" ${item.done ? 'readonly' : ''}>${item.text}</textarea>
-                <i class="bi bi-x-lg btn-del" onclick="deletePunchTask('${item.id}')"></i>
-            </div>`).join('');
-        document.querySelectorAll('.item-text-area').forEach(el => { el.style.height = el.scrollHeight + 'px'; });
-    }
-
-    function openPunchAddModal() { document.getElementById('addTaskModal').style.display = 'flex'; const input = document.getElementById('newTaskInput'); input.value = ''; input.style.height = '48px'; input.focus(); }
-    function closePunchAddModal() { document.getElementById('addTaskModal').style.display = 'none'; }
-    async function saveNewPunchTask() { const text = document.getElementById('newTaskInput').value.trim(); if(!text) return alert("내용을 입력해주세요."); await db.collection("punch_lists").add({ teamId: myTeamId, siteName: currentSite, text: text, done: false, writer: userNickname, createdAt: Date.now() }); closePunchAddModal(); }
-    async function togglePunchTask(id, currentStatus) { await db.collection("punch_lists").doc(id).update({ done: !currentStatus }); }
-    async function updatePunchText(id, newText) { await db.collection("punch_lists").doc(id).update({ text: newText }); }
-    async function deletePunchTask(id) { if(confirm("항목을 지울까요?")) await db.collection("punch_lists").doc(id).delete(); }
-
-    /* =========================================
-       [모듈 4] T5 계산기
-    ========================================= */
-    function toggleT5Specs() { const el = document.getElementById('t5-spec-container'); el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
-    function addNewSpec() { let n = prompt("규격 명칭(예: 1500)"); if(!n) return; let a = prompt(n+"용 실제 치수(mm)"); if(!a) return; let div = document.createElement('div'); div.className = "col-4 col-md-auto spec-item position-relative"; div.innerHTML = `<label class="small text-secondary mb-1">${n}용</label><input type="number" class="form-control input-dark text-center p-1 fs-6 spec-actual" data-nominal="${n}" value="${a}"><button class="btn btn-sm btn-danger position-absolute top-0 end-0 p-0" style="width:20px;height:20px;font-size:10px;" onclick="this.parentElement.remove()">X</button>`; document.getElementById('t5-spec-list').appendChild(div); }
-    function addT5Row() { const div = document.createElement('div'); div.className = "row g-2 mb-2 t5-row-item"; div.innerHTML = `<div class="col-6"><input type="text" class="form-control input-dark t5-section-name" placeholder="구간"></div><div class="col-6"><input type="number" class="form-control input-dark t5-length-val" placeholder="길이"></div>`; document.getElementById('t5-input-container').appendChild(div); }
-
-    function calculateT5Only() {
-        const site = document.getElementById('t5-site-title').value.trim() || "미지정 현장"; const rows = document.querySelectorAll('.t5-row-item');
-        let specEls = document.querySelectorAll('.spec-actual'); let specs = []; specEls.forEach(el => specs.push({ n: el.getAttribute('data-nominal'), a: parseInt(el.value) || 0 })); specs.sort((a,b) => b.a - a.a);
-        let sectionRes = [], totalCounts = {}, rowsData = [];
-        rows.forEach(row => {
-            const name = row.querySelector('.t5-section-name').value || "구간"; const len = parseInt(row.querySelector('.t5-length-val').value) || 0; if(len <= 0) return;
-            rowsData.push({ section: name, length: len }); let remain = len - 50, lineArr = [], sumA = 0;
-            specs.forEach(s => { let q = Math.floor(remain / s.a); if(q>0) { lineArr.push(`${s.n}-${q}개`); totalCounts[s.n] = (totalCounts[s.n]||0)+q; remain -= (q*s.a); sumA += (q*s.a); } });
-            sectionRes.push({ name, result: lineArr.join(', '), gap: len - sumA });
-        });
-        if(sectionRes.length === 0) return alert("길이 입력 필요");
-        let totalSum = []; Object.keys(totalCounts).sort((a,b)=>b-a).forEach(k => totalSum.push(`${k}-${totalCounts[k]}개`));
-        calculatedData = { siteName: site, rows: rowsData, resultText: totalSum.join(' / ') };
-        document.getElementById('res-site-display').innerText = `📍 ${site}`;
-        document.getElementById('res-list-container').innerHTML = sectionRes.map(r => `<div class="mb-2"><div class="small text-secondary border-bottom border-secondary border-opacity-25 pb-1">• ${r.name}: ${r.result}</div><div class="res-gap ms-2">ㄴ 여유: ${r.gap}mm (50mm 이상 확보)</div></div>`).join('');
-        document.getElementById('res-total-summary').innerText = calculatedData.resultText;
-        document.getElementById('t5-temp-result').style.display = 'block'; document.getElementById('t5-save-btn').style.display = 'block';
-    }
-
-    async function saveT5ToHistory() {
-        if(!calculatedData) return;
-        const data = { teamId: myTeamId, siteName: calculatedData.siteName, resultText: calculatedData.resultText, rows: calculatedData.rows, writer: userNickname, updatedAt: Date.now() };
-        if (t5EditingId) { await db.collection("t5_logs").doc(t5EditingId).update(data); alert("덮어쓰기 완료!"); } 
-        else { data.createdAt = Date.now(); await db.collection("t5_logs").add(data); alert("저장 완료!"); }
-        location.reload();
-    }
-
-    function loadT5History() {
-        db.collection("t5_logs").where("teamId","==", myTeamId).orderBy("updatedAt","desc").limit(20).onSnapshot(ss => {
-            document.getElementById('t5-history-list').innerHTML = ss.docs.map(doc => {
-                const d = doc.data(); const isOwner = (d.writer === userNickname || myRole === "owner"); 
-                let modifyBtns = isOwner ? `<button class="t5-btn-small bg-secondary text-white" style="flex:1;" onclick="editT5Log('${doc.id}')">수정</button>` : '';
-                modifyBtns += `<button class="t5-btn-small bg-primary text-white" style="flex:1;" onclick="copyAndNewT5Log('${doc.id}')">복사</button>
-                               <button class="t5-btn-small bg-success text-white" style="flex:1;" onclick="copyT5Order('${d.siteName}', '${d.resultText}')">발주용</button>`;
-                if(isOwner) modifyBtns += `<button class="t5-btn-small bg-danger text-white" style="flex:1;" onclick="deleteT5Log('${doc.id}')">삭제</button>`;
-                
-                return `<div class="history-card"><div class="history-author"><i class="bi bi-person-fill"></i> ${d.writer}</div><h6 class="fw-bold text-white mb-2">${d.siteName}</h6><p class="text-secondary small mb-3">${d.resultText}</p><div class="d-flex gap-2 flex-wrap">${modifyBtns}</div></div>`;
-            }).join('') || '<p class="text-secondary small ms-2">내역 없음</p>';
-        });
-    }
-
-    async function editT5Log(id) { const d = (await db.collection("t5_logs").doc(id).get()).data(); t5EditingId = id; document.getElementById('t5-site-title').value = d.siteName; const container = document.getElementById('t5-input-container'); container.innerHTML = ''; d.rows.forEach(r => { let div = document.createElement('div'); div.className = "row g-2 mb-2 t5-row-item"; div.innerHTML = `<div class="col-6"><input type="text" class="form-control input-dark t5-section-name" value="${r.section}"></div><div class="col-6"><input type="number" class="form-control input-dark t5-length-val" value="${r.length}"></div>`; container.appendChild(div); }); showPage('t5', document.querySelectorAll('.nav-link')[4]); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-    async function copyAndNewT5Log(id) { const d = (await db.collection("t5_logs").doc(id).get()).data(); t5EditingId = null; document.getElementById('t5-site-title').value = d.siteName + " (복사)"; const container = document.getElementById('t5-input-container'); container.innerHTML = ''; d.rows.forEach(r => { let div = document.createElement('div'); div.className = "row g-2 mb-2 t5-row-item"; div.innerHTML = `<div class="col-6"><input type="text" class="form-control input-dark t5-section-name" value="${r.section}"></div><div class="col-6"><input type="number" class="form-control input-dark t5-length-val" value="${r.length}"></div>`; container.appendChild(div); }); showPage('t5', document.querySelectorAll('.nav-link')[4]); alert("데이터가 복사되었습니다."); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-    function copyT5Order(site, text) { const fmt = site + '\n' + text.split(' / ').join('\n'); const t = document.createElement("textarea"); document.body.appendChild(t); t.value = fmt; t.select(); document.execCommand('copy'); document.body.removeChild(t); alert("복사 완료!\n\n" + fmt); }
-    async function deleteT5Log(id) { if(confirm("삭제할까요?")) await db.collection("t5_logs").doc(id).delete(); }
-
-    /* =========================================
-       [모듈 5] 팀원 관리 & 프로필 & 기타
-    ========================================= */
-    function checkTeamUI() {
-        if(myTeamId) { document.getElementById('no-team-section').style.display = 'none'; document.getElementById('has-team-section').style.display = 'block'; loadTeamMembers(); } 
-        else { document.getElementById('no-team-section').style.display = 'block'; document.getElementById('has-team-section').style.display = 'none'; }
-    }
-
-    async function joinTeam() {
-        const code = document.getElementById('joinTeamId').value.trim().toUpperCase(); if(!code) return alert("6자리 참가 코드를 입력해주세요.");
-        try {
-            const q = await db.collection("teams").where("inviteCode", "==", code).get();
-            if(q.empty) return alert("유효하지 않거나 만료된 참가 코드입니다.");
-            
-            const tid = q.docs[0].id;
-            let members = q.docs[0].data().members || [];
-            if(!members.includes(myEmail)) { members.push(myEmail); await db.collection("teams").doc(tid).update({ members: members }); alert("팀 합류 성공!"); location.reload(); } 
-            else { alert("이미 소속된 팀입니다."); }
-        } catch(e) { alert("오류: " + e.message); }
-    }
-
-    async function createTeam() {
-        if(confirm("최고 책임자(에디터)로서 새 팀을 개설하시겠습니까?")) { 
-            try { 
-                const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-                await db.collection("teams").add({ createdAt: Date.now(), members: [myEmail], owner: myEmail, admins: [], inviteCode: newCode }); 
-                alert("팀이 성공적으로 개설되었습니다!"); location.reload(); 
-            } catch(e) { alert("오류: " + e.message); } 
-        }
-    }
-
-    async function regenerateInviteCode() {
-        if(confirm("새 코드를 발급하면 기존 코드는 즉시 무효화됩니다. 계속하시겠습니까?")) {
-            const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-            await db.collection("teams").doc(myTeamId).update({ inviteCode: newCode });
-            document.getElementById('displayTeamId').value = newCode;
-            alert("새로운 참가 코드가 발급되었습니다!");
-        }
-    }
-
-    async function loadTeamMembers() {
-        if(!myTeamId) return;
-        const tDoc = await db.collection("teams").doc(myTeamId).get();
-        const tData = tDoc.data();
-        const members = tData.members || [];
-        
-        if(myRole === "owner" || myRole === "admin") document.getElementById('btnRegenCode').style.display = 'inline-block';
-        else document.getElementById('btnRegenCode').style.display = 'none';
-
-        document.getElementById('displayTeamId').value = tData.inviteCode || '발급필요';
-
-        const memberPromises = members.map(async mEmail => {
-            let nick = "이름미상";
-            try { const uDoc = await db.collection("users").doc(mEmail).get(); if(uDoc.exists) nick = uDoc.data().nickname; } catch(e){}
-            return { email: mEmail, nick: nick };
-        });
-        const memberData = await Promise.all(memberPromises);
-
-        document.getElementById('member-list').innerHTML = memberData.map(m => {
-            let badge = "", actionBtn = "";
-            let isOwner = (tData.owner === m.email || m.email === "idong2300@naver.com");
-            let isAdmin = (tData.admins && tData.admins.includes(m.email));
-
-            if(isOwner) badge = `<span class="badge bg-warning text-dark">에디터</span>`;
-            else if(isAdmin) {
-                badge = `<span class="badge bg-primary">관리자</span>`;
-                if(myRole === "owner") {
-                    actionBtn = `<button class="btn btn-sm btn-outline-secondary py-0 me-2" onclick="toggleAdmin('${m.email}', false)">관리자 해제</button>
-                                 <button class="btn btn-sm btn-outline-danger py-0" onclick="kickMember('${m.email}')">삭제</button>`;
-                }
-            }
-            else {
-                badge = `<span class="badge bg-secondary">팀원</span>`;
-                if(myRole === "owner") {
-                    actionBtn = `<button class="btn btn-sm btn-outline-info py-0 me-2" onclick="toggleAdmin('${m.email}', true)">관리자 임명</button>
-                                 <button class="btn btn-sm btn-outline-danger py-0" onclick="kickMember('${m.email}')">삭제</button>`;
-                } else if(myRole === "admin") {
-                    actionBtn = `<button class="btn btn-sm btn-outline-danger py-0" onclick="kickMember('${m.email}')">삭제</button>`;
-                }
-            }
-
-            return `<div class="list-group-item bg-transparent text-white border-secondary border-opacity-25 py-3 d-flex flex-column gap-2 flex-md-row justify-content-md-between align-items-md-center">
-                <div class="d-flex align-items-center flex-wrap gap-2">
-                    ${badge} <span class="fw-bold">${m.nick}</span> <span class="small text-secondary">(${m.email})</span>
-                </div>
-                <div class="text-end">${actionBtn}</div>
-            </div>`;
-        }).join('');
-    }
-
-    async function kickMember(targetEmail) {
-        if(confirm(`${targetEmail}님을 팀에서 정말 내보내시겠습니까?`)) {
-            const tDoc = await db.collection("teams").doc(myTeamId).get();
-            let members = tDoc.data().members.filter(m => m !== targetEmail);
-            let admins = (tDoc.data().admins || []).filter(a => a !== targetEmail);
-            await db.collection("teams").doc(myTeamId).update({ members: members, admins: admins });
-            loadTeamMembers(); alert("팀원이 삭제되었습니다.");
-        }
-    }
-
-    async function toggleAdmin(targetEmail, isPromoting) {
-        const tDoc = await db.collection("teams").doc(myTeamId).get();
-        let admins = tDoc.data().admins || [];
-        if(isPromoting) { if(!admins.includes(targetEmail)) admins.push(targetEmail); }
-        else { admins = admins.filter(a => a !== targetEmail); }
-        await db.collection("teams").doc(myTeamId).update({ admins: admins });
-        loadTeamMembers();
-    }
-
-    async function updateProfile() {
-        const newNick = document.getElementById('editNickname').value.trim(); if(!newNick) return alert("닉네임을 입력하세요.");
-        await db.collection("users").doc(myEmail).update({ nickname: newNick }); alert("수정되었습니다. 새로고침 후 반영됩니다."); location.reload();
-    }
-
-    async function changePassword() {
-        const pw = document.getElementById('newPasswordInput').value;
-        if(pw.length < 6) return alert("비밀번호는 6자리 이상이어야 합니다.");
-        try {
-            await auth.currentUser.updatePassword(pw);
-            alert("비밀번호가 성공적으로 변경되었습니다.");
-            document.getElementById('newPasswordInput').value = '';
-        } catch(e) {
-            if(e.code === 'auth/requires-recent-login') alert("보안상의 이유로, 로그아웃 후 다시 로그인해야 비밀번호를 변경할 수 있습니다.");
-            else alert("오류 발생: " + e.message);
-        }
-    }
-
-    function copyText(text) { navigator.clipboard.writeText(text); alert("복사되었습니다."); }
-    function toggleAuthMode() { isLoginMode = !isLoginMode; document.getElementById('auth-title').innerText = isLoginMode ? "현장 관리 접속" : "회원가입 시작"; document.getElementById('userNick').style.display = isLoginMode ? "none" : "block"; }
-    async function handleAuth() { const e = document.getElementById('userEmail').value.trim(), p = document.getElementById('userPw').value.trim(), n = document.getElementById('userNick').value.trim(); try { if(isLoginMode) await auth.signInWithEmailAndPassword(e, p); else { await auth.createUserWithEmailAndPassword(e, p); await db.collection("users").doc(e).set({ nickname: n, email:e, createdAt: Date.now() }); } } catch(err) { alert(err.message); } }
+    function toggleAuthMode() { isLoginMode = !isLoginMode; document.getElementById('auth-title').innerText = isLoginMode ? "접속" : "가입"; document.getElementById('userNick').style.display = isLoginMode ? "none" : "block"; }
+    async function handleAuth() { const e=document.getElementById('userEmail').value, p=document.getElementById('userPw').value, n=document.getElementById('userNick').value; try { if(isLoginMode) await auth.signInWithEmailAndPassword(e,p); else { await auth.createUserWithEmailAndPassword(e,p); await db.collection("users").doc(e).set({ nickname:n, email:e, createdAt:Date.now()}); } } catch(err){alert(err.message);} }
     async function handleLogout() { if(confirm("로그아웃 하시겠습니까?")) { await auth.signOut(); location.reload(); } }
 
-    async function exportToExcel(id) { 
-        const d_raw = (await db.collection("monthly_logs").doc(id).get()).data(); const [year, monthNum] = d_raw.month.split('-'); const lastDayNum = new Date(year, monthNum, 0).getDate(); 
-        const wb = XLSX.utils.book_new(); const wsData = Array.from({ length: 5 }, () => Array(36).fill("")); 
-        wsData[0][0] = `${year}년 ${monthNum}월 현장 작업 일보 (김목수이야기)`; wsData[1][0] = `현장명: ${d_raw.site}`; wsData[3] = ["NO", "공정", "이 름", ...Array.from({length:31},(_,i)=>i+1), "계", "비고"]; 
-        let curR = 5, totalNo = 1; 
-        d_raw.teamData.forEach(team => { 
-            let startR = curR + 1; 
-            team.workers.forEach(w => { wsData.push([totalNo++, team.teamName, w.name, ...Array.from({length:31},(_,i)=>parseFloat(w.days[i+1]||0)|| ""), {t:'n', f:`SUM(D${curR+1}:AH${curR+1})`}]); curR++; }); 
-            wsData.push(["", team.teamName, "공정소계", ...Array(31).fill(""), {t:'n', f:`SUM(AI${startR}:AI${curR})`}]); curR += 2; 
-        }); 
-        const ws = XLSX.utils.aoa_to_sheet(wsData); XLSX.utils.book_append_sheet(wb, ws, "근무현황"); XLSX.writeFile(wb, `${d_raw.site}_${monthNum}월.xlsx`); 
+    // ----------------------------------------------------
+    // 1. 공지 & 전달사항 (Board)
+    // ----------------------------------------------------
+    function loadBoard() {
+        db.collection("board_memos").where("teamId", "==", myTeamId).orderBy("createdAt", "desc").onSnapshot(ss => {
+            let notices=[], memos=[];
+            ss.docs.forEach(doc => { const d = doc.data(); d.id = doc.id; if(d.type === 'notice') notices.push(d); else memos.push(d); });
+            
+            document.getElementById('home-notice-list').innerHTML = notices.slice(0,5).map(n => `<div class="mb-1 text-truncate">• ${n.text}</div>`).join('') || '내용 없음';
+            document.getElementById('home-msg-list').innerHTML = memos.slice(0,5).map(n => `<div class="mb-1 text-truncate">• ${n.text}</div>`).join('') || '내용 없음';
+
+            document.getElementById('manage-notice-list').innerHTML = notices.map(n => `<div class="board-item d-flex justify-content-between"><span>${n.text} <span class="small text-secondary ms-2">${n.dateStr}</span></span><button class="btn btn-sm text-danger p-0" onclick="delBoardItem('${n.id}')"><i class="bi bi-trash"></i></button></div>`).join('');
+            document.getElementById('manage-memo-list').innerHTML = memos.map(n => `<div class="board-item d-flex justify-content-between" style="border-color:var(--success-btn);"><span>${n.text} <span class="small text-secondary ms-2">${n.dateStr}</span></span><button class="btn btn-sm text-danger p-0" onclick="delBoardItem('${n.id}')"><i class="bi bi-trash"></i></button></div>`).join('');
+        });
     }
-    
-    document.getElementById('logMonth').onchange = renderAllTeams; 
-    document.getElementById('logMonth').value = new Date().toISOString().substring(0, 7);
+    async function addBoardItem(type) {
+        let input = document.getElementById(`input-${type}`); let text = input.value.trim(); if(!text) return;
+        let today = new Date(); let dStr = `0${today.getMonth()+1}`.slice(-2)+"."+`0${today.getDate()}`.slice(-2);
+        await db.collection("board_memos").add({ teamId: myTeamId, type: type, text: text, dateStr: dStr, createdAt: Date.now() });
+        input.value = '';
+    }
+    async function delBoardItem(id) { if(confirm("삭제할까요?")) await db.collection("board_memos").doc(id).delete(); }
+
+    // ----------------------------------------------------
+    // 2. 공정표 & 추가공사 (Gantt)
+    // ----------------------------------------------------
+    let ganttTasks = ["철거", "목공", "전기", "필름", "도장", "소방", "가구", "바닥", "유리", "금속", "사인", "설비", "청소", "기타 잔손"];
+    let ganttDates = []; let ganttState = {}; let currentGanttId = null;
+
+    function createNewProject() {
+        let sd = prompt("시작일을 8자리 숫자로 입력하세요 (예: 20260420)");
+        if(!sd || sd.length !== 8) return;
+        let start = new Date(sd.substring(0,4), parseInt(sd.substring(4,6))-1, sd.substring(6,8));
+        ganttDates = []; ganttState = {}; currentGanttId = null; document.getElementById('ganttSiteName').value = '';
+        for(let i=0; i<45; i++) { let dt = new Date(start); dt.setDate(start.getDate()+i); ganttDates.push(dt); }
+        document.getElementById('ganttDashboard').style.display = 'block'; document.getElementById('extraCostBody').innerHTML = '';
+        calcExtraSum(); renderGantt();
+    }
+
+    function renderGantt() {
+        if(ganttDates.length === 0) return;
+        const thead = ganttDates.map(d => `<th class="${d.getDay()===0?'day-sun':(d.getDay()===6?'day-sat':'')}">${d.getMonth()+1}/${d.getDate()}</th>`).join('');
+        let html = `<thead><tr><th class="gantt-task-col text-secondary">공종 (클릭 수정)</th>${thead}</tr></thead><tbody>`;
+        ganttTasks.forEach((task, tIdx) => {
+            html += `<tr><td class="gantt-task-col"><input type="text" class="task-editable" value="${task}" onchange="ganttTasks[${tIdx}]=this.value"></td>`;
+            ganttDates.forEach((d, dIdx) => {
+                let key = `${tIdx}_${dIdx}`; let bg = d.getDay()===0?'day-sun':(d.getDay()===6?'day-sat':'');
+                html += `<td class="gantt-cell ${bg} ${ganttState[key]?'gantt-active':''}" onclick="toggleGantt('${key}')"></td>`;
+            }); html += `</tr>`;
+        });
+        document.getElementById('ganttTable').innerHTML = html + `</tbody>`;
+    }
+    function toggleGantt(key) { ganttState[key] = !ganttState[key]; renderGantt(); }
+    function addGanttTaskRow() { ganttTasks.push("새 공종"); renderGantt(); }
+    function addGanttDate() { let lastD = new Date(ganttDates[ganttDates.length-1]); lastD.setDate(lastD.getDate() + 1); ganttDates.push(lastD); renderGantt(); }
+
+    function captureGantt() {
+        html2canvas(document.getElementById('captureArea'), { backgroundColor: '#2a2e39', scale: 2 }).then(canvas => {
+            let link = document.createElement('a'); link.download = `${document.getElementById('ganttSiteName').value||'현장'}_공정표.png`; link.href = canvas.toDataURL(); link.click();
+        });
+    }
+
+    // 추가공사 로직
+    function addExtraCostRow(data = {}) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><input type="date" class="form-control form-control-sm input-dark ec-date" value="${data.date||''}"></td>
+            <td><input type="text" class="form-control form-control-sm input-dark ec-desc" value="${data.desc||''}"></td>
+            <td><input type="number" class="form-control form-control-sm input-dark text-end ec-cost" oninput="calcExtraSum()" value="${data.cost||0}"></td>
+            <td><input class="form-check-input ec-prog" type="checkbox" ${data.prog?'checked':''}></td>
+            <td><input class="form-check-input ec-tax" type="checkbox" ${data.tax?'checked':''}></td>
+            <td><input type="text" class="form-control form-control-sm input-dark ec-note" value="${data.note||''}"></td>
+            <td><button class="btn btn-sm btn-danger py-0 px-2" onclick="this.closest('tr').remove(); calcExtraSum();"><i class="bi bi-x"></i></button></td>`;
+        document.getElementById('extraCostBody').appendChild(tr); calcExtraSum();
+    }
+    function calcExtraSum() {
+        let sum = 0; document.querySelectorAll('.ec-cost').forEach(el => sum += parseInt(el.value || 0));
+        document.getElementById('extraTotalSum').innerText = sum.toLocaleString() + " 원";
+    }
+
+    // Gantt Firebase Save/Load
+    async function saveGantt() {
+        let site = document.getElementById('ganttSiteName').value.trim(); if(!site) return alert("현장명을 입력해주세요.");
+        let extra = []; document.querySelectorAll('#extraCostBody tr').forEach(tr => {
+            extra.push({ date: tr.querySelector('.ec-date').value, desc: tr.querySelector('.ec-desc').value, cost: tr.querySelector('.ec-cost').value, prog: tr.querySelector('.ec-prog').checked, tax: tr.querySelector('.ec-tax').checked, note: tr.querySelector('.ec-note').value });
+        });
+        const data = { teamId: myTeamId, site: site, tasks: ganttTasks, dates: ganttDates.map(d=>d.toISOString()), state: ganttState, extra: extra, updatedAt: Date.now() };
+        if(currentGanttId) await db.collection("gantt_logs").doc(currentGanttId).update(data);
+        else { const res = await db.collection("gantt_logs").add(data); currentGanttId = res.id; }
+        alert("저장되었습니다.");
+    }
+
+    function loadGanttList() {
+        db.collection("gantt_logs").where("teamId","==",myTeamId).orderBy("updatedAt","desc").onSnapshot(ss => {
+            const container = document.getElementById('saved-gantt-list');
+            if(ss.empty) return container.innerHTML = '<p class="text-secondary ms-2">저장된 내역이 없습니다.</p>';
+            container.innerHTML = ss.docs.map(doc => `<div class="col-md-4"><div class="t5-card p-3 d-flex justify-content-between align-items-center mb-0"><b class="text-white text-truncate">${doc.data().site}</b><button class="btn btn-sm btn-primary py-0 text-nowrap ms-2" onclick="loadGanttDoc('${doc.id}')">열기</button></div></div>`).join('');
+        });
+    }
+
+    async function loadGanttDoc(id) {
+        const d = (await db.collection("gantt_logs").doc(id).get()).data();
+        currentGanttId = id; document.getElementById('ganttSiteName').value = d.site;
+        ganttTasks = d.tasks; ganttState = d.state; ganttDates = d.dates.map(str => new Date(str));
+        document.getElementById('extraCostBody').innerHTML = ''; d.extra.forEach(ex => addExtraCostRow(ex));
+        document.getElementById('ganttDashboard').style.display = 'block'; renderGantt(); calcExtraSum(); window.scrollTo(0,0);
+    }
+    async function deleteGantt() {
+        if(!confirm("이 공정표를 삭제하시겠습니까?")) return;
+        if(currentGanttId) await db.collection("gantt_logs").doc(currentGanttId).delete();
+        document.getElementById('ganttDashboard').style.display = 'none'; ganttDates=[]; currentGanttId=null;
+    }
+
+    // ----------------------------------------------------
+    // 3. 작업일보
+    // ----------------------------------------------------
+    let editingId = null; let teamData = [{ teamName: "목공팀", workers: [] }];
+    function renderAllTeams() {
+        const container = document.getElementById('team-container'); const [year, month] = (document.getElementById('logMonth').value||"2026-04").split('-').map(Number); const lastDay = new Date(year, month, 0).getDate();
+        container.innerHTML = teamData.map((team, tIdx) => {
+            let teamTotal = 0; const tables = team.workers.map((w, wIdx) => {
+                let pSum = 0; Object.values(w.days).forEach(v => pSum += parseFloat(v||0)); teamTotal += pSum;
+                return `<table class="excel-table"><tr class="date-row"><td rowspan="4" class="name-cell"><input type="text" class="name-input" value="${w.name}" onchange="teamData[${tIdx}].workers[${wIdx}].name=this.value"><br><button onclick="removeWorker(${tIdx}, ${wIdx})" class="btn btn-danger btn-sm p-0 px-2 mt-2" style="font-size:0.6rem;">삭제</button></td>${loopDays(year, month, 1, 16, 'date')}</tr><tr>${loopDays(year, month, 1, 16, 'input', tIdx, wIdx)}</tr><tr class="date-row">${loopDays(year, month, 17, 31, 'date', 0, 0, lastDay)}<td style="background:#1e222d;">계</td></tr><tr>${loopDays(year, month, 17, 31, 'input', tIdx, wIdx, lastDay)}<td class="fw-bold text-primary">${pSum}</td></tr></table>`;
+            }).join('');
+            return `<div class="mb-5"><div class="d-flex justify-content-between mb-2"><h6 class="m-0 fw-bold">${team.teamName}</h6><button onclick="addWorker(${tIdx})" class="t5-btn-small">+</button></div>${tables}</div>`;
+        }).join(''); bindLongPress();
+    }
+    function loopDays(y, m, s, e, type, tIdx, wIdx, max=31) { let html=""; for(let d=s; d<=e; d++){ if(d>max) html+=`<td></td>`; else if(type==='date') html+=`<td style="${new Date(y,m-1,d).getDay()===0?'color:#ef4444':''}">${d}</td>`; else html+=`<td class="gongsu-cell" data-t="${tIdx}" data-w="${wIdx}" data-d="${d}" onclick="handleCellClick(this)">${teamData[tIdx].workers[wIdx].days[d]||''}</td>`; } return html; }
+    function handleCellClick(el) { const { t, w, d } = el.dataset; teamData[t].workers[w].days[d] = teamData[t].workers[w].days[d]==1?'':1; renderAllTeams(); }
+    function bindLongPress() { document.querySelectorAll('.gongsu-cell').forEach(cell => { let timer; cell.onmousedown=cell.ontouchstart=()=>timer=setTimeout(()=>{ const { t, w, d } = cell.dataset; const input = prompt("공수", teamData[t].workers[w].days[d]); if(input!==null){ teamData[t].workers[w].days[d]=input; renderAllTeams(); } }, 600); cell.onmouseup=cell.ontouchend=()=>clearTimeout(timer); }); }
+    function addTeam() { const n = prompt("공정명"); if(n){ teamData.push({teamName:n, workers:[]}); renderAllTeams(); } }
+    function addWorker(t) { teamData[t].workers.push({name:"", days:{}}); renderAllTeams(); }
+    function removeWorker(t, w) { if(confirm("삭제?")){ teamData[t].workers.splice(w,1); renderAllTeams(); } }
+    async function saveMonthlyLog() { const m = document.getElementById('logMonth').value, s = document.getElementById('siteName').value; if(!s) return; const d = { teamId:myTeamId, month:m, site:s, teamData, updatedAt:Date.now(), lastModifier:userNickname }; if(editingId) await db.collection("monthly_logs").doc(editingId).update(d); else await db.collection("monthly_logs").add({...d, originalWriter:userNickname}); alert("저장 완료"); location.reload(); }
+    function loadWorklogs() { db.collection("monthly_logs").where("teamId","==",myTeamId).orderBy("updatedAt","desc").limit(10).onSnapshot(ss => { document.getElementById('history-list').innerHTML = ss.docs.map(doc => { const d = doc.data(); return `<div class="col-md-6"><div class="t5-card p-3 m-0 d-flex justify-content-between align-items-center"><div><b class="text-primary">${d.month}</b><br>${d.site}<br><span class="small text-secondary">작성: ${d.originalWriter||'관리자'} ${d.lastModifier?`/ 수정: ${d.lastModifier}`:''}</span></div><div><button class="btn btn-sm btn-secondary py-0" onclick="editLog('${doc.id}')">수정</button> <button class="btn btn-sm btn-danger py-0" onclick="deleteLog('${doc.id}')">삭제</button></div></div></div>`; }).join(''); }); }
+    async function editLog(id) { const d = (await db.collection("monthly_logs").doc(id).get()).data(); editingId = id; document.getElementById('logMonth').value = d.month; document.getElementById('siteName').value = d.site; teamData = d.teamData; showPage('worklog'); renderAllTeams(); }
+    async function deleteLog(id) { if(confirm("삭제할까요?")) await db.collection("monthly_logs").doc(id).delete(); }
+
+    // ----------------------------------------------------
+    // 4. 펀치리스트 (기존 구조)
+    // ----------------------------------------------------
+    let currentSite = ""; let punchListListener = null; let punchDetailListener = null; let globalPunchSites = []; let activePunchCardFilter = "전체"; let globalPunchItems = []; let activePunchFilter = "전체";
+    function loadPunchSummaryCards() { if(!myTeamId) return; if(punchListListener) punchListListener(); punchListListener = db.collection("punch_lists").where("teamId", "==", myTeamId).onSnapshot(ss => { let sitesData = {}; ss.docs.forEach(doc => { const d = doc.data(); if(!sitesData[d.siteName]) sitesData[d.siteName] = { total: 0, done: 0, lastAt: 0, writer: d.writer }; sitesData[d.siteName].total++; if(d.done) sitesData[d.siteName].done++; if(d.createdAt > sitesData[d.siteName].lastAt) { sitesData[d.siteName].lastAt = d.createdAt; sitesData[d.siteName].writer = d.writer; } }); globalPunchSites = Object.keys(sitesData).map(key => ({ name: key, ...sitesData[key] })).sort((a, b) => b.lastAt - a.lastAt); renderPunchCardFilterAndList(); }); }
+    function renderPunchCardFilterAndList() { document.getElementById('punch-card-filter').innerHTML = ["전체", ...new Set(globalPunchSites.map(s => s.writer).filter(Boolean))].map(w => `<button class="btn btn-sm ${w === activePunchCardFilter ? 'btn-primary' : 'btn-outline-secondary text-secondary'} rounded-pill px-3" onclick="activePunchCardFilter='${w}'; renderPunchCardFilterAndList();">${w}</button>`).join(''); const filteredSites = activePunchCardFilter === "전체" ? globalPunchSites : globalPunchSites.filter(s => s.writer === activePunchCardFilter); document.getElementById('punch-history-list').innerHTML = filteredSites.map(s => { const pct = s.total === 0 ? 0 : Math.round((s.done / s.total) * 100); return `<div class="col-md-6 col-lg-4"><div class="summary-card" onclick="openDetailView('${s.name}')"><h6 class="fw-bold text-white mb-1">${s.name}</h6><p class="small text-secondary mb-3"><i class="bi bi-person-fill"></i> ${s.writer}</p><div class="progress-container"><div class="progress-fill" style="width: ${pct}%;"></div></div></div></div>`; }).join(''); }
+    function createOrLoadSite() { const val = document.getElementById('searchSiteInput').value.trim(); if(val) openDetailView(val); }
+    function openDetailView(siteName) { currentSite = siteName; document.getElementById('view-list').style.display = 'none'; document.getElementById('view-detail').style.display = 'block'; document.getElementById('detailSiteName').innerText = siteName; activePunchFilter = "전체"; loadDetailChecklist(siteName); }
+    function goBackToPunchList() { if(punchDetailListener) punchDetailListener(); currentSite = ""; document.getElementById('view-detail').style.display = 'none'; document.getElementById('view-list').style.display = 'block'; }
+    function loadDetailChecklist(siteName) { if(punchDetailListener) punchDetailListener(); punchDetailListener = db.collection("punch_lists").where("teamId", "==", myTeamId).where("siteName", "==", siteName).onSnapshot(ss => { globalPunchItems = ss.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b)=>a.done?1:-1); renderPunchFilterAndList(); }); }
+    function renderPunchFilterAndList() { document.getElementById('punch-filter-container').innerHTML = ["전체", ...new Set(globalPunchItems.map(i => i.writer))].map(w => `<button class="btn btn-sm ${w === activePunchFilter ? 'btn-primary' : 'btn-outline-secondary text-secondary'} rounded-pill px-3" onclick="activePunchFilter='${w}'; renderPunchFilterAndList();">${w}</button>`).join(''); const filteredItems = activePunchFilter === "전체" ? globalPunchItems : globalPunchItems.filter(i => i.writer === activePunchFilter); const pct = globalPunchItems.length===0?0:Math.round((globalPunchItems.filter(i=>i.done).length/globalPunchItems.length)*100); document.getElementById('detailProgressText').innerText = `${pct}%`; document.getElementById('detailProgressBar').style.width = pct + '%'; document.getElementById('checklist-container').innerHTML = filteredItems.map(item => `<div class="check-item ${item.done ? 'completed' : ''}"><input type="checkbox" class="custom-check" ${item.done ? 'checked' : ''} onclick="db.collection('punch_lists').doc('${item.id}').update({done:${!item.done}})"><textarea class="item-text-area" rows="1" onchange="db.collection('punch_lists').doc('${item.id}').update({text:this.value})">${item.text}</textarea><i class="bi bi-x-lg btn-del" onclick="if(confirm('삭제?')) db.collection('punch_lists').doc('${item.id}').delete()"></i></div>`).join(''); }
+    function openPunchAddModal() { document.getElementById('addTaskModal').style.display = 'flex'; document.getElementById('newTaskInput').value = ''; }
+    function closePunchAddModal() { document.getElementById('addTaskModal').style.display = 'none'; }
+    async function saveNewPunchTask() { const t = document.getElementById('newTaskInput').value.trim(); if(!t) return; await db.collection("punch_lists").add({ teamId: myTeamId, siteName: currentSite, text: t, done: false, writer: userNickname, createdAt: Date.now() }); closePunchAddModal(); }
+
+    // ----------------------------------------------------
+    // 5. T5 계산기 (기존)
+    // ----------------------------------------------------
+    function toggleT5Specs() { const el = document.getElementById('t5-spec-container'); el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+    function addNewSpec() { let n=prompt("규격"), a=prompt("치수"); if(n&&a) document.getElementById('t5-spec-list').insertAdjacentHTML('beforeend', `<div class="col-4 col-md-auto spec-item"><label class="small">${n}용</label><input type="number" class="form-control input-dark spec-actual" data-nominal="${n}" value="${a}"></div>`); }
+    function addT5Row() { document.getElementById('t5-input-container').insertAdjacentHTML('beforeend', `<div class="row g-2 mb-2 t5-row-item"><div class="col-6"><input type="text" class="form-control input-dark t5-section-name" placeholder="구간"></div><div class="col-6"><input type="number" class="form-control input-dark t5-length-val" placeholder="길이"></div></div>`); }
+    let calculatedData = null; let t5EditingId = null;
+    function calculateT5Only() {
+        const site = document.getElementById('t5-site-title').value.trim() || "현장"; let specs = []; document.querySelectorAll('.spec-actual').forEach(el => specs.push({ n: el.getAttribute('data-nominal'), a: parseInt(el.value) })); specs.sort((a,b) => b.a - a.a);
+        let sectionRes = [], tc = {}, rowsData = [];
+        document.querySelectorAll('.t5-row-item').forEach(row => { const name = row.querySelector('.t5-section-name').value, len = parseInt(row.querySelector('.t5-length-val').value); if(!len) return; rowsData.push({ section: name, length: len }); let remain = len - 50, lineArr = [], sumA = 0; specs.forEach(s => { let q = Math.floor(remain / s.a); if(q>0) { lineArr.push(`${s.n}-${q}개`); tc[s.n] = (tc[s.n]||0)+q; remain -= (q*s.a); sumA += (q*s.a); } }); sectionRes.push({ name, result: lineArr.join(', '), gap: len - sumA }); });
+        let ts = []; Object.keys(tc).sort((a,b)=>b-a).forEach(k => ts.push(`${k}-${tc[k]}개`)); calculatedData = { siteName: site, rows: rowsData, resultText: ts.join(' / ') };
+        document.getElementById('res-list-container').innerHTML = sectionRes.map(r => `<div class="small">• ${r.name}: ${r.result} (여유 ${r.gap}mm)</div>`).join(''); document.getElementById('res-total-summary').innerText = calculatedData.resultText; document.getElementById('t5-temp-result').style.display = 'block'; document.getElementById('t5-save-btn').style.display = 'block';
+    }
+    async function saveT5ToHistory() { if(!calculatedData) return; const data = { teamId: myTeamId, ...calculatedData, writer: userNickname, updatedAt: Date.now() }; if (t5EditingId) await db.collection("t5_logs").doc(t5EditingId).update(data); else await db.collection("t5_logs").add({...data, createdAt: Date.now()}); location.reload(); }
+    function loadT5History() { db.collection("t5_logs").where("teamId","==",myTeamId).orderBy("updatedAt","desc").limit(20).onSnapshot(ss => { document.getElementById('t5-history-list').innerHTML = ss.docs.map(d => `<div class="t5-card p-3 mb-2"><h6 class="fw-bold">${d.data().siteName}</h6><p class="small text-secondary m-0">${d.data().resultText}</p></div>`).join(''); }); }
+
+    // ----------------------------------------------------
+    // 6. 팀 메모장 (Memos)
+    // ----------------------------------------------------
+    let currentMemoTab = 'private';
+    function loadMemos() {
+        db.collection("team_memos").where("teamId", "==", myTeamId).onSnapshot(ss => {
+            let memos = ss.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b)=>b.createdAt-a.createdAt);
+            const filtered = memos.filter(m => m.type === currentMemoTab && (m.type === 'shared' || m.writer === myEmail));
+            document.getElementById('memoContainer').innerHTML = filtered.map(m => `<div class="memo-card ${m.type === 'shared' ? 'shared' : ''}"><div class="d-flex justify-content-between mb-2 pb-1 border-bottom border-secondary border-opacity-10"><span class="small text-secondary">${m.dateStr}</span><i class="bi bi-x text-danger cursor-pointer" onclick="delMemo('${m.id}')"></i></div><div style="white-space:pre-wrap; font-size:0.9rem;">${m.text}</div></div>`).join('') || '<p class="text-secondary small">메모가 없습니다.</p>';
+        });
+    }
+    function switchMemoTab(tab) { currentMemoTab = tab; document.querySelectorAll('#memoTabs .nav-link').forEach(l => l.classList.remove('active')); event.target.classList.add('active'); loadMemos(); }
+    async function addMemo() { let t = prompt("메모 내용 (앞에 [공용] 이라고 적으면 공유됩니다)"); if(!t) return; let type = t.startsWith("[공용]") ? 'shared' : 'private'; let dStr = new Date().toISOString().split('T')[0]; await db.collection("team_memos").add({ teamId: myTeamId, type, text: t, writer: myEmail, dateStr: dStr, createdAt: Date.now() }); switchMemoTab(type); }
+    async function delMemo(id) { if(confirm("삭제?")) await db.collection("team_memos").doc(id).delete(); }
+
+    // ----------------------------------------------------
+    // 7. 연차 관리 (Leave)
+    // ----------------------------------------------------
+    let teamMembersInfo = {}; 
+    function loadLeaveData(teamData) {
+        teamMembersInfo = teamData.membersInfo || {};
+        if(myRole === "owner" || myRole === "admin") {
+            document.getElementById('leaveAdminPanel').style.display = 'block';
+            document.getElementById('leaveAdminBody').innerHTML = (teamData.members||[]).map(mEmail => {
+                let info = teamMembersInfo[mEmail] || { joinDate: '', base: 15 };
+                return `<tr><td class="small">${mEmail.split('@')[0]}</td><td><input type="date" class="form-control form-control-sm input-dark leave-join" data-email="${mEmail}" value="${info.joinDate}"></td><td><input type="number" class="form-control form-control-sm input-dark leave-base" data-email="${mEmail}" value="${info.base}"></td></tr>`;
+            }).join('');
+        }
+        
+        db.collection("leave_records").where("teamId","==",myTeamId).onSnapshot(ss => {
+            let used = {}; ss.docs.forEach(doc => { let d = doc.data(); used[d.userEmail] = (used[d.userEmail]||0) + parseFloat(d.amount); });
+            document.getElementById('leaveStatusBody').innerHTML = (teamData.members||[]).map(mEmail => {
+                let info = teamMembersInfo[mEmail] || { joinDate: '-', base: 15 };
+                let usedAmt = used[mEmail] || 0; let remain = info.base - usedAmt;
+                return `<tr><td class="fw-bold">${mEmail.split('@')[0]}</td><td class="text-info">${info.base}</td><td class="text-danger">${usedAmt}</td><td class="text-success fw-bold">${remain}</td></tr>`;
+            }).join('');
+
+            document.getElementById('leaveHistoryList').innerHTML = ss.docs.map(doc => `<div class="small mb-1">• ${doc.data().userEmail.split('@')[0]} : ${doc.data().date} (${doc.data().amount}일)</div>`).join('');
+        });
+    }
+    async function saveLeaveSettings() {
+        let newInfo = {};
+        document.querySelectorAll('.leave-join').forEach(el => { let email = el.getAttribute('data-email'); if(!newInfo[email]) newInfo[email]={}; newInfo[email].joinDate = el.value; });
+        document.querySelectorAll('.leave-base').forEach(el => { let email = el.getAttribute('data-email'); if(!newInfo[email]) newInfo[email]={}; newInfo[email].base = parseFloat(el.value||15); });
+        await db.collection("teams").doc(myTeamId).update({ membersInfo: newInfo }); alert("설정 저장 완료");
+    }
+    async function addLeaveRecord() {
+        let d = prompt("휴가 날짜 (예: 2026-05-10)"); if(!d) return;
+        let t = prompt("휴가 종류 입력 (1: 종일, 0.5: 반차)"); if(!t) return;
+        await db.collection("leave_records").add({ teamId: myTeamId, userEmail: myEmail, date: d, amount: parseFloat(t), createdAt: Date.now() }); alert("신청 완료");
+    }
+
+    // ----------------------------------------------------
+    // 8. 팀 & 설정
+    // ----------------------------------------------------
+    function checkTeamUI() {
+        if(myTeamId) { document.getElementById('no-team-section').style.display = 'none'; document.getElementById('has-team-section').style.display = 'block'; document.getElementById('displayTeamId').value = myTeamId; }
+        else { document.getElementById('no-team-section').style.display = 'block'; document.getElementById('has-team-section').style.display = 'none'; }
+    }
+    async function createTeam() { if(confirm("개설?")) { await db.collection("teams").add({ createdAt: Date.now(), members: [myEmail], owner: myEmail, admins: [] }); location.reload(); } }
+    async function updateProfile() { await db.collection("users").doc(myEmail).update({ nickname: document.getElementById('editNickname').value }); location.reload(); }
+    function copyText(t) { navigator.clipboard.writeText(t); alert("복사됨"); }
+    async function changePassword() { try { await auth.currentUser.updatePassword(document.getElementById('newPasswordInput').value); alert("성공"); } catch(e){ alert(e.message); } }
 </script>
 </body>
 </html>

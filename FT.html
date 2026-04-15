@@ -38,15 +38,22 @@
 
         .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1040; backdrop-filter: blur(2px); transition: 0.3s; opacity: 0; }
         .sidebar-overlay.active { display: block; opacity: 1; }
+        
+        /* 모바일 UI 톤업 (입체감 및 여백 확보) */
         @media (max-width: 768px) {
             .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-100%); } 
             .sidebar.active { transform: translateX(0); } 
             .page-section { padding: 20px 15px; padding-bottom: 100px; } 
             .mobile-menu-btn { display: flex !important; } 
-            .mobile-col-6 { width: 50% !important; padding: 5px !important; }
-            .compact-card { padding: 15px 10px !important; margin-bottom: 0 !important; }
-            .compact-card i { font-size: 2rem !important; margin-bottom: 10px !important; }
-            .compact-card h6 { font-size: 0.9rem !important; }
+            .mobile-col-6 { width: 50% !important; padding: 6px !important; }
+            .compact-card { 
+                padding: 18px 12px !important; 
+                margin-bottom: 0 !important; 
+                box-shadow: 0 6px 15px rgba(0,0,0,0.3) !important; 
+                border: 1px solid rgba(255,255,255,0.08) !important;
+            }
+            .compact-card i { font-size: 2.2rem !important; margin-bottom: 12px !important; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+            .compact-card h6 { font-size: 0.95rem !important; font-weight: 700 !important; }
             .compact-card p { display: none; }
         }
 
@@ -59,26 +66,17 @@
         .t5-btn-small { background: rgba(255,255,255,0.1); border: none; color: #ced4da; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; transition: 0.2s; cursor: pointer; }
         .btn-primary-custom { background: var(--primary-accent); border: none; color: white; border-radius: 8px; padding: 8px 16px; transition: 0.2s; cursor: pointer; font-weight: bold; }
 
-        /* 상황판 & 게시판 */
+        /* 게시판 및 상황판 */
         .board-list { max-height: 250px; overflow-y: auto; padding-right: 5px; }
         .board-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid var(--primary-accent); font-size: 0.9rem; }
-        
         .status-table { width: 100%; border-collapse: separate; border-spacing: 0 4px; table-layout: fixed; }
         .status-table th { color: #94a3b8; font-weight: 600; font-size: 0.82rem; padding: 12px 10px; border-bottom: 2px solid rgba(255,255,255,0.05); text-align: center; white-space: nowrap; }
         .status-table td { background: #1e222d; padding: 12px 10px; font-size: 0.88rem; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .mobile-site-card { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
-        .mobile-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-        .mobile-card-title { font-size: 1.05rem; font-weight: 700; color: var(--primary-accent); margin: 0; }
-        .mobile-card-date { font-size: 0.75rem; color: #94a3b8; font-weight: 600; }
-        .mobile-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; background: rgba(0,0,0,0.25); padding: 10px 5px; border-radius: 8px; }
-        .mobile-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: center; background: rgba(0,0,0,0.25); padding: 10px 5px; border-radius: 8px; }
-        .mobile-grid-label { font-size: 0.65rem; color: #94a3b8; margin-bottom: 3px; }
-        .mobile-grid-val { font-size: 0.85rem; color: #f8fafc; font-weight: bold; }
 
-        /* [수정] 공정표 CSS (25px 압축 & 박스 탈출 버그 수정) */
+        /* 공정표 (Gantt) 25px 최적화 */
         .gantt-container { overflow-x: auto; background: transparent; }
         .gantt-table { margin: 0; white-space: nowrap; font-size: 0.7rem; border-collapse: separate; border-spacing: 0; }
-        .gantt-table th, .gantt-table td { border: 1px solid rgba(255,255,255,0.05); padding: 5px 2px !important; text-align: center; vertical-align: middle; }
+        .gantt-table th, .gantt-table td { border: 1px solid rgba(255,255,255,0.05); padding: 5px 0 !important; text-align: center; vertical-align: middle; }
         .gantt-cell, .gantt-date-th { min-width: 25px; max-width: 25px; width: 25px; transition: 0.1s; cursor: pointer; }
         .gantt-task-col { position: sticky; left: 0; background: var(--card-bg) !important; z-index: 10; min-width: 90px; text-align: left !important; border-right: 2px solid var(--primary-accent) !important; padding-left: 10px !important; }
         .gantt-month-row th { background: #181b24; color: #ced4da; font-weight: bold; border-bottom: 2px solid rgba(255,255,255,0.1); }
@@ -117,21 +115,22 @@
         .progress-container { background: #131722; border-radius: 10px; height: 16px; overflow: hidden; position: relative; margin-top: 8px; }
         .progress-fill { background: var(--primary-accent); height: 100%; width: 0%; transition: width 0.4s ease-out; }
 
-        /* T5 */
+        /* T5 & 메모장 */
         #t5-temp-result { background: #1c212d; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; margin-bottom: 20px; display: none; }
         .res-gap { color: #fcc419; font-weight: bold; font-size: 0.85rem; }
         .history-card { background: var(--card-bg); border-radius: 16px; padding: 18px; margin-bottom: 12px; position: relative; }
-
-        /* 메모장 & 연차 달력 */
         .memo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
         .memo-card { background: #fff9db; color: #333; padding: 15px; border-radius: 8px; box-shadow: 2px 4px 10px rgba(0,0,0,0.1); position: relative; }
         .memo-card.shared { background: #e3f2fd; border-left: 4px solid #5c7cfa; }
         
-        .cal-day-box { background: #1e222d; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; height: 100px; padding: 5px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; overflow-y: auto; }
-        .cal-day-box::-webkit-scrollbar { display: none; }
+        /* 연차 아코디언 달력 CSS */
+        .cal-day-box { background: #1e222d; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; min-height: 60px; padding: 5px; cursor: pointer; transition: 0.2s; position: relative; }
         .cal-day-box:hover { border-color: var(--primary-accent); }
-        .cal-date-num { font-size: 0.85rem; font-weight: bold; text-align: left; margin-bottom: 5px; }
-        .leave-badge { font-size: 0.75rem; padding: 4px; border-radius: 4px; margin-bottom: 3px; text-align: left; line-height: 1.2; word-break: keep-all; }
+        .cal-date-num { font-size: 0.85rem; font-weight: bold; text-align: left; margin-bottom: 3px; }
+        .cal-dots { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
+        .cal-dot { padding: 2px 5px; border-radius: 4px; font-size: 0.65rem; background: var(--primary-accent); color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .cal-accordion-content { background: #131722; border-radius: 8px; margin-top: 10px; padding: 15px; border: 1px solid rgba(255,255,255,0.1); box-shadow: inset 0 2px 10px rgba(0,0,0,0.2); }
+        .leave-detail-item { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; }
 
         #addTaskModal, #ganttCreateModal, #leaveApplyModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s; }
         .modal-box { background: var(--card-bg); padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -167,6 +166,8 @@
         </div>
         <div class="flex-grow-1 mt-3">
             <div class="nav-link active" onclick="showPage('home', this)"><i class="bi bi-house-door"></i> 홈 메인</div>
+            <div class="nav-link text-warning" onclick="showPage('team', this)"><i class="bi bi-people-fill"></i> 팀원 및 조직 관리</div>
+            <hr class="border-secondary border-opacity-25 mx-3">
             <div class="nav-link" onclick="showPage('status', this)"><i class="bi bi-gear-wide-connected"></i> 종합 상황판 관리</div>
             <div class="nav-link" onclick="showPage('gantt', this)"><i class="bi bi-calendar3"></i> 공정표 & 추가공사</div>
             <div class="nav-link" onclick="showPage('worklog', this)"><i class="bi bi-journal-text"></i> 작업일보</div>
@@ -174,7 +175,6 @@
             <div class="nav-link" onclick="showPage('t5', this)"><i class="bi bi-calculator"></i> T5 계산기</div>
             <div class="nav-link" onclick="showPage('memo', this)"><i class="bi bi-stickies"></i> 전체 & 개인 메모장</div>
             <div class="nav-link" onclick="showPage('leave', this)"><i class="bi bi-calendar2-check"></i> 연차 관리</div>
-            <div class="nav-link" onclick="showPage('team', this)"><i class="bi bi-people"></i> 팀원 관리</div>
             <div class="nav-link" onclick="showPage('profile', this)"><i class="bi bi-person-gear"></i> 내 정보 수정</div>
         </div>
         <div class="p-4 border-top border-secondary border-opacity-10 mt-auto">
@@ -192,14 +192,11 @@
     <main class="main-container">
         
         <section id="page-home" class="page-section active">
-            <h3 class="fw-bold mb-4">현장 종합 요약</h3>
-            
-            <div class="row g-3 mb-4">
+            <div class="row g-3 mb-3">
                 <div class="col-12 col-md-8">
                     <div class="t5-card h-100 mb-0">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="fw-bold text-warning m-0"><i class="bi bi-bell-fill me-2"></i>공지사항</h5>
-                            <button class="btn btn-sm btn-outline-secondary py-0" onclick="showPage('status', document.querySelectorAll('.nav-link')[1])">관리</button>
                         </div>
                         <div class="board-list" id="home-notice-list"></div>
                     </div>
@@ -207,55 +204,64 @@
                 <div class="col-12 col-md-4">
                     <div class="t5-card h-100 mb-0">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold text-info m-0"><i class="bi bi-chat-dots-fill me-2"></i>최근 전달내용</h6>
-                            <button class="btn btn-sm btn-outline-secondary py-0" onclick="showPage('status', document.querySelectorAll('.nav-link')[1])">관리</button>
+                            <h6 class="fw-bold text-info m-0"><i class="bi bi-chat-dots-fill me-2"></i>회의 전달내용</h6>
                         </div>
                         <div class="board-list" id="home-msg-list"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="row g-3 row-cols-2 row-cols-md-3">
-                <div class="col mobile-col-6" onclick="showPage('gantt', document.querySelectorAll('.nav-link')[2])">
-                    <div class="t5-card compact-card h-100 cursor-pointer text-center">
-                        <i class="bi bi-bar-chart-steps fs-1 d-block mb-3 text-primary"></i>
-                        <h6 class="fw-bold m-0">공정표 & 추가</h6>
-                        <p class="small text-secondary mt-2 mb-0">일정 및 비용 정산</p>
+            <div class="t5-card mb-4 bg-primary bg-opacity-10 border border-primary border-opacity-25 cursor-pointer" onclick="showPage('status', document.querySelectorAll('.nav-link')[2])">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="fw-bold text-white mb-2"><i class="bi bi-display me-2 text-primary"></i>종합 상황판</h4>
+                        <p class="text-secondary small m-0">전체 현장의 공정 단계를 한눈에 확인하고 관리합니다.</p>
                     </div>
+                    <i class="bi bi-chevron-right fs-2 text-primary"></i>
                 </div>
-                <div class="col mobile-col-6" onclick="showPage('worklog', document.querySelectorAll('.nav-link')[3])">
+            </div>
+
+            <div class="row g-3 row-cols-2 row-cols-md-3">
+                <div class="col mobile-col-6" onclick="showPage('worklog', document.querySelectorAll('.nav-link')[4])">
                     <div class="t5-card compact-card h-100 cursor-pointer text-center">
                         <i class="bi bi-journal-text fs-1 d-block mb-3 text-success"></i>
                         <h6 class="fw-bold m-0">작업일보</h6>
                         <p class="small text-secondary mt-2 mb-0">공수 기록 / 엑셀</p>
                     </div>
                 </div>
-                <div class="col mobile-col-6" onclick="showPage('punch', document.querySelectorAll('.nav-link')[4])">
+                <div class="col mobile-col-6" onclick="showPage('gantt', document.querySelectorAll('.nav-link')[3])">
+                    <div class="t5-card compact-card h-100 cursor-pointer text-center">
+                        <i class="bi bi-bar-chart-steps fs-1 d-block mb-3 text-primary"></i>
+                        <h6 class="fw-bold m-0">공정표 & 추가</h6>
+                        <p class="small text-secondary mt-2 mb-0">일정 및 비용 정산</p>
+                    </div>
+                </div>
+                <div class="col mobile-col-6" onclick="showPage('punch', document.querySelectorAll('.nav-link')[5])">
                     <div class="t5-card compact-card h-100 cursor-pointer text-center">
                         <i class="bi bi-ui-checks fs-1 d-block mb-3 text-danger"></i>
                         <h6 class="fw-bold m-0">펀치리스트</h6>
                         <p class="small text-secondary mt-2 mb-0">마감 진행률 체크</p>
                     </div>
                 </div>
-                <div class="col mobile-col-6" onclick="showPage('t5', document.querySelectorAll('.nav-link')[5])">
+                <div class="col mobile-col-6" onclick="showPage('leave', document.querySelectorAll('.nav-link')[8])">
                     <div class="t5-card compact-card h-100 cursor-pointer text-center">
-                        <i class="bi bi-calculator fs-1 d-block mb-3 text-warning"></i>
-                        <h6 class="fw-bold m-0">T5 계산기</h6>
-                        <p class="small text-secondary mt-2 mb-0">발주 물량 산출</p>
+                        <i class="bi bi-calendar2-check fs-1 d-block mb-3" style="color: #9b59b6;"></i>
+                        <h6 class="fw-bold m-0">연차 관리</h6>
+                        <p class="small text-secondary mt-2 mb-0">휴가 캘린더 현황</p>
                     </div>
                 </div>
-                <div class="col mobile-col-6" onclick="showPage('memo', document.querySelectorAll('.nav-link')[6])">
+                <div class="col mobile-col-6" onclick="showPage('memo', document.querySelectorAll('.nav-link')[7])">
                     <div class="t5-card compact-card h-100 cursor-pointer text-center">
                         <i class="bi bi-stickies fs-1 d-block mb-3" style="color: #e67e22;"></i>
                         <h6 class="fw-bold m-0">메모장</h6>
                         <p class="small text-secondary mt-2 mb-0">개인/팀 포스트잇</p>
                     </div>
                 </div>
-                <div class="col mobile-col-6" onclick="showPage('leave', document.querySelectorAll('.nav-link')[7])">
+                <div class="col mobile-col-6" onclick="showPage('t5', document.querySelectorAll('.nav-link')[6])">
                     <div class="t5-card compact-card h-100 cursor-pointer text-center">
-                        <i class="bi bi-calendar2-check fs-1 d-block mb-3" style="color: #9b59b6;"></i>
-                        <h6 class="fw-bold m-0">연차 관리</h6>
-                        <p class="small text-secondary mt-2 mb-0">휴가 캘린더 현황</p>
+                        <i class="bi bi-calculator fs-1 d-block mb-3 text-warning"></i>
+                        <h6 class="fw-bold m-0">T5 계산기</h6>
+                        <p class="small text-secondary mt-2 mb-0">발주 물량 산출</p>
                     </div>
                 </div>
             </div>
@@ -268,11 +274,9 @@
             </div>
 
             <div class="t5-card mb-5">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#boardManagerCollapse">
                     <h6 class="fw-bold m-0"><i class="bi bi-gear-fill me-2 text-secondary"></i>공지 및 전달사항 관리</h6>
-                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#boardManagerCollapse">
-                        관리창 열기/접기
-                    </button>
+                    <i class="bi bi-chevron-down text-secondary"></i>
                 </div>
                 
                 <div class="collapse mt-3" id="boardManagerCollapse">
@@ -478,9 +482,12 @@
                             <select id="calMonth" class="form-select form-select-sm input-dark" style="width:auto; min-width:70px;" onchange="renderLeaveCalendar()"></select>
                         </div>
                     </div>
-                    <span class="small text-secondary d-none d-md-block">* 날짜를 클릭하여 신청</span>
                 </div>
                 <div id="leaveCalendar" class="text-center" style="font-size:0.8rem;"></div>
+                
+                <div id="calAccordionArea" style="display:none;">
+                    <div class="cal-accordion-content" id="calAccordionContent"></div>
+                </div>
             </div>
             
             <div class="t5-card border border-warning border-opacity-50" id="leaveAdminPanel" style="display:none;">
@@ -683,9 +690,9 @@
         ganttModal = new bootstrap.Modal(document.getElementById('ganttCreateModal')); 
         leaveModal = new bootstrap.Modal(document.getElementById('leaveApplyModal')); 
 
-        // 연도, 월 드롭다운 초기화
         let yrHtml = '', moHtml = '';
-        for(let y=2024; y<=2030; y++) yrHtml += `<option value="${y}">${y}년</option>`;
+        let ty = new Date().getFullYear();
+        for(let y=ty-1; y<=ty+5; y++) yrHtml += `<option value="${y}">${y}년</option>`;
         for(let m=1; m<=12; m++) moHtml += `<option value="${m}">${m}월</option>`;
         document.getElementById('calYear').innerHTML = yrHtml;
         document.getElementById('calMonth').innerHTML = moHtml;
@@ -701,6 +708,14 @@
         if(pageId === 'team') checkTeamUI();
         if(pageId === 'profile') { document.getElementById('editNickname').value = userNickname; document.getElementById('editEmail').value = myEmail; }
         if(pageId === 'checklist') { goBackToPunchList(false); loadPunchSummaryCards(); }
+        // 연차 페이지 진입 시 이번 달로 자동 초기화
+        if(pageId === 'leave') {
+            let td = new Date();
+            document.getElementById('calYear').value = td.getFullYear();
+            document.getElementById('calMonth').value = td.getMonth() + 1;
+            document.getElementById('calAccordionArea').style.display = 'none';
+            renderLeaveCalendar();
+        }
     }
     function toggleSidebar() {
         document.getElementById('sidebar').classList.toggle('active');
@@ -749,7 +764,7 @@
     async function handleLogout() { if(confirm("로그아웃 하시겠습니까?")) { await auth.signOut(); location.reload(); } }
 
     // ----------------------------------------------------
-    // 1. 공지 & 전달사항 (Board)
+    // 1. 공지 & 전달사항
     // ----------------------------------------------------
     function loadBoardMemos() {
         db.collection("notices").where("teamId", "==", myTeamId).orderBy("createdAt", "desc").onSnapshot(ss => {
@@ -763,7 +778,6 @@
             document.getElementById('manage-memo-list').innerHTML = memos.map(n => `<div class="board-item d-flex justify-content-between" style="border-color:var(--success-btn);"><span>${n.text} <span class="small text-secondary ms-2">${n.dateStr}</span></span><button class="btn btn-sm text-danger p-0" onclick="delBoardItem('${n.id}')"><i class="bi bi-trash"></i></button></div>`).join('');
         });
     }
-
     async function addBoardItem(type) {
         let input = document.getElementById(`input-${type}`); let text = input.value.trim(); if(!text) return;
         if(type === 'notice') { await db.collection("notices").add({ teamId: myTeamId, text: text, writer: userNickname, createdAt: Date.now() }); } 
@@ -774,7 +788,7 @@
     async function delBoardItem(id) { if(confirm("삭제할까요?")) await db.collection("board_memos").doc(id).delete(); }
 
     // ----------------------------------------------------
-    // 2. 종합 상황판 
+    // 2. 종합 상황판
     // ----------------------------------------------------
     let siteEditingId = null;
     function loadAllStatusData() {
@@ -866,7 +880,7 @@
 
         html2canvas(captureArea, { backgroundColor: '#1e222d', scale: 2 }).then(canvas => {
             scrollWrapper.style.overflowX = origOverflow;
-            captureArea.style.width = 'auto'; // 원상복구
+            captureArea.style.width = 'auto';
             let link = document.createElement('a'); 
             link.download = `${siteName}_예상_공정표.png`; 
             link.href = canvas.toDataURL(); link.click();
@@ -925,7 +939,7 @@
     }
 
     // ----------------------------------------------------
-    // 4. 작업일보 
+    // 4. 작업일보
     // ----------------------------------------------------
     let editingId = null; let teamData = [{ teamName: "목공팀", workers: [] }];
     function renderAllTeams() {
@@ -959,7 +973,7 @@
     async function deleteLog(id) { if(confirm("이 작업일보를 완전히 삭제할까요?")) { await db.collection("monthly_logs").doc(id).delete(); } }
 
     // ----------------------------------------------------
-    // 5. 펀치리스트 
+    // 5. 펀치리스트
     // ----------------------------------------------------
     let currentSite = ""; let punchListListener = null; let punchDetailListener = null; let globalPunchSites = []; let activePunchCardFilter = "전체"; let globalPunchItems = []; let activePunchFilter = "전체";
     function loadPunchSummaryCards() { if(!myTeamId) return; if(punchListListener) punchListListener(); punchListListener = db.collection("punch_lists").where("teamId", "==", myTeamId).onSnapshot(ss => { let sitesData = {}; ss.docs.forEach(doc => { const d = doc.data(); if(!sitesData[d.siteName]) sitesData[d.siteName] = { total: 0, done: 0, lastAt: 0, writer: d.writer }; sitesData[d.siteName].total++; if(d.done) sitesData[d.siteName].done++; if(d.createdAt > sitesData[d.siteName].lastAt) { sitesData[d.siteName].lastAt = d.createdAt; sitesData[d.siteName].writer = d.writer; } }); globalPunchSites = Object.keys(sitesData).map(key => ({ name: key, ...sitesData[key] })).sort((a, b) => b.lastAt - a.lastAt); renderPunchCardFilterAndList(); }); }
@@ -1015,7 +1029,7 @@
     async function delMemo(id) { if(confirm("삭제?")) await db.collection("team_memos").doc(id).delete(); }
 
     // ----------------------------------------------------
-    // 8. 연차 관리 (Leave)
+    // 8. 연차 관리 (Leave - 아코디언 드롭다운 적용)
     // ----------------------------------------------------
     let teamMembersInfo = {}; 
     let globalLeaveRecords = [];
@@ -1043,14 +1057,6 @@
                 return `<tr><td class="fw-bold">${nick}</td><td class="text-secondary">${resetDate}</td><td class="text-info">${info.base}</td><td class="text-danger">${usedAmt}</td><td class="text-success fw-bold">${remain}</td></tr>`;
             }).join('');
 
-            let calYearEl = document.getElementById('calYear');
-            let calMonthEl = document.getElementById('calMonth');
-            if(!calYearEl.dataset.initialized) {
-                let td = new Date(); 
-                calYearEl.value = td.getFullYear(); 
-                calMonthEl.value = td.getMonth() + 1;
-                calYearEl.dataset.initialized = "true";
-            }
             renderLeaveCalendar();
         });
     }
@@ -1061,7 +1067,7 @@
         let firstDay = new Date(year, month, 1).getDay();
         let daysInMonth = new Date(year, month + 1, 0).getDate();
 
-        let html = '<div class="d-grid" style="grid-template-columns: repeat(7, 1fr); gap: 8px;">';
+        let html = '<div class="d-grid" style="grid-template-columns: repeat(7, 1fr); gap: 5px;">';
         const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
         weekDays.forEach((w, i) => {
             let color = i===0 ? 'text-danger' : (i===6 ? 'text-primary' : 'text-secondary');
@@ -1073,42 +1079,73 @@
         for(let i=1; i<=daysInMonth; i++) {
             let dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
             let matchRecs = globalLeaveRecords.filter(r => r.date === dateStr);
-            let badgeHtml = matchRecs.map(r => {
-                let txt = r.amount === 1 ? '종일' : (r.type === 'am' ? '오전' : '오후');
+            
+            // 모바일 짤림 방지: 달력 칸에는 이름만 심플하게 표시 (Dots)
+            let badgeHtml = `<div class="cal-dots">` + matchRecs.map(r => {
                 let nick = globalEmailToNick[r.userEmail] || r.userEmail.split('@')[0];
-                let isApproved = r.approved ? 'checked' : '';
-                let chkClass = r.approved ? 'bg-success' : 'bg-secondary';
-                
-                let isOwnerOrAdmin = (myRole === 'owner' || myRole === 'admin');
-                let chkDisabled = isOwnerOrAdmin ? '' : 'disabled';
-                let canDelete = r.approved ? isOwnerOrAdmin : (isOwnerOrAdmin || r.userEmail === myEmail);
-                let delBtn = canDelete ? `<i class="bi bi-x-circle-fill ms-1 text-white" style="cursor:pointer;" onclick="event.stopPropagation(); deleteLeaveRecord('${r.id}')"></i>` : '';
-
-                return `<div class="leave-badge ${chkClass} text-white mt-1 d-flex justify-content-between align-items-center">
-                            <span class="text-truncate">${nick}(${txt})</span>
-                            <div class="d-flex align-items-center">
-                                <input type="checkbox" class="form-check-input m-0 p-0" style="width:14px; height:14px;" ${isApproved} ${chkDisabled} onclick="event.stopPropagation(); toggleLeaveApprove('${r.id}', ${r.approved||false})">
-                                ${delBtn}
-                            </div>
-                        </div>`;
-            }).join('');
+                let bg = r.approved ? 'var(--success-btn)' : '#6c757d';
+                return `<span class="cal-dot" style="background:${bg};">${nick}</span>`;
+            }).join('') + `</div>`;
             
             let dayOfWeek = new Date(year, month, i).getDay();
             let dayColor = dayOfWeek===0 ? '#e03131' : (dayOfWeek===6 ? '#5c7cfa' : '#94a3b8');
-            html += `<div class="cal-day-box" onclick="openLeaveModal('${dateStr}')"><div class="cal-date-num" style="color:${dayColor}">${i}</div>${badgeHtml}</div>`;
+            html += `<div class="cal-day-box" onclick="toggleCalAccordion('${dateStr}')"><div class="cal-date-num" style="color:${dayColor}">${i}</div>${badgeHtml}</div>`;
         }
         html += '</div>';
         document.getElementById('leaveCalendar').innerHTML = html;
     }
 
+    // 터치 시 스르륵 열리는 아코디언 로직
+    function toggleCalAccordion(dateStr) {
+        const area = document.getElementById('calAccordionArea');
+        const content = document.getElementById('calAccordionContent');
+        
+        let matchRecs = globalLeaveRecords.filter(r => r.date === dateStr);
+        let listHtml = matchRecs.map(r => {
+            let txt = r.amount === 1 ? '종일' : (r.type === 'am' ? '오전반차' : '오후반차');
+            let nick = globalEmailToNick[r.userEmail] || r.userEmail.split('@')[0];
+            let isApproved = r.approved ? 'checked' : '';
+            let isOwnerOrAdmin = (myRole === 'owner' || myRole === 'admin');
+            let chkDisabled = isOwnerOrAdmin ? '' : 'disabled';
+            let canDelete = r.approved ? isOwnerOrAdmin : (isOwnerOrAdmin || r.userEmail === myEmail);
+            let delBtn = canDelete ? `<button class="btn btn-sm btn-danger py-0 px-2" onclick="deleteLeaveRecord('${r.id}', '${r.userEmail}', ${r.approved||false})"><i class="bi bi-x"></i></button>` : '';
+
+            return `<div class="leave-detail-item">
+                        <div class="fw-bold">${nick} <span class="text-secondary small ms-2">${txt}</span></div>
+                        <div class="d-flex align-items-center gap-3">
+                            <label class="m-0 d-flex align-items-center gap-1 small cursor-pointer">
+                                <input type="checkbox" class="form-check-input m-0" ${isApproved} ${chkDisabled} onchange="toggleLeaveApprove('${r.id}', ${r.approved||false})">
+                                ${r.approved ? '<span class="text-success fw-bold">승인됨</span>' : '<span class="text-secondary">대기중</span>'}
+                            </label>
+                            ${delBtn}
+                        </div>
+                    </div>`;
+        }).join('');
+
+        if(!listHtml) listHtml = `<p class="text-secondary small text-center m-0">이 날짜에 신청된 휴가가 없습니다.</p>`;
+
+        let bottomBtn = `<button class="btn btn-outline-success w-100 mt-3 py-2 fw-bold" onclick="openLeaveModal('${dateStr}')">+ 이 날짜(${dateStr.slice(5)})로 휴가 신청하기</button>`;
+        
+        content.innerHTML = `<h6 class="fw-bold text-primary mb-3">${dateStr} 상세 내역</h6>${listHtml}${bottomBtn}`;
+        area.style.display = 'block';
+        area.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
     async function toggleLeaveApprove(id, currentStatus) {
         if(myRole !== 'owner' && myRole !== 'admin') return alert("관리자만 승인할 수 있습니다.");
         await db.collection("leave_records").doc(id).update({ approved: !currentStatus });
+        // UI 즉시 반영을 위해 닫기
+        document.getElementById('calAccordionArea').style.display = 'none';
     }
 
-    async function deleteLeaveRecord(id) {
-        if(confirm("이 휴가 신청을 삭제하시겠습니까?")) {
+    async function deleteLeaveRecord(id, recordEmail, isApproved) {
+        let isOwnerOrAdmin = (myRole === 'owner' || myRole === 'admin');
+        if (isApproved && !isOwnerOrAdmin) return alert("승인된 연차는 관리자만 삭제할 수 있습니다.");
+        if (!isApproved && !isOwnerOrAdmin && recordEmail !== myEmail) return alert("본인의 신청 내역만 삭제할 수 있습니다.");
+        
+        if(confirm("이 휴가 신청을 취소/삭제하시겠습니까?")) {
             await db.collection("leave_records").doc(id).delete();
+            document.getElementById('calAccordionArea').style.display = 'none';
         }
     }
 
@@ -1125,6 +1162,7 @@
         
         await db.collection("leave_records").add({ teamId: myTeamId, userEmail: myEmail, date: d, amount: amt, type: typeStr, approved: false, createdAt: Date.now() }); 
         leaveModal.hide();
+        document.getElementById('calAccordionArea').style.display = 'none';
     }
 
     async function saveLeaveSettings() {
@@ -1152,29 +1190,23 @@
         else document.getElementById('btnRegenCode').style.display = 'none';
         document.getElementById('displayTeamId').value = tData.inviteCode || '발급필요';
 
-        const memberPromises = members.map(async mEmail => {
-            let nick = "이름미상";
-            try { const uDoc = await db.collection("users").doc(mEmail).get(); if(uDoc.exists) nick = uDoc.data().nickname; } catch(e){}
-            return { email: mEmail, nick: nick };
-        });
-        const memberData = await Promise.all(memberPromises);
-
-        document.getElementById('member-list').innerHTML = memberData.map(m => {
+        document.getElementById('member-list').innerHTML = members.map(m => {
+            let nick = globalEmailToNick[m] || m.split('@')[0];
             let badge = "", actionBtn = "";
-            let isOwner = (tData.owner === m.email || m.email === "idong2300@naver.com");
-            let isAdmin = (tData.admins && tData.admins.includes(m.email));
+            let isOwner = (tData.owner === m || m === "idong2300@naver.com");
+            let isAdmin = (tData.admins && tData.admins.includes(m));
 
             if(isOwner) badge = `<span class="badge bg-warning text-dark">에디터</span>`;
             else if(isAdmin) {
                 badge = `<span class="badge bg-primary">관리자</span>`;
-                if(myRole === "owner") actionBtn = `<button class="btn btn-sm btn-outline-secondary py-0 me-2" onclick="toggleAdmin('${m.email}', false)">관리자 해제</button><button class="btn btn-sm btn-outline-danger py-0" onclick="kickMember('${m.email}')">삭제</button>`;
+                if(myRole === "owner") actionBtn = `<button class="btn btn-sm btn-outline-secondary py-0 me-2" onclick="toggleAdmin('${m}', false)">관리자 해제</button><button class="btn btn-sm btn-outline-danger py-0" onclick="kickMember('${m}')">삭제</button>`;
             }
             else {
                 badge = `<span class="badge bg-secondary">팀원</span>`;
-                if(myRole === "owner") actionBtn = `<button class="btn btn-sm btn-outline-info py-0 me-2" onclick="toggleAdmin('${m.email}', true)">관리자 임명</button><button class="btn btn-sm btn-outline-danger py-0" onclick="kickMember('${m.email}')">삭제</button>`;
-                else if(myRole === "admin") actionBtn = `<button class="btn btn-sm btn-outline-danger py-0" onclick="kickMember('${m.email}')">삭제</button>`;
+                if(myRole === "owner") actionBtn = `<button class="btn btn-sm btn-outline-info py-0 me-2" onclick="toggleAdmin('${m}', true)">관리자 임명</button><button class="btn btn-sm btn-outline-danger py-0" onclick="kickMember('${m}')">삭제</button>`;
+                else if(myRole === "admin") actionBtn = `<button class="btn btn-sm btn-outline-danger py-0" onclick="kickMember('${m}')">삭제</button>`;
             }
-            return `<div class="list-group-item bg-transparent text-white border-secondary border-opacity-25 py-3 d-flex flex-column gap-2 flex-md-row justify-content-md-between align-items-md-center"><div class="d-flex align-items-center flex-wrap gap-2">${badge} <span class="fw-bold">${m.nick}</span> <span class="small text-secondary">(${m.email})</span></div><div class="text-end">${actionBtn}</div></div>`;
+            return `<div class="list-group-item bg-transparent text-white border-secondary border-opacity-25 py-3 d-flex flex-column gap-2 flex-md-row justify-content-md-between align-items-md-center"><div class="d-flex align-items-center flex-wrap gap-2">${badge} <span class="fw-bold">${nick}</span> <span class="small text-secondary">(${m})</span></div><div class="text-end">${actionBtn}</div></div>`;
         }).join('');
     }
 

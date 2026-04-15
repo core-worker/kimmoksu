@@ -3,136 +3,233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>신규 기능 테스트 - 김목수이야기</title>
+    <title>김목수이야기 통합 ERP - 마스터 테스트</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
+
     <style>
-        :root { --bg-deep: #131722; --sidebar-bg: #1e222d; --card-bg: #2a2e39; --primary-accent: #5c7cfa; --success-btn: #0ca678; }
+        :root {
+            --bg-deep: #131722; --sidebar-bg: #1e222d; --card-bg: #2a2e39;
+            --primary-accent: #5c7cfa; --success-btn: #0ca678; --danger-btn: #e03131;
+        }
+
         body { background-color: var(--bg-deep); color: #f8fafc; font-family: 'Pretendard', sans-serif; margin: 0; overflow: hidden; }
-        .app-wrapper { display: flex; height: 100vh; width: 100vw; }
+        .app-wrapper { display: flex; height: 100vh; height: 100dvh; width: 100vw; position: relative; }
         
-        .sidebar { width: 240px; background-color: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; z-index: 1050; }
-        .main-container { flex: 1; overflow-y: auto; padding: 25px; padding-bottom: 80px; }
-
-        .nav-link { color: #94a3b8; padding: 12px 18px; margin: 4px 10px; border-radius: 10px; cursor: pointer; transition: 0.2s; }
-        .nav-link:hover, .nav-link.active { background-color: rgba(92, 124, 250, 0.2); color: var(--primary-accent); font-weight: bold; }
-        .nav-link i { margin-right: 10px; }
-
-        .page-section { display: none; animation: fadeIn 0.2s; }
+        /* 사이드바 */
+        .sidebar { width: 260px; height: 100dvh; background-color: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1050; overflow-y: auto; flex-shrink: 0; }
+        
+        .main-container { flex: 1; overflow-y: auto; background-color: var(--bg-deep); width: 100%; }
+        .page-section { display: none; animation: fadeIn 0.2s ease-out; padding: 30px; max-width: 1400px; margin: 0 auto; width: 100%; padding-bottom: 80px; }
         .page-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        .t5-card { background: var(--card-bg); border-radius: 14px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); margin-bottom: 20px; }
-        .input-dark { background: #1e222d !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; }
-        
-        /* 게시판 UI */
+        .nav-link { color: #94a3b8; padding: 14px 20px; margin: 4px 15px; border-radius: 12px; transition: 0.3s; cursor: pointer; display: flex; align-items: center; text-decoration: none; }
+        .nav-link i { font-size: 1.2rem; margin-right: 12px; }
+        .nav-link:hover, .nav-link.active { background-color: rgba(92, 124, 250, 0.2); color: var(--primary-accent); font-weight: bold; }
+
+        /* 모바일 대응 */
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1040; backdrop-filter: blur(2px); transition: 0.3s; opacity: 0; }
+        .sidebar-overlay.active { display: block; opacity: 1; }
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-100%); } 
+            .sidebar.active { transform: translateX(0); } 
+            .page-section { padding: 20px 15px; padding-bottom: 100px; } 
+            .mobile-menu-btn { display: flex !important; } 
+            /* 모바일 기능카드 2열 콤팩트 배치 */
+            .mobile-col-6 { width: 50% !important; padding: 5px !important; }
+            .compact-card { padding: 15px 10px !important; margin-bottom: 0 !important; }
+            .compact-card i { font-size: 2rem !important; margin-bottom: 10px !important; }
+            .compact-card h6 { font-size: 0.9rem !important; }
+            .compact-card p { display: none; }
+        }
+
+        /* 햄버거 메뉴 버튼 복구 */
+        .mobile-menu-btn { display: none; position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary-accent); color: white; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1030; border: none; font-size: 1.8rem; cursor: pointer; }
+
+        .t5-card { background: var(--card-bg); border-radius: 16px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; }
+        .input-dark { background: #1e222d !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; font-size: 0.95rem !important; }
+        .input-dark::placeholder { color: #8b95a1 !important; opacity: 1 !important; }
+
+        /* 상황판 & 게시판 CSS */
         .board-list { max-height: 250px; overflow-y: auto; padding-right: 5px; }
         .board-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid var(--primary-accent); font-size: 0.9rem; }
-        
-        /* 공정표 UI */
-        .gantt-container { overflow-x: auto; background: #1e222d; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
-        .gantt-table { margin: 0; white-space: nowrap; font-size: 0.8rem; }
-        .gantt-table th, .gantt-table td { border-color: rgba(255,255,255,0.1) !important; padding: 6px !important; vertical-align: middle; }
-        .gantt-task-col { position: sticky; left: 0; background: var(--card-bg) !important; z-index: 2; font-weight: bold; text-align: left; min-width: 100px; border-right: 2px solid rgba(255,255,255,0.2) !important; }
-        .gantt-cell { cursor: pointer; min-width: 35px; transition: 0.1s; }
-        .gantt-cell:hover { background: rgba(255,255,255,0.1); }
-        .gantt-active { background: var(--primary-accent) !important; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2); }
-        .day-sat { background: rgba(92, 124, 250, 0.1) !important; color: #5c7cfa; }
-        .day-sun { background: rgba(224, 49, 49, 0.1) !important; color: #e03131; }
 
-        /* 메모장 UI */
-        .memo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
-        .memo-card { background: #fffae6; color: #333; padding: 15px; border-radius: 8px; box-shadow: 2px 4px 10px rgba(0,0,0,0.1); position: relative; }
-        .memo-card.shared { background: #e3f2fd; }
-        .memo-date { font-size: 0.7rem; color: #666; margin-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 4px; }
-        .memo-content { font-size: 0.9rem; white-space: pre-wrap; line-height: 1.4; }
+        /* 공정표 CSS */
+        .gantt-container { overflow-x: auto; background: #1e222d; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .gantt-table { margin: 0; white-space: nowrap; font-size: 0.8rem; border-collapse: separate; border-spacing: 0; }
+        .gantt-table th, .gantt-table td { border: 1px solid rgba(255,255,255,0.05); padding: 8px !important; text-align: center; vertical-align: middle; }
+        .gantt-task-col { position: sticky; left: 0; background: var(--card-bg) !important; z-index: 10; min-width: 140px; text-align: left !important; border-right: 2px solid var(--primary-accent) !important; }
+        .gantt-cell { cursor: pointer; min-width: 35px; transition: 0.1s; }
+        .gantt-cell:hover { background-color: rgba(255,255,255,0.1); }
+        /* 주말 색상이 !important 라서 덮어쓰지 못하던 버그 수정 */
+        .day-sat { background-color: rgba(92, 124, 250, 0.05); color: #5c7cfa; }
+        .day-sun { background-color: rgba(224, 49, 49, 0.05); color: #e03131; }
+        .gantt-active { background-color: var(--primary-accent) !important; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2); }
+        .task-editable { background: transparent; border: none; color: #0dcaf0; font-weight: bold; width: 100%; outline: none; }
+
+        /* 메모장 CSS */
+        .memo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .memo-card { background: #fff9db; color: #333; padding: 15px; border-radius: 8px; box-shadow: 2px 4px 10px rgba(0,0,0,0.1); position: relative; }
+        .memo-card.shared { background: #e3f2fd; border-left: 4px solid #5c7cfa; }
         
-        @media (max-width: 768px) {
-            .sidebar { display: none; } /* 테스트용 임시 숨김 */
-            .main-container { padding: 15px; }
-        }
-        
-        /* 커스텀 스크롤바 */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
     </style>
 </head>
 <body>
 
 <div class="app-wrapper">
-    <nav class="sidebar">
-        <div class="p-4 text-center border-bottom border-secondary border-opacity-25">
-            <h5 class="fw-bold text-white m-0">김목수이야기 ERP</h5>
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <nav class="sidebar" id="sidebar">
+        <div class="p-4 text-center border-bottom border-secondary border-opacity-10">
+            <h5 class="fw-bold text-white m-0">Kimmoksu ERP</h5>
         </div>
         <div class="flex-grow-1 mt-3">
-            <div class="nav-link active" onclick="showPage('board', this)"><i class="bi bi-megaphone"></i> 알림 보드</div>
-            <div class="nav-link" onclick="showPage('gantt', this)"><i class="bi bi-bar-chart-steps"></i> 공정 & 추가공사</div>
-            <div class="nav-link" onclick="showPage('memo', this)"><i class="bi bi-stickies"></i> 메모장</div>
-            <div class="nav-link" onclick="showPage('leave', this)"><i class="bi bi-calendar2-heart"></i> 연차 관리</div>
-            <hr class="border-secondary opacity-25 mx-3">
-            <div class="nav-link text-secondary"><i class="bi bi-journal-check"></i> 작업일보 (Off)</div>
-            <div class="nav-link text-secondary"><i class="bi bi-ui-checks"></i> 펀치리스트 (Off)</div>
-            <div class="nav-link text-secondary"><i class="bi bi-calculator"></i> T5 계산기 (Off)</div>
+            <div class="nav-link active" onclick="showPage('home', this)"><i class="bi bi-house-door"></i> 홈 메인</div>
+            <div class="nav-link" onclick="showPage('board', this)"><i class="bi bi-bell"></i> 공지 & 전달 관리</div>
+            <div class="nav-link" onclick="showPage('gantt', this)"><i class="bi bi-bar-chart-steps"></i> 공정표 & 추가공사</div>
+            <div class="nav-link" onclick="showPage('worklog', this)"><i class="bi bi-journal-text"></i> 작업일보</div>
+            <div class="nav-link" onclick="showPage('punch', this)"><i class="bi bi-ui-checks"></i> 펀치리스트</div>
+            <div class="nav-link" onclick="showPage('t5', this)"><i class="bi bi-calculator"></i> T5 계산기</div>
+            <div class="nav-link" onclick="showPage('memo', this)"><i class="bi bi-stickies"></i> 팀 메모장</div>
+            <div class="nav-link" onclick="showPage('leave', this)"><i class="bi bi-calendar2-check"></i> 연차 관리</div>
         </div>
     </nav>
 
     <main class="main-container">
         
-        <section id="page-board" class="page-section active">
-            <h3 class="fw-bold mb-4">현장 소통 보드</h3>
+        <section id="page-home" class="page-section active">
+            <h3 class="fw-bold mb-4">현장 종합 요약</h3>
             
-            <div class="row g-3">
+            <div class="row g-3 mb-4">
                 <div class="col-12 col-md-8">
-                    <div class="t5-card h-100">
+                    <div class="t5-card h-100 mb-0">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="fw-bold text-warning m-0"><i class="bi bi-bell-fill me-2"></i>공지사항</h5>
-                            <button class="btn btn-sm btn-outline-light" onclick="addMsg('notice')">+ 작성</button>
+                            <button class="btn btn-sm btn-outline-secondary py-0" onclick="showPage('board', document.querySelectorAll('.nav-link')[1])">관리</button>
                         </div>
-                        <div class="board-list" id="notice-list">
+                        <div class="board-list" id="home-notice-list">
                             </div>
                     </div>
                 </div>
-                
                 <div class="col-12 col-md-4">
-                    <div class="t5-card h-100">
+                    <div class="t5-card h-100 mb-0">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="fw-bold text-info m-0"><i class="bi bi-chat-dots-fill me-2"></i>최근 전달내용</h6>
-                            <button class="btn btn-sm btn-outline-light" onclick="addMsg('memo')">+ 작성</button>
+                            <button class="btn btn-sm btn-outline-secondary py-0" onclick="showPage('board', document.querySelectorAll('.nav-link')[1])">관리</button>
                         </div>
-                        <div class="board-list" id="msg-list">
+                        <div class="board-list" id="home-msg-list">
                             </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 row-cols-2 row-cols-md-3">
+                <div class="col mobile-col-6" onclick="showPage('gantt', document.querySelectorAll('.nav-link')[2])">
+                    <div class="t5-card compact-card h-100 cursor-pointer text-center">
+                        <i class="bi bi-bar-chart-steps fs-1 d-block mb-3 text-primary"></i>
+                        <h6 class="fw-bold m-0">공정표 & 추가</h6>
+                        <p class="small text-secondary mt-2 mb-0">일정 및 비용 정산</p>
+                    </div>
+                </div>
+                <div class="col mobile-col-6" onclick="showPage('worklog', document.querySelectorAll('.nav-link')[3])">
+                    <div class="t5-card compact-card h-100 cursor-pointer text-center">
+                        <i class="bi bi-journal-text fs-1 d-block mb-3 text-success"></i>
+                        <h6 class="fw-bold m-0">작업일보</h6>
+                        <p class="small text-secondary mt-2 mb-0">공수 기록 / 엑셀</p>
+                    </div>
+                </div>
+                <div class="col mobile-col-6" onclick="showPage('punch', document.querySelectorAll('.nav-link')[4])">
+                    <div class="t5-card compact-card h-100 cursor-pointer text-center">
+                        <i class="bi bi-ui-checks fs-1 d-block mb-3 text-danger"></i>
+                        <h6 class="fw-bold m-0">펀치리스트</h6>
+                        <p class="small text-secondary mt-2 mb-0">마감 진행률 체크</p>
+                    </div>
+                </div>
+                <div class="col mobile-col-6" onclick="showPage('t5', document.querySelectorAll('.nav-link')[5])">
+                    <div class="t5-card compact-card h-100 cursor-pointer text-center">
+                        <i class="bi bi-calculator fs-1 d-block mb-3 text-warning"></i>
+                        <h6 class="fw-bold m-0">T5 계산기</h6>
+                        <p class="small text-secondary mt-2 mb-0">발주 물량 산출</p>
+                    </div>
+                </div>
+                <div class="col mobile-col-6" onclick="showPage('memo', document.querySelectorAll('.nav-link')[6])">
+                    <div class="t5-card compact-card h-100 cursor-pointer text-center">
+                        <i class="bi bi-stickies fs-1 d-block mb-3" style="color: #e67e22;"></i>
+                        <h6 class="fw-bold m-0">메모장</h6>
+                        <p class="small text-secondary mt-2 mb-0">개인/팀 포스트잇</p>
+                    </div>
+                </div>
+                <div class="col mobile-col-6" onclick="showPage('leave', document.querySelectorAll('.nav-link')[7])">
+                    <div class="t5-card compact-card h-100 cursor-pointer text-center">
+                        <i class="bi bi-calendar2-check fs-1 d-block mb-3" style="color: #9b59b6;"></i>
+                        <h6 class="fw-bold m-0">연차 관리</h6>
+                        <p class="small text-secondary mt-2 mb-0">휴가 캘린더 현황</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-board" class="page-section">
+            <h3 class="fw-bold mb-4">공지 및 전달사항 관리 센터</h3>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="t5-card h-100">
+                        <h6 class="fw-bold mb-3 text-warning"><i class="bi bi-bell-fill me-2"></i>공지사항 추가/삭제</h6>
+                        <div class="d-flex gap-2 mb-4">
+                            <input type="text" id="input-notice" class="form-control input-dark" placeholder="새 공지 입력" onkeypress="if(event.keyCode===13) addBoardItem('notice')">
+                            <button class="btn btn-primary px-3 fw-bold" onclick="addBoardItem('notice')">추가</button>
+                        </div>
+                        <div id="manage-notice-list"></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="t5-card h-100">
+                        <h6 class="fw-bold mb-3 text-info"><i class="bi bi-chat-dots-fill me-2"></i>회의 전달내용 추가/삭제</h6>
+                        <div class="d-flex gap-2 mb-4">
+                            <input type="text" id="input-memo" class="form-control input-dark" placeholder="새 전달사항 입력" onkeypress="if(event.keyCode===13) addBoardItem('memo')">
+                            <button class="btn btn-primary px-3 fw-bold" onclick="addBoardItem('memo')">추가</button>
+                        </div>
+                        <div id="manage-memo-list"></div>
                     </div>
                 </div>
             </div>
         </section>
 
         <section id="page-gantt" class="page-section">
-            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary border-opacity-25 pb-3">
+            <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="fw-bold m-0">현장 공정 & 추가 내역</h3>
-                <button class="btn btn-primary fw-bold" onclick="createNewProject()">+ 신규 현장 공정 셋팅</button>
+                <button class="btn btn-primary fw-bold" onclick="createNewProject()">+ 신규 공정표 생성</button>
             </div>
 
-            <div class="t5-card">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold text-white m-0">📍 일강이앤아이 현장</h5>
-                    <span class="badge bg-secondary">진행중</span>
+            <div class="t5-card" id="ganttDashboard" style="display: none;">
+                <div class="row g-2 mb-4 align-items-center">
+                    <div class="col-md-6">
+                        <input type="text" id="ganttSiteName" class="form-control input-dark fs-5 fw-bold text-warning" placeholder="현장명을 입력하세요 (예: 일강이앤아이)">
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <button class="btn btn-sm btn-success me-1 px-3 fw-bold" onclick="saveGantt()">💾 현재 상태 저장</button>
+                        <button class="btn btn-sm btn-outline-danger px-3" onclick="deleteGantt()">초기화/삭제</button>
+                    </div>
                 </div>
                 
-                <h6 class="fw-bold mt-4 mb-2 text-primary"><i class="bi bi-bar-chart-steps me-2"></i>실전 공정표 (Gantt)</h6>
-                <div class="gantt-container mb-4">
+                <h6 class="fw-bold mt-2 mb-3 text-primary"><i class="bi bi-bar-chart-steps me-2"></i>실전 공정표 (Gantt)</h6>
+                <div class="gantt-container mb-3">
                     <table class="table table-dark table-bordered gantt-table" id="ganttTable">
                         </table>
                 </div>
-                <div class="text-end mb-4">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="addGanttDate()">+ 날짜 1일 추가 연장</button>
+                <div class="d-flex justify-content-between mb-5">
+                    <button class="btn btn-sm btn-outline-info" onclick="addGanttTaskRow()">+ 공종(행) 추가</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="addGanttDate()">일정 1일 연장 <i class="bi bi-arrow-right"></i></button>
                 </div>
 
                 <hr class="border-secondary opacity-25">
 
-                <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+                <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
                     <h6 class="fw-bold text-warning m-0"><i class="bi bi-cash-coin me-2"></i>추가 공사 내역</h6>
                     <button class="btn btn-sm btn-outline-warning" onclick="addExtraCostRow()">+ 내역 추가</button>
                 </div>
@@ -153,120 +250,179 @@
                             </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="2" class="text-end fw-bold text-secondary">총 추가 공사대금 :</td>
-                                <td class="text-warning fw-bold fs-6" id="extraTotalSum">0</td>
+                                <td colspan="2" class="text-end fw-bold text-secondary py-3">총 추가 공사대금 :</td>
+                                <td class="text-warning fw-bold fs-5 py-3" id="extraTotalSum">0</td>
                                 <td colspan="4"></td>
                             </tr>
                         </tfoot>
                     </table>
                 </div>
             </div>
+
+            <h5 class="fw-bold mt-5 mb-3"><i class="bi bi-archive me-2"></i>저장된 현장 목록</h5>
+            <div id="saved-gantt-list" class="row g-3">
+                <p class="text-secondary small ms-2">저장된 내역이 없습니다.</p>
+            </div>
+        </section>
+
+        <section id="page-worklog" class="page-section">
+            <h3 class="fw-bold mb-4">작업일보</h3>
+            <div class="t5-card text-center py-5 text-secondary">
+                <i class="bi bi-journal-text fs-1 mb-3 d-block"></i>
+                <p>통합 테스트를 위해 기존 코드는 일시적으로 가려두었습니다.<br>레이아웃 융합 확인용입니다.</p>
+            </div>
+        </section>
+        <section id="page-punch" class="page-section">
+            <h3 class="fw-bold mb-4">마감 펀치리스트</h3>
+            <div class="t5-card text-center py-5 text-secondary">
+                <i class="bi bi-ui-checks fs-1 mb-3 d-block"></i>
+                <p>통합 테스트를 위해 기존 코드는 일시적으로 가려두었습니다.<br>레이아웃 융합 확인용입니다.</p>
+            </div>
+        </section>
+        <section id="page-t5" class="page-section">
+            <h3 class="fw-bold mb-4">T5 계산기</h3>
+            <div class="t5-card text-center py-5 text-secondary">
+                <i class="bi bi-calculator fs-1 mb-3 d-block"></i>
+                <p>통합 테스트를 위해 기존 코드는 일시적으로 가려두었습니다.<br>레이아웃 융합 확인용입니다.</p>
+            </div>
         </section>
 
         <section id="page-memo" class="page-section">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3 class="fw-bold m-0">메모장</h3>
+                <h3 class="fw-bold m-0">팀 공유 메모장</h3>
                 <button class="btn btn-primary fw-bold" onclick="addMemo()">+ 새 메모 작성</button>
             </div>
-            
-            <ul class="nav nav-pills mb-4" id="memoTabs">
+            <ul class="nav nav-pills mb-4 border-bottom border-secondary border-opacity-25 pb-2" id="memoTabs">
                 <li class="nav-item"><button class="nav-link active py-1 px-3" onclick="switchMemoTab('private')">내 메모</button></li>
-                <li class="nav-item"><button class="nav-link py-1 px-3" onclick="switchMemoTab('shared')">팀 공유 메모</button></li>
+                <li class="nav-item"><button class="nav-link py-1 px-3" onclick="switchMemoTab('shared')">팀 공유 보드</button></li>
             </ul>
-
-            <div class="memo-grid" id="memoContainer">
-                </div>
+            <div class="memo-grid" id="memoContainer"></div>
         </section>
 
         <section id="page-leave" class="page-section">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3 class="fw-bold m-0">팀원 연차 관리 (입사일 기준)</h3>
-                <button class="btn btn-success fw-bold" onclick="requestLeave()">+ 연차/반차 신청</button>
+                <h3 class="fw-bold m-0">팀원 연차 관리</h3>
+                <button class="btn btn-success fw-bold" onclick="alert('테스트: 연차 신청 팝업')">+ 휴가 신청</button>
             </div>
-
             <div class="t5-card border border-warning border-opacity-50">
-                <h6 class="fw-bold text-warning mb-3"><i class="bi bi-gear me-2"></i>[관리자 전용] 팀원 기본 세팅</h6>
+                <h6 class="fw-bold text-warning mb-3"><i class="bi bi-gear me-2"></i>팀원 세팅 현황 (입사일 기준 자동갱신)</h6>
                 <div class="table-responsive">
                     <table class="table table-dark table-sm align-middle text-center mb-0">
                         <thead class="text-secondary">
-                            <tr><th>이름</th><th>입사일</th><th>기본 연차</th><th>조정(보너스)</th><th>총 연차</th><th>사용</th><th>잔여</th></tr>
+                            <tr><th>이름</th><th>입사일</th><th>기본 연차</th><th>총 연차</th><th>사용</th><th>잔여</th></tr>
                         </thead>
-                        <tbody id="leaveAdminBody">
+                        <tbody>
                             <tr>
-                                <td class="fw-bold text-white">강재구</td>
-                                <td><input type="date" class="form-control form-control-sm input-dark" value="2025-04-10"></td>
-                                <td><input type="number" class="form-control form-control-sm input-dark text-center" value="15" style="width:60px; margin:auto;"></td>
-                                <td><input type="number" class="form-control form-control-sm input-dark text-center" value="0" style="width:60px; margin:auto;"></td>
-                                <td class="fw-bold text-info">15</td>
-                                <td class="text-danger">2.5</td>
-                                <td class="text-success fw-bold fs-6">12.5</td>
+                                <td class="fw-bold text-white">이준호</td><td>2024-03-01</td><td>15</td><td class="fw-bold text-info">15</td><td class="text-danger">0.5</td><td class="text-success fw-bold fs-6">14.5</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-white">강재구</td><td>2025-04-10</td><td>15</td><td class="fw-bold text-info">15</td><td class="text-danger">2.0</td><td class="text-success fw-bold fs-6">13.0</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-
-            <h6 class="fw-bold mt-5 mb-3 text-white"><i class="bi bi-calendar-check me-2"></i>이번 달 휴가자 현황</h6>
-            <div class="t5-card p-3">
-                <div id="leaveCalendar" class="row g-2 text-center" style="font-size:0.8rem;">
-                    </div>
-            </div>
+            <h6 class="fw-bold mt-5 mb-3 text-white"><i class="bi bi-calendar-check me-2"></i>이번 달 휴가 달력 (Mock)</h6>
+            <div class="t5-card p-3"><div class="text-center py-4 text-secondary">달력 UI 렌더링 영역</div></div>
         </section>
 
     </main>
+
+    <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
 </div>
 
 <script>
     // -------------------------
-    // 공통 네비게이션
+    // 네비게이션 & 모바일 사이드바
     // -------------------------
     function showPage(pageId, el) {
         document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
         document.getElementById('page-' + pageId).classList.add('active');
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        if(el) el.classList.add('active');
+        if(el) {
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            el.classList.add('active');
+        }
+        // 모바일에서 클릭 시 사이드바 닫기
+        document.getElementById('sidebar').classList.remove('active');
+        document.getElementById('sidebarOverlay').classList.remove('active');
+    }
+
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('sidebarOverlay').classList.toggle('active');
     }
 
     // -------------------------
-    // 1. 알림 보드 로직
+    // 1. 공지 & 전달사항 관리 (Mock Data)
     // -------------------------
     let boardData = {
-        notice: [{ text: "4월 현장 전체 안전교육 실시", date: "04.14" }, { text: "새로운 김목수이야기 ERP 도입 안내", date: "04.13" }],
-        memo: [{ text: "일강이앤아이 도면 수정본 확인 요망", date: "04.15" }, { text: "내일 비 소식, 야외 자재 천막 덮기", date: "04.15" }]
+        notice: [{ id: 1, text: "4월 현장 안전교육 실시", date: "04.14" }],
+        memo: [{ id: 2, text: "일강이앤아이 도장 컬러 확인", date: "04.15" }]
     };
 
     function renderBoard() {
-        document.getElementById('notice-list').innerHTML = boardData.notice.map(n => `<div class="board-item d-flex justify-content-between"><span>${n.text}</span><span class="text-secondary" style="font-size:0.75rem;">${n.date}</span></div>`).join('');
-        document.getElementById('msg-list').innerHTML = boardData.memo.map(n => `<div class="board-item d-flex justify-content-between" style="border-color:var(--success-btn);"><span>${n.text}</span><span class="text-secondary" style="font-size:0.75rem;">${n.date}</span></div>`).join('');
+        // 홈 화면 렌더링
+        document.getElementById('home-notice-list').innerHTML = boardData.notice.map(n => `<div class="mb-1 text-truncate">• ${n.text}</div>`).join('') || '내용 없음';
+        document.getElementById('home-msg-list').innerHTML = boardData.memo.map(n => `<div class="mb-1 text-truncate">• ${n.text}</div>`).join('') || '내용 없음';
+
+        // 관리 화면 렌더링
+        document.getElementById('manage-notice-list').innerHTML = boardData.notice.map(n => `
+            <div class="board-item d-flex justify-content-between align-items-center">
+                <span>${n.text} <span class="small text-secondary ms-2">${n.date}</span></span>
+                <button class="btn btn-sm text-danger p-0" onclick="delBoardItem('notice', ${n.id})"><i class="bi bi-trash"></i></button>
+            </div>`).join('');
+        document.getElementById('manage-memo-list').innerHTML = boardData.memo.map(n => `
+            <div class="board-item d-flex justify-content-between align-items-center" style="border-color:var(--success-btn);">
+                <span>${n.text} <span class="small text-secondary ms-2">${n.date}</span></span>
+                <button class="btn btn-sm text-danger p-0" onclick="delBoardItem('memo', ${n.id})"><i class="bi bi-trash"></i></button>
+            </div>`).join('');
     }
 
-    function addMsg(type) {
-        let msg = prompt("내용을 입력하세요");
-        if(msg) {
-            let today = new Date(); let dStr = `0${today.getMonth()+1}`.slice(-2) + "." + `0${today.getDate()}`.slice(-2);
-            boardData[type].unshift({ text: msg, date: dStr });
-            renderBoard();
-        }
+    function addBoardItem(type) {
+        let input = document.getElementById(`input-${type}`);
+        let text = input.value.trim();
+        if(!text) return;
+        let dStr = "04.15"; // Mock
+        boardData[type].unshift({ id: Date.now(), text: text, date: dStr });
+        input.value = '';
+        renderBoard();
+    }
+    
+    function delBoardItem(type, id) {
+        boardData[type] = boardData[type].filter(item => item.id !== id);
+        renderBoard();
     }
     renderBoard();
 
     // -------------------------
-    // 2. 맞춤형 공정표 로직
+    // 2. 맞춤형 공정표 (Gantt) 로직
     // -------------------------
-    const defaultTasks = ["철거", "목공", "전기", "필름", "도장", "소방", "가구", "바닥", "유리", "금속", "사인", "설비", "청소", "기타 잔손"];
+    let ganttTasks = ["철거", "목공", "전기", "필름", "도장", "소방", "가구", "바닥", "유리", "금속", "사인", "설비", "청소", "기타 잔손"];
     let ganttDates = [];
-    let ganttState = {}; // { "철거_2026-04-10": true }
+    let ganttState = {}; 
+    let currentGanttId = null;
+    let savedGanttList = []; // 메모리 DB
 
     function createNewProject() {
-        let sd = prompt("공사 시작일 (예: 2026-04-15)");
-        if(!sd) return;
-        let start = new Date(sd);
-        ganttDates = [];
-        for(let i=0; i<45; i++) { // 45일 기본 세팅
-            let d = new Date(start); d.setDate(start.getDate() + i);
-            ganttDates.push(d);
+        let sd = prompt("공사 시작일을 숫자 8자리로 입력하세요 (예: 20260420)");
+        if(!sd || sd.length !== 8 || isNaN(sd)) return alert("정확히 8자리 숫자로 입력해주세요.");
+        
+        let y = sd.substring(0,4), m = parseInt(sd.substring(4,6))-1, d = sd.substring(6,8);
+        let start = new Date(y, m, d);
+        
+        ganttDates = []; ganttState = {}; currentGanttId = null;
+        document.getElementById('ganttSiteName').value = '';
+        
+        for(let i=0; i<45; i++) {
+            let dt = new Date(start); dt.setDate(start.getDate() + i);
+            ganttDates.push(dt);
         }
+        document.getElementById('ganttDashboard').style.display = 'block';
         renderGantt();
+        
+        // 추가공사 초기화
+        document.getElementById('extraCostBody').innerHTML = '';
+        calcExtraSum();
     }
 
     function renderGantt() {
@@ -277,14 +433,16 @@
             return `<th class="${cClass}">${d.getMonth()+1}/${d.getDate()}</th>`;
         }).join('');
         
-        let html = `<thead><tr><th class="gantt-task-col">공정명</th>${thead}</tr></thead><tbody>`;
+        let html = `<thead><tr><th class="gantt-task-col">공종 (클릭시 수정)</th>${thead}</tr></thead><tbody>`;
         
-        defaultTasks.forEach((task, tIdx) => {
-            html += `<tr><td class="gantt-task-col text-info">${task}</td>`;
+        ganttTasks.forEach((task, tIdx) => {
+            html += `<tr><td class="gantt-task-col"><input type="text" class="task-editable" value="${task}" onchange="updateGanttTaskName(${tIdx}, this.value)"></td>`;
             ganttDates.forEach((d, dIdx) => {
-                const day = d.getDay(); let bgClass = day === 0 ? 'day-sun' : (day === 6 ? 'day-sat' : '');
+                const day = d.getDay(); 
+                let bgClass = day === 0 ? 'day-sun' : (day === 6 ? 'day-sat' : '');
                 let key = `${tIdx}_${dIdx}`;
                 let active = ganttState[key] ? 'gantt-active' : '';
+                // td 자체에 클래스를 병합. active가 있으면 CSS !important로 덮어씌워짐
                 html += `<td class="gantt-cell ${bgClass} ${active}" onclick="toggleGantt('${key}')"></td>`;
             });
             html += `</tr>`;
@@ -293,22 +451,82 @@
         document.getElementById('ganttTable').innerHTML = html;
     }
 
+    function updateGanttTaskName(idx, val) {
+        ganttTasks[idx] = val;
+    }
+
+    function addGanttTaskRow() {
+        ganttTasks.push("새 공종");
+        renderGantt();
+    }
+
     function toggleGantt(key) {
         ganttState[key] = !ganttState[key];
         renderGantt();
     }
 
     function addGanttDate() {
-        if(ganttDates.length === 0) return alert("먼저 공정을 셋팅하세요.");
+        if(ganttDates.length === 0) return;
         let lastD = new Date(ganttDates[ganttDates.length-1]);
         lastD.setDate(lastD.getDate() + 1);
         ganttDates.push(lastD);
         renderGantt();
     }
 
-    // 시연용 초기화
-    ganttDates = [new Date(), new Date(new Date().setDate(new Date().getDate()+1)), new Date(new Date().setDate(new Date().getDate()+2)), new Date(new Date().setDate(new Date().getDate()+3))];
-    renderGantt();
+    // 저장/불러오기/삭제 (Mock)
+    function saveGantt() {
+        let site = document.getElementById('ganttSiteName').value.trim();
+        if(!site) return alert("현장명을 입력해주세요.");
+        let id = currentGanttId || Date.now();
+        
+        let existing = savedGanttList.findIndex(g => g.id === id);
+        let data = { id: id, site: site, tasks: [...ganttTasks], dates: [...ganttDates], state: {...ganttState} };
+        
+        if(existing >= 0) savedGanttList[existing] = data;
+        else savedGanttList.push(data);
+        
+        currentGanttId = id;
+        alert("저장되었습니다.");
+        renderSavedGanttList();
+    }
+
+    function renderSavedGanttList() {
+        const container = document.getElementById('saved-gantt-list');
+        if(savedGanttList.length === 0) {
+            container.innerHTML = '<p class="text-secondary small ms-2">저장된 내역이 없습니다.</p>'; return;
+        }
+        container.innerHTML = savedGanttList.map(g => `
+            <div class="col-md-4">
+                <div class="t5-card p-3 d-flex justify-content-between align-items-center mb-0">
+                    <b class="text-white">${g.site}</b>
+                    <button class="btn btn-sm btn-primary py-0" onclick="loadGantt(${g.id})">불러오기</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function loadGantt(id) {
+        let target = savedGanttList.find(g => g.id === id);
+        if(!target) return;
+        currentGanttId = target.id;
+        document.getElementById('ganttSiteName').value = target.site;
+        ganttTasks = [...target.tasks];
+        ganttDates = [...target.dates];
+        ganttState = {...target.state};
+        document.getElementById('ganttDashboard').style.display = 'block';
+        renderGantt();
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function deleteGantt() {
+        if(!confirm("이 공정표를 화면에서 지우고 초기화할까요? (저장된 내역도 삭제됩니다)")) return;
+        if(currentGanttId) {
+            savedGanttList = savedGanttList.filter(g => g.id !== currentGanttId);
+            renderSavedGanttList();
+        }
+        document.getElementById('ganttDashboard').style.display = 'none';
+        ganttDates = []; ganttState = {}; currentGanttId = null;
+    }
 
     // -------------------------
     // 3. 추가 공사 로직
@@ -332,9 +550,7 @@
 
     function calcExtraSum() {
         let sum = 0;
-        document.querySelectorAll('.cost-input').forEach(el => {
-            sum += parseInt(el.value || 0);
-        });
+        document.querySelectorAll('.cost-input').forEach(el => { sum += parseInt(el.value || 0); });
         document.getElementById('extraTotalSum').innerText = formatNumber(sum) + " 원";
     }
 
@@ -342,8 +558,8 @@
     // 4. 하이브리드 메모장 로직
     // -------------------------
     let memos = [
-        { type: 'private', text: "내일 반장님들 커피 사가기", date: "2026-04-15" },
-        { type: 'shared', text: "[공용] 실리콘 발주 2박스 더 필요함 (강재구)", date: "2026-04-14" }
+        { type: 'private', text: "내일 반장님들 커피 사가기", date: "04.15" },
+        { type: 'shared', text: "[공용] 실리콘 발주 2박스 (강재구)", date: "04.14" }
     ];
     let currentMemoTab = 'private';
 
@@ -358,49 +574,23 @@
         const filtered = memos.filter(m => m.type === currentMemoTab);
         document.getElementById('memoContainer').innerHTML = filtered.map((m, i) => `
             <div class="memo-card ${m.type === 'shared' ? 'shared' : ''}">
-                <div class="memo-date d-flex justify-content-between">
-                    <span>${m.date}</span>
-                    <i class="bi bi-x text-danger" style="cursor:pointer;" onclick="memos.splice(${i}, 1); renderMemos();"></i>
+                <div class="d-flex justify-content-between mb-2 border-bottom border-secondary border-opacity-10 pb-1">
+                    <span class="small text-secondary">${m.date}</span>
+                    <i class="bi bi-x text-danger cursor-pointer" onclick="memos.splice(${i}, 1); renderMemos();"></i>
                 </div>
-                <div class="memo-content">${m.text}</div>
+                <div style="white-space:pre-wrap; font-size:0.9rem;">${m.text}</div>
             </div>
-        `).join('') || '<p class="text-secondary">작성된 메모가 없습니다.</p>';
+        `).join('') || '<p class="text-secondary small">작성된 메모가 없습니다.</p>';
     }
 
     function addMemo() {
-        let text = prompt("메모 내용을 입력하세요.\n(앞에 [공유] 라고 적으면 팀 공유 메모로 저장됩니다.)");
+        let text = prompt("메모 내용을 입력하세요.\n(앞에 [공용] 이라고 적으면 팀원들과 공유됩니다.)");
         if(!text) return;
-        let type = text.startsWith("[공유]") ? 'shared' : 'private';
-        let today = new Date().toISOString().split('T')[0];
-        memos.push({ type: type, text: text, date: today });
-        switchMemoTab(type); // 작성한 탭으로 이동
+        let type = text.startsWith("[공용]") ? 'shared' : 'private';
+        memos.push({ type: type, text: text, date: "04.15" });
+        switchMemoTab(type);
     }
     renderMemos();
-
-    // -------------------------
-    // 5. 연차 관리 (달력 UI 데모)
-    // -------------------------
-    function requestLeave() {
-        alert("[데모] 연차 신청 팝업 (종일/오전/오후 선택) 이 오픈됩니다.");
-    }
-
-    function renderLeaveCalendar() {
-        // 임시 달력 렌더링 (간단한 날짜 박스)
-        let html = '';
-        for(let i=1; i<=15; i++) {
-            let badge = '';
-            if(i===4) badge = `<br><span class="badge bg-danger mt-1">강재구(종)</span>`;
-            if(i===12) badge = `<br><span class="badge bg-warning text-dark mt-1">이준호(오전)</span>`;
-            html += `<div class="col-2 col-md-1 mb-2">
-                <div class="border border-secondary border-opacity-25 rounded p-1 h-100">
-                    <span class="fw-bold">${i}</span>${badge}
-                </div>
-            </div>`;
-        }
-        document.getElementById('leaveCalendar').innerHTML = html;
-    }
-    renderLeaveCalendar();
-
 </script>
 </body>
 </html>

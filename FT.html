@@ -66,12 +66,19 @@
         .status-table { width: 100%; border-collapse: separate; border-spacing: 0 4px; table-layout: fixed; }
         .status-table th { color: #94a3b8; font-weight: 600; font-size: 0.82rem; padding: 12px 10px; border-bottom: 2px solid rgba(255,255,255,0.05); text-align: center; white-space: nowrap; }
         .status-table td { background: #1e222d; padding: 12px 10px; font-size: 0.88rem; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .mobile-site-card { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .mobile-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .mobile-card-title { font-size: 1.05rem; font-weight: 700; color: var(--primary-accent); margin: 0; }
+        .mobile-card-date { font-size: 0.75rem; color: #94a3b8; font-weight: 600; }
+        .mobile-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; background: rgba(0,0,0,0.25); padding: 10px 5px; border-radius: 8px; }
+        .mobile-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: center; background: rgba(0,0,0,0.25); padding: 10px 5px; border-radius: 8px; }
+        .mobile-grid-label { font-size: 0.65rem; color: #94a3b8; margin-bottom: 3px; }
+        .mobile-grid-val { font-size: 0.85rem; color: #f8fafc; font-weight: bold; }
 
-        /* [수정 4] 공정표 CSS (월 표시 및 고정 너비) */
+        /* 공정표 CSS */
         .gantt-container { overflow-x: auto; background: #1e222d; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
         .gantt-table { margin: 0; white-space: nowrap; font-size: 0.75rem; border-collapse: separate; border-spacing: 0; }
         .gantt-table th, .gantt-table td { border: 1px solid rgba(255,255,255,0.05); padding: 5px !important; text-align: center; vertical-align: middle; }
-        /* 날짜 셀 너비 고정 */
         .gantt-cell, .gantt-date-th { min-width: 35px; max-width: 35px; width: 35px; transition: 0.1s; cursor: pointer; }
         .gantt-task-col { position: sticky; left: 0; background: var(--card-bg) !important; z-index: 10; min-width: 100px; text-align: left !important; border-right: 2px solid var(--primary-accent) !important; padding-left: 10px !important; }
         .gantt-month-row th { background: #181b24; color: #ced4da; font-weight: bold; border-bottom: 2px solid rgba(255,255,255,0.1); }
@@ -92,12 +99,11 @@
         .g-yellow { background-color: rgba(245, 158, 11, 0.2) !important; color: #f59e0b !important; }
         .g-red { background-color: rgba(239, 68, 68, 0.2) !important; color: #ef4444 !important; }
 
-        /* [수정 2] 펀치리스트 버튼 겹침 해결 CSS */
+        /* 펀치리스트 CSS */
         .auto-resize-textarea { resize: none; overflow: hidden; min-height: 48px; line-height: 1.5; }
         .round-add-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--primary-accent); color: white; border: none; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; transition: 0.2s; flex-shrink: 0; }
         .summary-card { background: #1e222d; border-radius: 12px; padding: 16px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: 0.2s; }
         .summary-card:hover { border-color: var(--primary-accent); }
-        /* 기존 position absolute 제거하고, Flex 레이아웃에 맞춰 패딩 조정 */
         .summary-del-btn { background: rgba(224, 49, 49, 0.1); color: var(--danger-btn); border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; transition: 0.2s; white-space: nowrap; height: 28px; }
         .summary-del-btn:hover { background: var(--danger-btn); color: white; }
         
@@ -122,9 +128,9 @@
         .memo-card { background: #fff9db; color: #333; padding: 15px; border-radius: 8px; box-shadow: 2px 4px 10px rgba(0,0,0,0.1); position: relative; }
         .memo-card.shared { background: #e3f2fd; border-left: 4px solid #5c7cfa; }
         
-        .cal-day-box { background: #1e222d; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; min-height: 80px; padding: 5px; cursor: pointer; transition: 0.2s; position: relative; display: flex; flex-direction: column; align-items: stretch; }
+        .cal-day-box { background: #1e222d; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; min-height: 80px; padding: 5px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: stretch; }
         .cal-day-box:hover { border-color: var(--primary-accent); }
-        .cal-date-num { font-size: 0.8rem; font-weight: bold; color: #94a3b8; text-align: left; margin-bottom: 5px; }
+        .cal-date-num { font-size: 0.85rem; font-weight: bold; text-align: left; margin-bottom: 5px; }
         .leave-badge { font-size: 0.7rem; padding: 2px 4px; border-radius: 4px; margin-bottom: 2px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         #addTaskModal, #ganttCreateModal, #leaveApplyModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s; }
@@ -166,7 +172,7 @@
             <div class="nav-link" onclick="showPage('worklog', this)"><i class="bi bi-journal-text"></i> 작업일보</div>
             <div class="nav-link" onclick="showPage('punch', this)"><i class="bi bi-ui-checks"></i> 펀치리스트</div>
             <div class="nav-link" onclick="showPage('t5', this)"><i class="bi bi-calculator"></i> T5 계산기</div>
-            <div class="nav-link" onclick="showPage('memo', this)"><i class="bi bi-stickies"></i> 팀 메모장</div>
+            <div class="nav-link" onclick="showPage('memo', this)"><i class="bi bi-stickies"></i> 메모장</div>
             <div class="nav-link" onclick="showPage('leave', this)"><i class="bi bi-calendar2-check"></i> 연차 관리</div>
             <div class="nav-link" onclick="showPage('team', this)"><i class="bi bi-people"></i> 팀원 관리</div>
             <div class="nav-link" onclick="showPage('profile', this)"><i class="bi bi-person-gear"></i> 내 정보 수정</div>
@@ -450,30 +456,53 @@
 
         <section id="page-memo" class="page-section">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3 class="fw-bold m-0">팀 & 개인 메모장</h3>
+                <h3 class="fw-bold m-0">전체 & 개인 메모장</h3>
                 <button class="btn btn-primary fw-bold" onclick="addMemo()">+ 새 메모 작성</button>
             </div>
             <ul class="nav nav-pills mb-4 border-bottom border-secondary border-opacity-25 pb-2" id="memoTabs">
                 <li class="nav-item"><button class="nav-link active py-1 px-3" onclick="switchMemoTab('private')">내 메모</button></li>
-                <li class="nav-item"><button class="nav-link py-1 px-3" onclick="switchMemoTab('shared')">팀 공유 보드</button></li>
+                <li class="nav-item"><button class="nav-link py-1 px-3" onclick="switchMemoTab('shared')">전체 공유 보드</button></li>
             </ul>
             <div class="memo-grid" id="memoContainer"></div>
         </section>
 
         <section id="page-leave" class="page-section">
-            <h3 class="fw-bold mb-4">팀원 연차 현황</h3>
+            <h3 class="fw-bold mb-4">김목수 이야기 연차 현황</h3>
             
             <div class="t5-card p-3 mb-4">
                 <div class="d-flex justify-content-between align-items-center border-bottom border-secondary border-opacity-25 pb-3 mb-3">
-                    <h6 class="fw-bold text-white m-0"><i class="bi bi-calendar-check me-2"></i>이번 달 휴가 달력</h6>
-                    <span class="small text-secondary">* 날짜를 클릭하여 신청</span>
+                    <div class="d-flex align-items-center gap-3">
+                        <h6 class="fw-bold text-white m-0"><i class="bi bi-calendar-check me-2"></i>휴가 달력</h6>
+                        <div class="d-flex gap-2">
+                            <select id="calYear" class="form-select form-select-sm input-dark" style="width:auto; min-width:80px;" onchange="renderLeaveCalendar()">
+                                <option value="2025">2025년</option>
+                                <option value="2026">2026년</option>
+                                <option value="2027">2027년</option>
+                            </select>
+                            <select id="calMonth" class="form-select form-select-sm input-dark" style="width:auto; min-width:70px;" onchange="renderLeaveCalendar()">
+                                <option value="1">1월</option>
+                                <option value="2">2월</option>
+                                <option value="3">3월</option>
+                                <option value="4">4월</option>
+                                <option value="5">5월</option>
+                                <option value="6">6월</option>
+                                <option value="7">7월</option>
+                                <option value="8">8월</option>
+                                <option value="9">9월</option>
+                                <option value="10">10월</option>
+                                <option value="11">11월</option>
+                                <option value="12">12월</option>
+                            </select>
+                        </div>
+                    </div>
+                    <span class="small text-secondary d-none d-md-block">* 날짜를 클릭하여 신청</span>
                 </div>
-                <div id="leaveCalendar" class="row g-2 text-center" style="font-size:0.8rem;"></div>
+                <div id="leaveCalendar" class="text-center" style="font-size:0.8rem;"></div>
             </div>
             
             <div class="t5-card border border-warning border-opacity-50" id="leaveAdminPanel" style="display:none;">
                 <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#leaveAdminCollapse">
-                    <h6 class="fw-bold text-warning m-0"><i class="bi bi-gear me-2"></i>[관리자용] 팀원 연차 설정</h6>
+                    <h6 class="fw-bold text-warning m-0"><i class="bi bi-gear me-2"></i>[관리자용] 연차 정보 관리</h6>
                     <i class="bi bi-chevron-down text-warning"></i>
                 </div>
                 <div class="collapse mt-3" id="leaveAdminCollapse">
@@ -491,7 +520,7 @@
 
             <div class="t5-card">
                 <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#leaveStatusCollapse">
-                    <h6 class="fw-bold m-0"><i class="bi bi-person-check me-2"></i>우리팀 남은 연차 현황</h6>
+                    <h6 class="fw-bold m-0"><i class="bi bi-person-check me-2"></i>남은 연차 현황</h6>
                     <i class="bi bi-chevron-down"></i>
                 </div>
                 <div class="collapse mt-3" id="leaveStatusCollapse">
@@ -560,6 +589,38 @@
     <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
 </div>
 
+<div class="modal fade" id="siteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="background: var(--card-bg); border-radius: 20px;">
+            <div class="modal-body p-4">
+                <h5 class="fw-bold mb-4" id="modalTitle">현장 데이터 입력</h5>
+                <div class="row g-3" id="siteForm">
+                    <div class="col-12">
+                        <label class="small text-secondary mb-1">진행 단계</label>
+                        <select id="f_status" class="form-select input-dark" onchange="handleStatusChange(this.value)">
+                            <option value="ongoing">공사 진행 중</option>
+                            <option value="scheduled">공사 착공 예정</option>
+                            <option value="designing">디자인 진행 중</option>
+                            <option value="pre-design">디자인 예정</option>
+                        </select>
+                    </div>
+                    <div class="col-12"><input type="text" id="f_siteName" class="form-control input-dark fw-bold" placeholder="상호명 / 현장 명칭"></div>
+                    <div class="col-6"><input type="text" id="f_date1" class="form-control input-dark"></div>
+                    <div class="col-6"><input type="text" id="f_date2" class="form-control input-dark"></div>
+                    <div class="col-6"><input type="text" id="f_site_manager" class="form-control input-dark" placeholder="담당 현장소장"></div>
+                    <div class="col-6"><input type="text" id="f_designer" class="form-control input-dark" placeholder="담당 디자이너"></div>
+                    <div id="ongoing_only" class="col-12"><input type="text" id="f_designer_sign" class="form-control input-dark" placeholder="싸인(간판) 담당 디자이너"></div>
+                    <div class="col-12"><textarea id="f_etc" class="form-control input-dark" rows="3" placeholder="기타 특이사항 및 메모"></textarea></div>
+                </div>
+                <div class="d-flex gap-2 mt-4">
+                    <button class="btn btn-secondary w-50 py-2 fw-bold" data-bs-dismiss="modal">취소</button>
+                    <button class="btn btn-primary w-50 py-2 fw-bold" onclick="saveSiteData()">저장하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="ganttCreateModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="background: var(--card-bg); border-radius: 20px;">
@@ -571,8 +632,8 @@
                         <input type="text" id="newGanttName" class="form-control input-dark" placeholder="예: 일강이앤아이">
                     </div>
                     <div class="col-12">
-                        <label class="small text-secondary mb-1">착공일 (공사 시작일)</label>
-                        <input type="date" id="newGanttDate" class="form-control input-dark">
+                        <label class="small text-secondary mb-1">착공일 (숫자 8자리)</label>
+                        <input type="text" id="newGanttDate" class="form-control input-dark" placeholder="예: 20260420">
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-4">
@@ -606,38 +667,6 @@
                 <div class="d-flex gap-2 mt-4">
                     <button class="btn btn-secondary w-50 py-2 fw-bold" data-bs-dismiss="modal">취소</button>
                     <button class="btn btn-success w-50 py-2 fw-bold" onclick="submitLeaveRequest()">신청하기</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="siteModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="background: var(--card-bg); border-radius: 20px;">
-            <div class="modal-body p-4">
-                <h5 class="fw-bold mb-4" id="modalTitle">현장 데이터 입력</h5>
-                <div class="row g-3" id="siteForm">
-                    <div class="col-12">
-                        <label class="small text-secondary mb-1">진행 단계</label>
-                        <select id="f_status" class="form-select input-dark" onchange="handleStatusChange(this.value)">
-                            <option value="ongoing">공사 진행 중</option>
-                            <option value="scheduled">공사 착공 예정</option>
-                            <option value="designing">디자인 진행 중</option>
-                            <option value="pre-design">디자인 예정</option>
-                        </select>
-                    </div>
-                    <div class="col-12"><input type="text" id="f_siteName" class="form-control input-dark fw-bold" placeholder="상호명 / 현장 명칭"></div>
-                    <div class="col-6"><input type="text" id="f_date1" class="form-control input-dark"></div>
-                    <div class="col-6"><input type="text" id="f_date2" class="form-control input-dark"></div>
-                    <div class="col-6"><input type="text" id="f_site_manager" class="form-control input-dark" placeholder="담당 현장소장"></div>
-                    <div class="col-6"><input type="text" id="f_designer" class="form-control input-dark" placeholder="담당 디자이너"></div>
-                    <div id="ongoing_only" class="col-12"><input type="text" id="f_designer_sign" class="form-control input-dark" placeholder="싸인(간판) 담당 디자이너"></div>
-                    <div class="col-12"><textarea id="f_etc" class="form-control input-dark" rows="3" placeholder="기타 특이사항 및 메모"></textarea></div>
-                </div>
-                <div class="d-flex gap-2 mt-4">
-                    <button class="btn btn-secondary w-50 py-2 fw-bold" data-bs-dismiss="modal">취소</button>
-                    <button class="btn btn-primary w-50 py-2 fw-bold" onclick="saveSiteData()">저장하기</button>
                 </div>
             </div>
         </div>
@@ -734,6 +763,7 @@
             document.getElementById('home-notice-list').innerHTML = notices.slice(0,5).map(n => `<div class="mb-1 text-truncate">• ${n.text}</div>`).join('') || '내용 없음';
             document.getElementById('manage-notice-list').innerHTML = notices.map(n => `<div class="board-item d-flex justify-content-between"><span>${n.text} <span class="small text-secondary ms-2">${n.dateStr}</span></span><button class="btn btn-sm text-danger p-0" onclick="delOldNotice('${n.id}')"><i class="bi bi-trash"></i></button></div>`).join('');
         });
+
         db.collection("board_memos").where("teamId", "==", myTeamId).where("type", "==", "memo").orderBy("createdAt", "desc").onSnapshot(ss => {
             let memos = ss.docs.map(doc => ({ id: doc.id, text: doc.data().text, dateStr: doc.data().dateStr }));
             document.getElementById('home-msg-list').innerHTML = memos.slice(0,5).map(n => `<div class="mb-1 text-truncate">• ${n.text}</div>`).join('') || '내용 없음';
@@ -743,8 +773,12 @@
 
     async function addBoardItem(type) {
         let input = document.getElementById(`input-${type}`); let text = input.value.trim(); if(!text) return;
-        if(type === 'notice') { await db.collection("notices").add({ teamId: myTeamId, text: text, writer: userNickname, createdAt: Date.now() }); } 
-        else { let today = new Date(); let dStr = `0${today.getMonth()+1}`.slice(-2)+"."+`0${today.getDate()}`.slice(-2); await db.collection("board_memos").add({ teamId: myTeamId, type: type, text: text, dateStr: dStr, createdAt: Date.now() }); }
+        if(type === 'notice') {
+            await db.collection("notices").add({ teamId: myTeamId, text: text, writer: userNickname, createdAt: Date.now() });
+        } else {
+            let today = new Date(); let dStr = `0${today.getMonth()+1}`.slice(-2)+"."+`0${today.getDate()}`.slice(-2);
+            await db.collection("board_memos").add({ teamId: myTeamId, type: type, text: text, dateStr: dStr, createdAt: Date.now() });
+        }
         input.value = '';
     }
     async function delOldNotice(id) { if(confirm("삭제할까요?")) await db.collection("notices").doc(id).delete(); }
@@ -783,23 +817,23 @@
     async function deleteSite(id) { if(confirm("삭제하시겠습니까?")) await db.collection("site_status").doc(id).delete(); }
 
     // ----------------------------------------------------
-    // 3. 공정표 & 추가공사 [수정 4 - 월별 셀 병합 및 고정 너비]
+    // 3. 공정표 & 추가공사
     // ----------------------------------------------------
     let ganttTasks = ["철거", "목공", "전기", "필름", "도장", "소방", "가구", "바닥", "유리", "금속", "사인", "설비", "청소", "기타 잔손"];
     let ganttDates = []; let ganttState = {}; let currentGanttId = null;
 
     function openGanttCreateModal() {
-        document.getElementById('newGanttName').value = '';
-        document.getElementById('newGanttDate').value = '';
+        document.getElementById('newGanttName').value = ''; document.getElementById('newGanttDate').value = '';
         ganttModal.show();
     }
 
     function submitNewProject() {
         let name = document.getElementById('newGanttName').value.trim();
-        let dateVal = document.getElementById('newGanttDate').value;
+        let dateVal = document.getElementById('newGanttDate').value.trim();
         if(!name || !dateVal) return alert("현장명과 착공일을 모두 입력하세요.");
+        if(dateVal.length !== 8 || isNaN(dateVal)) return alert("착공일은 8자리 숫자로 입력해주세요.");
         
-        let start = new Date(dateVal);
+        let start = new Date(dateVal.substring(0,4), parseInt(dateVal.substring(4,6))-1, dateVal.substring(6,8));
         ganttDates = []; ganttState = {}; currentGanttId = null; 
         document.getElementById('ganttSiteName').value = name;
         
@@ -811,13 +845,11 @@
 
     function renderGantt() {
         if(ganttDates.length === 0) return;
-        
-        // 월별 병합 계산
         let monthCounts = []; let currentMonth = ganttDates[0].getMonth(); let count = 0;
         ganttDates.forEach(d => { if(d.getMonth() === currentMonth) { count++; } else { monthCounts.push({m: currentMonth, c: count}); currentMonth = d.getMonth(); count = 1; } });
         monthCounts.push({m: currentMonth, c: count});
         
-        let monthHtml = `<tr class="gantt-month-row"><th class="gantt-task-col bg-dark" style="border-right:2px solid var(--primary-accent) !important;">월 구분</th>` + monthCounts.map(mc => `<th colspan="${mc.c}" class="text-center text-white" style="background:#2a2e39;">${mc.m + 1}월</th>`).join('') + `</tr>`;
+        let monthHtml = `<tr class="gantt-month-row"><th class="gantt-task-col bg-dark">월 구분</th>` + monthCounts.map(mc => `<th colspan="${mc.c}" class="text-center text-white" style="background:#2a2e39;">${mc.m + 1}월</th>`).join('') + `</tr>`;
         const thead = ganttDates.map(d => `<th class="gantt-date-th ${d.getDay()===0?'day-sun':(d.getDay()===6?'day-sat':'')}">${d.getDate()}</th>`).join('');
         
         let html = `<thead>${monthHtml}<tr><th class="gantt-task-col text-secondary">공종 (클릭 수정)</th>${thead}</tr></thead><tbody>`;
@@ -834,13 +866,11 @@
     function addGanttTaskRow() { ganttTasks.push("새 공종"); renderGantt(); }
     function addGanttDate() { let lastD = new Date(ganttDates[ganttDates.length-1]); lastD.setDate(lastD.getDate() + 1); ganttDates.push(lastD); renderGantt(); }
 
-    // [수정 4] 캡처 짤림 방지 (overflow 처리)
     function captureGantt() {
         const captureArea = document.getElementById('captureArea');
         const scrollWrapper = document.getElementById('ganttScrollWrapper');
         let siteName = document.getElementById('ganttSiteName').value.trim() || '현장';
         
-        // 강제로 넓혀서 짤림 방지
         const origOverflow = scrollWrapper.style.overflowX;
         scrollWrapper.style.overflowX = 'visible';
         captureArea.style.width = 'max-content';
@@ -903,7 +933,7 @@
     }
 
     // ----------------------------------------------------
-    // 4. 작업일보 복구 (색상 및 4대 버튼)
+    // 4. 작업일보
     // ----------------------------------------------------
     let editingId = null; let teamData = [{ teamName: "목공팀", workers: [] }];
     function renderAllTeams() {
@@ -922,11 +952,11 @@
         for(let d=s; d<=e; d++){ 
             if(d>max) html+=`<td></td>`; 
             else if(type==='date') {
-                let textCol = new Date(y,m-1,d).getDay()===0 ? 'color:#ef4444;' : new Date(y,m-1,d).getDay()===6 ? 'color:#5c7cfa;' : '';
+                let textCol = new Date(y,m-1,d).getDay()===0 ? 'color:#ef4444;' : (new Date(y,m-1,d).getDay()===6 ? 'color:#5c7cfa;' : '');
                 html+=`<td style="${textCol}">${d}</td>`; 
             } else {
                 let val = teamData[tIdx].workers[wIdx].days[d]||'';
-                let bgClass = val ? (parseFloat(val) > 2 ? 'g-red' : parseFloat(val) > 1 ? 'g-yellow' : 'g-green') : '';
+                let bgClass = val ? (parseFloat(val) > 2 ? 'g-red' : (parseFloat(val) > 1 ? 'g-yellow' : 'g-green')) : '';
                 html+=`<td class="gongsu-cell ${bgClass}" data-t="${tIdx}" data-w="${wIdx}" data-d="${d}" onclick="handleCellClick(this)">${val}</td>`; 
             }
         } 
@@ -956,7 +986,7 @@
     async function deleteLog(id) { if(confirm("이 작업일보를 완전히 삭제할까요?")) { await db.collection("monthly_logs").doc(id).delete(); } }
 
     // ----------------------------------------------------
-    // 5. 펀치리스트 (삭제/디자인 복구) [수정 2, 6]
+    // 5. 펀치리스트 
     // ----------------------------------------------------
     let currentSite = ""; let punchListListener = null; let punchDetailListener = null; let globalPunchSites = []; let activePunchCardFilter = "전체"; let globalPunchItems = []; let activePunchFilter = "전체";
     function loadPunchSummaryCards() { if(!myTeamId) return; if(punchListListener) punchListListener(); punchListListener = db.collection("punch_lists").where("teamId", "==", myTeamId).onSnapshot(ss => { let sitesData = {}; ss.docs.forEach(doc => { const d = doc.data(); if(!sitesData[d.siteName]) sitesData[d.siteName] = { total: 0, done: 0, lastAt: 0, writer: d.writer }; sitesData[d.siteName].total++; if(d.done) sitesData[d.siteName].done++; if(d.createdAt > sitesData[d.siteName].lastAt) { sitesData[d.siteName].lastAt = d.createdAt; sitesData[d.siteName].writer = d.writer; } }); globalPunchSites = Object.keys(sitesData).map(key => ({ name: key, ...sitesData[key] })).sort((a, b) => b.lastAt - a.lastAt); renderPunchCardFilterAndList(); }); }
@@ -975,7 +1005,7 @@
     async function saveNewPunchTask() { const t = document.getElementById('newTaskInput').value.trim(); if(!t) return; await db.collection("punch_lists").add({ teamId: myTeamId, siteName: currentSite, text: t, done: false, writer: userNickname, createdAt: Date.now() }); closePunchAddModal(); }
 
     // ----------------------------------------------------
-    // 6. T5 계산기 (4대 버튼 복구)
+    // 6. T5 계산기 
     // ----------------------------------------------------
     function toggleT5Specs() { const el = document.getElementById('t5-spec-container'); el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
     function addNewSpec() { let n=prompt("규격"), a=prompt("치수"); if(n&&a) document.getElementById('t5-spec-list').insertAdjacentHTML('beforeend', `<div class="col-4 col-md-auto spec-item"><label class="small">${n}용</label><input type="number" class="form-control input-dark spec-actual" data-nominal="${n}" value="${a}"></div>`); }
@@ -1009,7 +1039,7 @@
     async function deleteT5Log(id) { if(confirm("삭제할까요?")) await db.collection("t5_logs").doc(id).delete(); }
 
     // ----------------------------------------------------
-    // 7. 팀 메모장 (Memos)
+    // 7. 전체 & 개인 메모장 (Memos)
     // ----------------------------------------------------
     let currentMemoTab = 'private';
     function loadMemos() {
@@ -1020,13 +1050,15 @@
         });
     }
     function switchMemoTab(tab) { currentMemoTab = tab; document.querySelectorAll('#memoTabs .nav-link').forEach(l => l.classList.remove('active')); event.target.classList.add('active'); loadMemos(); }
-    async function addMemo() { let t = prompt("메모 내용 (앞에 [공용] 이라고 적으면 공유됩니다)"); if(!t) return; let type = t.startsWith("[공용]") ? 'shared' : 'private'; let dStr = new Date().toISOString().split('T')[0]; await db.collection("team_memos").add({ teamId: myTeamId, type, text: t, writer: myEmail, dateStr: dStr, createdAt: Date.now() }); switchMemoTab(type); }
+    async function addMemo() { let t = prompt("메모 내용 (앞에 [공용] 이라고 적으면 전체 공유 보드에 저장됩니다)"); if(!t) return; let type = t.startsWith("[공용]") ? 'shared' : 'private'; let dStr = new Date().toISOString().split('T')[0]; await db.collection("team_memos").add({ teamId: myTeamId, type, text: t, writer: myEmail, dateStr: dStr, createdAt: Date.now() }); switchMemoTab(type); }
     async function delMemo(id) { if(confirm("삭제?")) await db.collection("team_memos").doc(id).delete(); }
 
     // ----------------------------------------------------
-    // 8. 연차 관리 (Leave) [수정 3]
+    // 8. 연차 관리 (Leave)
     // ----------------------------------------------------
     let teamMembersInfo = {}; 
+    let globalLeaveRecords = [];
+
     function loadLeaveData(teamData) {
         teamMembersInfo = teamData.membersInfo || {};
         if(myRole === "owner" || myRole === "admin") {
@@ -1038,8 +1070,12 @@
         }
         
         db.collection("leave_records").where("teamId","==",myTeamId).onSnapshot(ss => {
-            let used = {}; let allRecords = [];
-            ss.docs.forEach(doc => { let d = doc.data(); used[d.userEmail] = (used[d.userEmail]||0) + parseFloat(d.amount); allRecords.push(d); });
+            let used = {}; globalLeaveRecords = [];
+            ss.docs.forEach(doc => { 
+                let d = doc.data(); 
+                used[d.userEmail] = (used[d.userEmail]||0) + parseFloat(d.amount); 
+                globalLeaveRecords.push(d); 
+            });
             
             document.getElementById('leaveStatusBody').innerHTML = (teamData.members||[]).map(mEmail => {
                 let info = teamMembersInfo[mEmail] || { joinDate: '-', base: 15 };
@@ -1047,22 +1083,44 @@
                 return `<tr><td class="fw-bold">${mEmail.split('@')[0]}</td><td class="text-info">${info.base}</td><td class="text-danger">${usedAmt}</td><td class="text-success fw-bold">${remain}</td></tr>`;
             }).join('');
 
-            renderLeaveCalendar(allRecords);
+            if(!document.getElementById('calYear').value) {
+                let td = new Date();
+                document.getElementById('calYear').value = td.getFullYear();
+                document.getElementById('calMonth').value = td.getMonth() + 1;
+            }
+
+            renderLeaveCalendar();
         });
     }
 
-    function renderLeaveCalendar(records) {
-        let html = '';
-        let today = new Date();
-        for(let i=1; i<=31; i++) {
-            let dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-            let matchRecs = records.filter(r => r.date === dateStr);
+    function renderLeaveCalendar() {
+        let year = parseInt(document.getElementById('calYear').value || new Date().getFullYear());
+        let month = parseInt(document.getElementById('calMonth').value || new Date().getMonth() + 1) - 1;
+        let firstDay = new Date(year, month, 1).getDay();
+        let daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        let html = '<div class="d-grid" style="grid-template-columns: repeat(7, 1fr); gap: 8px;">';
+        const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
+        weekDays.forEach((w, i) => {
+            let color = i===0 ? 'text-danger' : (i===6 ? 'text-primary' : 'text-secondary');
+            html += `<div class="fw-bold pb-2 border-bottom border-secondary border-opacity-25 ${color}">${w}</div>`;
+        });
+        
+        for(let i=0; i<firstDay; i++) html += `<div></div>`;
+        
+        for(let i=1; i<=daysInMonth; i++) {
+            let dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+            let matchRecs = globalLeaveRecords.filter(r => r.date === dateStr);
             let badgeHtml = matchRecs.map(r => {
-                let txt = r.amount === 1 ? '종일' : (r.amount === 0.5 && r.type === 'am' ? '오전' : '오후');
-                return `<div class="leave-badge bg-primary text-white">${r.userEmail.split('@')[0]} (${txt}) ✅</div>`;
+                let txt = r.amount === 1 ? '종일' : (r.type === 'am' ? '오전' : '오후');
+                return `<div class="leave-badge bg-success text-white mt-1 px-1 rounded">${r.userEmail.split('@')[0]} ${txt} ✅</div>`;
             }).join('');
-            html += `<div class="col-3 col-md-2 col-lg-1 mb-2"><div class="cal-day-box" onclick="openLeaveModal('${dateStr}')"><div class="cal-date-num">${i}</div>${badgeHtml}</div></div>`;
+            
+            let dayOfWeek = new Date(year, month, i).getDay();
+            let dayColor = dayOfWeek===0 ? '#e03131' : (dayOfWeek===6 ? '#5c7cfa' : '#94a3b8');
+            html += `<div class="cal-day-box" onclick="openLeaveModal('${dateStr}')"><div class="cal-date-num" style="color:${dayColor}">${i}</div>${badgeHtml}</div>`;
         }
+        html += '</div>';
         document.getElementById('leaveCalendar').innerHTML = html;
     }
 
@@ -1089,7 +1147,7 @@
     }
 
     // ----------------------------------------------------
-    // 9. 팀 & 설정 (팀원 리스트 복구 완료)
+    // 9. 팀 & 설정
     // ----------------------------------------------------
     function checkTeamUI() {
         if(myTeamId) { document.getElementById('no-team-section').style.display = 'none'; document.getElementById('has-team-section').style.display = 'block'; loadTeamMembers(); } 
@@ -1141,22 +1199,6 @@
     async function updateProfile() { await db.collection("users").doc(myEmail).update({ nickname: document.getElementById('editNickname').value }); location.reload(); }
     function copyText(t) { navigator.clipboard.writeText(t); alert("복사됨"); }
     async function changePassword() { try { await auth.currentUser.updatePassword(document.getElementById('newPasswordInput').value); alert("성공"); } catch(e){ alert(e.message); } }
-
-    async function exportToExcel(id) { 
-        const d_raw = (await db.collection("monthly_logs").doc(id).get()).data(); const [year, monthNum] = d_raw.month.split('-'); const lastDayNum = new Date(year, monthNum, 0).getDate(); 
-        const wb = XLSX.utils.book_new(); const wsData = Array.from({ length: 5 }, () => Array(36).fill("")); 
-        wsData[0][0] = `${year}년 ${monthNum}월 현장 작업 일보 (김목수이야기)`; wsData[1][0] = `현장명: ${d_raw.site}`; wsData[3] = ["NO", "공정", "이 름", ...Array.from({length:31},(_,i)=>i+1), "계", "비고"]; 
-        let curR = 5, totalNo = 1; 
-        d_raw.teamData.forEach(team => { 
-            let startR = curR + 1; 
-            team.workers.forEach(w => { wsData.push([totalNo++, team.teamName, w.name, ...Array.from({length:31},(_,i)=>parseFloat(w.days[i+1]||0)|| ""), {t:'n', f:`SUM(D${curR+1}:AH${curR+1})`}]); curR++; }); 
-            wsData.push(["", team.teamName, "공정소계", ...Array(31).fill(""), {t:'n', f:`SUM(AI${startR}:AI${curR})`}]); curR += 2; 
-        }); 
-        const ws = XLSX.utils.aoa_to_sheet(wsData); XLSX.utils.book_append_sheet(wb, ws, "근무현황"); XLSX.writeFile(wb, `${d_raw.site}_${monthNum}월.xlsx`); 
-    }
-    
-    document.getElementById('logMonth').onchange = renderAllTeams; 
-    document.getElementById('logMonth').value = new Date().toISOString().substring(0, 7);
 </script>
 </body>
 </html>

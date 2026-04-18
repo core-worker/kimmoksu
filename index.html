@@ -7,7 +7,7 @@
     <meta property="og:type" content="website">
     <meta property="og:title" content="김목수이야기 - 통합 ERP 시스템">
     <meta property="og:description" content="현장 관리, 공정표, 작업일보, 연차 관리 통합 시스템">
-    <meta property="og:image" content="kimmoksu_main_logo.png">
+    <meta property="og:image" content="https://(소장님의웹사이트주소)/kimmoksu_main_logo.png">
     <meta property="og:locale" content="ko_KR">
 
     <link rel="icon" href="favicon.png" type="image/png">
@@ -45,18 +45,15 @@
         .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1040; backdrop-filter: blur(2px); transition: 0.3s; opacity: 0; }
         .sidebar-overlay.active { display: block; opacity: 1; }
         
-        /* 💡 V21: 화이트(데이) 모드 전용 CSS 전면 개편 💡 */
+        /* 💡 V22: 화이트(데이) 모드 팝업/모달창 예외처리 완벽 적용 💡 */
         body.light-mode { background-color: #f4f6f8; color: #212529; }
-        body.light-mode .main-container, body.light-mode #auth-overlay { background-color: #f4f6f8; } /* 배경 연한 회색 */
+        body.light-mode .main-container, body.light-mode #auth-overlay { background-color: #f4f6f8; }
         body.light-mode .sidebar { background-color: #ffffff; border-right: 1px solid #dee2e6; }
         body.light-mode .sidebar-overlay { background: rgba(255,255,255,0.8); }
-        
-        /* V21: 펀치리스트(summary-card), 히스토리(history-card) 포함 하얀색 카드 처리 */
-        body.light-mode .t5-card, body.light-mode .modal-content, body.light-mode .mobile-site-card, body.light-mode .login-card, body.light-mode .cal-accordion-content, body.light-mode .monthly-list-box, body.light-mode .summary-card, body.light-mode .history-card { background-color: #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #dee2e6 !important; }
-        
-        body.light-mode .input-dark { background-color: #f8f9fa !important; border: 1px solid #ced4da !important; color: #212529 !important; }
+        body.light-mode .t5-card, body.light-mode .modal-content, body.light-mode .modal-box, body.light-mode .mobile-site-card, body.light-mode .login-card, body.light-mode .cal-accordion-content, body.light-mode .monthly-list-box, body.light-mode .summary-card, body.light-mode .history-card { background-color: #ffffff !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #dee2e6 !important; }
+        body.light-mode .input-dark, body.light-mode .modal-box textarea, body.light-mode .modal-box input, body.light-mode .modal-box select { background-color: #f8f9fa !important; border: 1px solid #ced4da !important; color: #212529 !important; }
         body.light-mode .input-dark::placeholder { color: #adb5bd !important; }
-        body.light-mode .text-white { color: #212529 !important; } /* 글씨 흑전환 */
+        body.light-mode .text-white, body.light-mode .modal-box h5, body.light-mode .modal-content h5 { color: #212529 !important; }
         body.light-mode .nav-link { color: #495057; }
         body.light-mode .nav-link:hover, body.light-mode .nav-link.active { background-color: #eef2ff; color: var(--primary-accent); }
         body.light-mode .table-dark { --bs-table-bg: #ffffff; --bs-table-color: #212529; --bs-table-border-color: #dee2e6; }
@@ -87,14 +84,13 @@
         body.light-mode .mobile-grid-2, body.light-mode .mobile-grid-3 { background: #f8f9fa; border: 1px solid #dee2e6; }
         body.light-mode .mobile-grid-val { color: #212529; }
         body.light-mode .mobile-card-subtitle { border-bottom: 1px solid #dee2e6; }
-        
-        /* V21: 로고 자동 흑백 전환, 프로그래스 바, 버튼 색상 교정 */
         body.light-mode img[src*="logo"] { filter: invert(1) grayscale(100%) contrast(200%); }
         body.light-mode .progress-container { background-color: #e9ecef; }
         body.light-mode .t5-btn-small.bg-secondary { background-color: #6c757d !important; color: #ffffff !important; }
         body.light-mode .t5-btn-small.bg-primary { background-color: #0d6efd !important; color: #ffffff !important; }
         body.light-mode .t5-btn-small.bg-success { background-color: #198754 !important; color: #ffffff !important; }
         body.light-mode .t5-btn-small.bg-danger { background-color: #dc3545 !important; color: #ffffff !important; }
+        body.light-mode .perm-item-box { background: #f8f9fa !important; border-color: #dee2e6 !important; color: #212529 !important; }
 
         @media (max-width: 768px) {
             .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-100%); } 
@@ -150,7 +146,10 @@
         .gantt-table { margin: 0; white-space: nowrap; font-size: 0.7rem; border-collapse: separate; border-spacing: 0; min-width: max-content; }
         .gantt-table th, .gantt-table td { border: 1px solid rgba(255,255,255,0.05); padding: 5px 0 !important; text-align: center; vertical-align: middle; }
         .gantt-cell, .gantt-date-th { min-width: 25px; max-width: 25px; width: 25px; transition: 0.1s; cursor: pointer; }
-        .gantt-task-col { position: sticky; left: 0; background: var(--card-bg) !important; z-index: 10; min-width: 90px; text-align: left !important; border-right: 2px solid var(--primary-accent) !important; padding-left: 10px !important; }
+        
+        /* 💡 V22: 공정표 행(공종명) 칸 크기 축소 (90px -> 65px) 💡 */
+        .gantt-task-col { position: sticky; left: 0; background: var(--card-bg) !important; z-index: 10; min-width: 65px; max-width: 65px; width: 65px; text-align: left !important; border-right: 2px solid var(--primary-accent) !important; padding: 0 5px !important; }
+        
         .gantt-month-row th { background: #181b24; color: #ced4da; font-weight: bold; border-bottom: 2px solid rgba(255,255,255,0.1); }
         .gantt-cell:hover { background-color: rgba(255,255,255,0.1); }
         .day-sat { background-color: rgba(92, 124, 250, 0.08) !important; color: #5c7cfa !important; }
@@ -212,11 +211,14 @@
         
         .monthly-list-box { background: #181b24; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); padding: 15px; }
 
-        #addTaskModal, #ganttCreateModal, #leaveApplyModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s; }
+        #addTaskModal, #ganttCreateModal, #leaveApplyModal, #permModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s; }
         .modal-box { background: var(--card-bg); padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
         #auth-overlay { position: fixed; inset: 0; background: var(--bg-deep); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .login-card { background: var(--card-bg); padding: 40px; border-radius: 24px; width: 100%; max-width: 380px; text-align: center; }
+        
+        /* V22: 권한 모달 아이템 박스 (라이트모드 대응) */
+        .perm-item-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
         
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -284,6 +286,7 @@
                     <div class="t5-card h-100 mb-0">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="fw-bold text-warning m-0"><i class="bi bi-bell-fill me-2"></i>공지사항</h5>
+                            <button class="btn btn-sm btn-outline-warning py-0" id="btnNoticePerm" style="display:none;" onclick="openPermModal('notice')"><i class="bi bi-person-gear"></i> 담당자</button>
                         </div>
                         <div class="board-list" id="home-notice-list"></div>
                     </div>
@@ -352,6 +355,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                 <h3 class="fw-bold m-0">종합 상황판 관리</h3>
                 <div class="d-flex gap-2">
+                    <button class="btn btn-outline-info fw-bold px-3" id="btnStatusPerm" style="display:none;" onclick="openPermModal('status')">담당자 설정</button>
                     <button class="btn btn-outline-warning fw-bold px-3" id="btnEditStatus" style="display:none;" onclick="toggleStatusEditMode()">편집</button>
                     <button class="btn btn-success fw-bold px-4" onclick="openSiteAddModal()">+ 현장 추가</button>
                 </div>
@@ -782,18 +786,40 @@
     </div>
 </div>
 
+<div class="modal fade" id="permModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="background: var(--card-bg); border-radius: 20px;">
+            <div class="modal-body p-4">
+                <h5 class="fw-bold mb-4" id="permModalTitle">담당자 설정</h5>
+                <p class="small text-secondary mb-3">체크된 팀원에게만 수정 및 삭제 권한이 부여됩니다.</p>
+                <div id="permMemberList" class="d-flex flex-column gap-2 mb-4" style="max-height: 300px; overflow-y: auto;"></div>
+                <div class="d-flex gap-2 mt-2">
+                    <button class="btn btn-secondary w-50 py-2 fw-bold" data-bs-dismiss="modal">취소</button>
+                    <button class="btn btn-primary w-50 py-2 fw-bold" onclick="savePerms()">권한 저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
     let myEmail, myTeamId, userNickname = "관리자";
     let isLoginMode = true; let myRole = "member"; 
     let globalEmailToNick = {}; 
-    let siteModal, ganttModal, leaveModal;
+    let siteModal, ganttModal, leaveModal, permModalInst;
+    
+    // V22: 권한 전역 변수
+    let globalNoticeAdmins = [];
+    let globalStatusAdmins = [];
+    let currentPermType = '';
 
     document.addEventListener("DOMContentLoaded", function() { 
         siteModal = new bootstrap.Modal(document.getElementById('siteModal')); 
         ganttModal = new bootstrap.Modal(document.getElementById('ganttCreateModal')); 
         leaveModal = new bootstrap.Modal(document.getElementById('leaveApplyModal')); 
+        permModalInst = new bootstrap.Modal(document.getElementById('permModal')); 
 
         let yrHtml = '', moHtml = '';
         let ty = new Date().getFullYear();
@@ -862,15 +888,23 @@
         }
     });
 
+    // V22: 권한 및 UI 노출 관리
     function applyRoleRestrictions() {
-        if(myRole === 'member') {
-            document.getElementById('btnEditStatus').style.display = 'none';
-            document.getElementById('btnDeleteGantt').style.display = 'none';
-        } else {
-            document.getElementById('btnEditStatus').style.display = 'inline-block';
-            document.getElementById('btnDeleteGantt').style.display = 'inline-block';
-        }
+        let isSuper = (myRole === 'owner' || myRole === 'admin');
+        
+        // 담당자 설정 버튼 보이기 (관리자/에디터만)
+        document.getElementById('btnNoticePerm').style.display = isSuper ? 'inline-block' : 'none';
+        document.getElementById('btnStatusPerm').style.display = isSuper ? 'inline-block' : 'none';
+        
+        // 상황판 편집 버튼 보이기 (관리자/에디터 OR 상황판담당자)
+        let canEditStatus = isSuper || globalStatusAdmins.includes(myEmail);
+        document.getElementById('btnEditStatus').style.display = canEditStatus ? 'inline-block' : 'none';
+        
+        // 공정표 삭제 버튼 보이기 (관리자/에디터만)
+        document.getElementById('btnDeleteGantt').style.display = isSuper ? 'inline-block' : 'none';
+        
         if(globalStatusData.length > 0) renderAllSections(globalStatusData);
+        loadBoardMemos(); // 재랜더링하여 공지 삭제버튼 숨김 처리
     }
 
     auth.onAuthStateChanged(async user => {
@@ -886,6 +920,10 @@
                 else if(tData.admins && tData.admins.includes(myEmail)) myRole = "admin";
                 else myRole = "member";
                 document.getElementById('userRoleDisplay').innerText = myRole === "owner" ? "에디터 (최고권한)" : (myRole === "admin" ? "관리자" : "팀원");
+
+                // V22: 데이터베이스에서 권한 리스트 가져오기
+                globalNoticeAdmins = tData.noticeAdmins || [];
+                globalStatusAdmins = tData.statusAdmins || [];
 
                 applyRoleRestrictions();
 
@@ -905,12 +943,53 @@
     async function handleAuth() { const e=document.getElementById('userEmail').value, p=document.getElementById('userPw').value, n=document.getElementById('userNick').value; try { if(isLoginMode) await auth.signInWithEmailAndPassword(e,p); else { await auth.createUserWithEmailAndPassword(e,p); await db.collection("users").doc(e).set({ nickname:n, email:e, createdAt:Date.now()}); } } catch(err){alert(err.message);} }
     async function handleLogout() { if(confirm("로그아웃 하시겠습니까?")) { await auth.signOut(); location.reload(); } }
 
+    // 💡 V22: 모달을 띄우고 담당자 저장하는 로직 추가 💡
+    async function openPermModal(type) {
+        currentPermType = type;
+        document.getElementById('permModalTitle').innerText = type === 'notice' ? '공지사항 담당자 설정' : '종합 상황판 담당자 설정';
+        
+        const tDoc = await db.collection("teams").doc(myTeamId).get();
+        const members = tDoc.data().members || [];
+        let activeList = type === 'notice' ? globalNoticeAdmins : globalStatusAdmins;
+        
+        document.getElementById('permMemberList').innerHTML = members.map(m => {
+            let nick = globalEmailToNick[m] || m;
+            let checked = activeList.includes(m) ? 'checked' : '';
+            return `<label class="d-flex align-items-center gap-2 p-3 rounded perm-item-box cursor-pointer">
+                <input type="checkbox" class="form-check-input perm-check" value="${m}" ${checked} style="width:20px; height:20px;"> 
+                <span class="fw-bold">${nick} <small class="text-secondary fw-normal">(${m})</small></span>
+            </label>`;
+        }).join('');
+        
+        permModalInst.show();
+    }
+
+    async function savePerms() {
+        let selected = [];
+        document.querySelectorAll('.perm-check:checked').forEach(cb => selected.push(cb.value));
+        
+        let updateData = {};
+        if(currentPermType === 'notice') updateData.noticeAdmins = selected;
+        else updateData.statusAdmins = selected;
+        
+        await db.collection("teams").doc(myTeamId).update(updateData);
+        permModalInst.hide();
+        alert("담당자 권한이 성공적으로 저장되었습니다.\n(새로고침 시 권한이 반영됩니다.)");
+        location.reload(); // 즉시 권한 반영을 위한 새로고침
+    }
+
     // 게시판
     function loadBoardMemos() {
+        // V22: 공지사항 삭제 권한 체크
+        let isSuper = (myRole === 'owner' || myRole === 'admin');
+        let canDeleteNotice = isSuper || globalNoticeAdmins.includes(myEmail);
+
         db.collection("notices").where("teamId", "==", myTeamId).orderBy("createdAt", "desc").onSnapshot(ss => {
             let notices = ss.docs.map(doc => ({ id: doc.id, text: doc.data().text, dateStr: new Date(doc.data().createdAt).toLocaleDateString().slice(5) }));
             document.getElementById('home-notice-list').innerHTML = notices.slice(0,5).map(n => `<div class="mb-1 text-truncate">• ${n.text}</div>`).join('') || '내용 없음';
-            document.getElementById('manage-notice-list').innerHTML = notices.map(n => `<div class="board-item d-flex justify-content-between"><span>${n.text} <span class="small text-secondary ms-2">${n.dateStr}</span></span><button class="btn btn-sm text-danger p-0" onclick="delOldNotice('${n.id}')"><i class="bi bi-trash"></i></button></div>`).join('');
+            
+            // 삭제 권한이 있는 경우에만 휴지통 아이콘 표시
+            document.getElementById('manage-notice-list').innerHTML = notices.map(n => `<div class="board-item d-flex justify-content-between"><span>${n.text} <span class="small text-secondary ms-2">${n.dateStr}</span></span>${canDeleteNotice ? `<button class="btn btn-sm text-danger p-0" onclick="delOldNotice('${n.id}')"><i class="bi bi-trash"></i></button>` : ''}</div>`).join('');
         });
         db.collection("board_memos").where("teamId", "==", myTeamId).where("type", "==", "memo").orderBy("createdAt", "desc").onSnapshot(ss => {
             let memos = ss.docs.map(doc => ({ id: doc.id, text: doc.data().text, dateStr: doc.data().dateStr }));
@@ -946,6 +1025,9 @@
     }
     
     function renderAllSections(data) {
+        let isSuper = (myRole === 'owner' || myRole === 'admin');
+        let canEditStatus = isSuper || globalStatusAdmins.includes(myEmail);
+
         const sections = [
             { key: 'ongoing', icon: 'bi-tools', title: '공사 진행 중', h: '<tr><th style="width:18%;">현장명</th><th style="width:12%;">착공일</th><th style="width:12%;">예정준공일</th><th style="width:12%;">소장</th><th style="width:12%;">디자이너</th><th style="width:12%;">싸인</th><th>비고</th><th style="width:100px;">관리</th></tr>' }, 
             { key: 'scheduled', icon: 'bi-calendar-event', title: '공사 착공 예정', h: '<tr><th style="width:20%;">상호명</th><th style="width:15%;">착공예정</th><th style="width:15%;">준공예정</th><th style="width:15%;">예상소장</th><th>비고</th><th style="width:100px;">관리</th></tr>' }, 
@@ -956,10 +1038,10 @@
         document.getElementById('all-status-containers').innerHTML = sections.map(sec => {
             const items = data.filter(d => d.status === sec.key);
             
-            let tableRows = items.length === 0 ? `<tr><td colspan="10" class="text-secondary py-4">등록된 데이터가 없습니다.</td></tr>` : items.map(item => `<tr><td class="fw-bold" style="color:var(--primary-accent);">${item.siteName}</td><td>${item.date1 || '-'}</td>${sec.key !== 'pre-design' ? `<td>${item.date2 || '-'}</td>` : ''}${sec.key === 'ongoing' ? `<td>${item.site_manager || '-'}</td><td>${item.designer || '-'}</td><td>${item.designer_sign || '-'}</td>` : ''}${sec.key === 'scheduled' ? `<td>${item.site_manager || '-'}</td>` : ''}${sec.key === 'designing' ? `<td>${item.designer || '-'}</td>` : ''}<td class="text-secondary text-start ps-3">${item.etc || '-'}</td><td class="text-nowrap" style="overflow:visible; text-overflow:clip; padding:0 5px;"><button class="btn btn-sm btn-outline-primary py-0 px-2 me-1" onclick="openSiteEditModal('${item.id}')"><i class="bi bi-pencil-square"></i></button>${isStatusEditMode ? `<button class="btn btn-sm btn-danger py-0 px-2" onclick="deleteSite('${item.id}')">삭제</button>` : ''}</td></tr>`).join('');
+            let tableRows = items.length === 0 ? `<tr><td colspan="10" class="text-secondary py-4">등록된 데이터가 없습니다.</td></tr>` : items.map(item => `<tr><td class="fw-bold" style="color:var(--primary-accent);">${item.siteName}</td><td>${item.date1 || '-'}</td>${sec.key !== 'pre-design' ? `<td>${item.date2 || '-'}</td>` : ''}${sec.key === 'ongoing' ? `<td>${item.site_manager || '-'}</td><td>${item.designer || '-'}</td><td>${item.designer_sign || '-'}</td>` : ''}${sec.key === 'scheduled' ? `<td>${item.site_manager || '-'}</td>` : ''}${sec.key === 'designing' ? `<td>${item.designer || '-'}</td>` : ''}<td class="text-secondary text-start ps-3">${item.etc || '-'}</td><td class="text-nowrap" style="overflow:visible; text-overflow:clip; padding:0 5px;">${canEditStatus ? `<button class="btn btn-sm btn-outline-primary py-0 px-2 me-1" onclick="openSiteEditModal('${item.id}')"><i class="bi bi-pencil-square"></i></button>` : ''}${(canEditStatus && isStatusEditMode) ? `<button class="btn btn-sm btn-danger py-0 px-2" onclick="deleteSite('${item.id}')">삭제</button>` : ''}</td></tr>`).join('');
             
             let cards = items.length === 0 ? `<p class="text-center text-secondary py-3 small" style="background:#1e222d; border-radius:12px;">등록된 데이터가 없습니다.</p>` : items.map(item => {
-                const btnHTML = `<div class="d-flex gap-1"><button class="btn btn-sm btn-outline-primary px-2 py-0" onclick="openSiteEditModal('${item.id}')"><i class="bi bi-pencil-square"></i> 수정</button>${isStatusEditMode ? `<button class="btn btn-sm btn-danger px-2 py-0" onclick="deleteSite('${item.id}')">삭제</button>` : ''}</div>`;
+                const btnHTML = `<div class="d-flex gap-1">${canEditStatus ? `<button class="btn btn-sm btn-outline-primary px-2 py-0" onclick="openSiteEditModal('${item.id}')"><i class="bi bi-pencil-square"></i> 수정</button>` : ''}${(canEditStatus && isStatusEditMode) ? `<button class="btn btn-sm btn-danger px-2 py-0" onclick="deleteSite('${item.id}')">삭제</button>` : ''}</div>`;
                 let etcHTML = ''; if(item.etc) { if(sec.key === 'pre-design') etcHTML = `<div class="text-secondary small mt-2 text-truncate">${item.etc}</div>`; else { const cid = `etc-${item.id}`; etcHTML = `<div class="text-secondary small mt-2 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#${cid}"><i class="bi bi-chat-square-text"></i> 메모 보기 <i class="bi bi-chevron-down"></i></div><div class="collapse" id="${cid}"><div class="mt-2 text-secondary small bg-dark p-2 rounded">${item.etc}</div></div>`; } }
                 
                 let dateStr = "";

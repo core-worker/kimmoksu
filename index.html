@@ -7,7 +7,7 @@
     <meta property="og:type" content="website">
     <meta property="og:title" content="김목수이야기 - 통합 ERP 시스템">
     <meta property="og:description" content="현장 관리, 공정표, 작업일보, 연차 관리 통합 시스템">
-    <meta property="og:image" content="https://kimmoksu.github.io/kimmoksu_main_logo.png">
+    <meta property="og:image" content="https://idong2300.github.io/kimmoksu/og-image.png">
     <meta property="og:locale" content="ko_KR">
 
     <link rel="icon" href="favicon.png" type="image/png">
@@ -24,7 +24,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
     <script src="firebase-config.js"></script>
 
     <style>
@@ -102,7 +101,6 @@
             .compact-card h6 { font-size: 0.95rem !important; font-weight: 700 !important; }
             .compact-card p { display: none; }
             
-            /* 💡 V24: 추가공사 모바일 카드뷰 flex order 유지 💡 */
             .mobile-extra-table thead { display: none; }
             .mobile-extra-table tr { display: flex; flex-wrap: wrap; align-items: center; background: #1e222d; margin-bottom: 15px; border-radius: 10px; padding: 12px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
             .mobile-extra-table td { border: none !important; padding: 2px !important; display: flex; align-items: center; }
@@ -231,7 +229,13 @@
         <h3 id="auth-title" class="mb-4 fw-bold">현장 관리 접속</h3>
         <input type="text" id="userNick" class="form-control input-dark mb-3" placeholder="이름 (실명 권장, 가입시 필수)" style="display:none;">
         <input type="email" id="userEmail" class="form-control input-dark mb-3" placeholder="이메일">
-        <input type="password" id="userPw" class="form-control input-dark mb-4" placeholder="비밀번호">
+        <input type="password" id="userPw" class="form-control input-dark mb-3" placeholder="비밀번호">
+        
+        <div class="form-check text-start mb-4 ms-1">
+            <input class="form-check-input" type="checkbox" id="autoLoginCheck" checked>
+            <label class="form-check-label small text-secondary" for="autoLoginCheck">자동 로그인 유지</label>
+        </div>
+
         <button class="t5-btn-primary" onclick="handleAuth()">접속하기</button>
         <p class="mt-4 text-secondary small" onclick="toggleAuthMode()" style="cursor:pointer;">계정 가입/로그인 전환</p>
     </div>
@@ -248,12 +252,12 @@
             <div class="nav-link active" onclick="showPage('home', this)"><i class="bi bi-house-door"></i> 홈 메인</div>
             <div class="nav-link text-warning" onclick="showPage('team', this)"><i class="bi bi-people-fill"></i> 팀원 및 조직 관리</div>
             <hr class="border-secondary border-opacity-25 mx-3">
-            <div class="nav-link" onclick="showPage('status', this)"><i class="bi bi-gear-wide-connected"></i> 종합 상황판 관리</div>
+            <div class="nav-link" onclick="location.href='calendar.html'"><i class="bi bi-calendar-check"></i> 마스터 스케줄러</div>
+            <div class="nav-link" onclick="showPage('status', this)"><i class="bi bi-gear-wide-connected"></i> 종합 상황판</div>
             <div class="nav-link" onclick="showPage('gantt', this)"><i class="bi bi-calendar3"></i> 공정표 & 추가공사</div>
             <div class="nav-link" onclick="showPage('worklog', this)"><i class="bi bi-journal-text"></i> 작업일보</div>
             <div class="nav-link" onclick="showPage('punch', this)"><i class="bi bi-ui-checks"></i> 펀치리스트</div>
             <div class="nav-link" onclick="showPage('t5', this)"><i class="bi bi-calculator"></i> T5 계산기</div>
-            <div class="nav-link" onclick="showPage('memo', this)"><i class="bi bi-stickies"></i> 전체 & 개인 메모장</div>
             <div class="nav-link" onclick="showPage('leave', this)"><i class="bi bi-calendar2-check"></i> 연차 관리</div>
             <div class="nav-link" onclick="showPage('profile', this)"><i class="bi bi-person-gear"></i> 내 정보 수정</div>
         </div>
@@ -299,30 +303,45 @@
                 </div>
             </div>
 
-            <div class="t5-card mb-4 bg-primary bg-opacity-10 border border-primary border-opacity-25 cursor-pointer" onclick="showPage('status', document.querySelectorAll('.nav-link')[2])">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h4 class="fw-bold text-white mb-2"><i class="bi bi-display me-2 text-primary"></i>종합 상황판</h4>
-                        <p class="text-secondary small m-0">전체 현장의 공정 단계를 한눈에 확인하고 관리합니다.</p>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-8">
+                    <div class="t5-card h-100 mb-0 bg-primary bg-opacity-10 border border-primary border-opacity-25 cursor-pointer d-flex flex-column justify-content-center" onclick="showPage('status', document.querySelectorAll('.nav-link')[3])">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h4 class="fw-bold text-white mb-2"><i class="bi bi-display me-2 text-primary"></i>종합 상황판</h4>
+                                <p class="text-secondary small m-0">전체 현장의 공정 단계를 한눈에 확인하고 관리합니다.</p>
+                            </div>
+                            <i class="bi bi-chevron-right fs-2 text-primary"></i>
+                        </div>
                     </div>
-                    <i class="bi bi-chevron-right fs-2 text-primary"></i>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="t5-card h-100 mb-0 bg-success bg-opacity-10 border border-success border-opacity-25 cursor-pointer d-flex flex-column justify-content-center" onclick="location.href='calendar.html'">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h4 class="fw-bold text-white mb-2"><i class="bi bi-calendar-check me-2 text-success"></i>마스터 스케줄러</h4>
+                                <p class="text-secondary small m-0">전체 일정을 달력으로 관리합니다.</p>
+                            </div>
+                            <i class="bi bi-chevron-right fs-2 text-success"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div class="row g-3 row-cols-2 row-cols-md-3">
-                <div class="col mobile-col-6" onclick="showPage('worklog', document.querySelectorAll('.nav-link')[4])">
+                <div class="col mobile-col-6" onclick="showPage('worklog', document.querySelectorAll('.nav-link')[5])">
                     <div class="t5-card compact-card h-100 cursor-pointer text-center">
                         <i class="bi bi-journal-text fs-1 d-block mb-3 text-success"></i>
                         <h6 class="fw-bold m-0">작업일보</h6>
                     </div>
                 </div>
-                <div class="col mobile-col-6" onclick="showPage('gantt', document.querySelectorAll('.nav-link')[3])">
+                <div class="col mobile-col-6" onclick="showPage('gantt', document.querySelectorAll('.nav-link')[4])">
                     <div class="t5-card compact-card h-100 cursor-pointer text-center">
                         <i class="bi bi-bar-chart-steps fs-1 d-block mb-3 text-primary"></i>
-                        <h6 class="fw-bold m-0">공정표 & 추가</h6>
+                        <h6 class="fw-bold m-0">공정표 & 추가공사</h6>
                     </div>
                 </div>
-                <div class="col mobile-col-6" onclick="showPage('punch', document.querySelectorAll('.nav-link')[5])">
+                <div class="col mobile-col-6" onclick="showPage('punch', document.querySelectorAll('.nav-link')[6])">
                     <div class="t5-card compact-card h-100 cursor-pointer text-center">
                         <i class="bi bi-ui-checks fs-1 d-block mb-3 text-danger"></i>
                         <h6 class="fw-bold m-0">펀치리스트</h6>
@@ -340,7 +359,7 @@
                         <h6 class="fw-bold m-0">메모장</h6>
                     </div>
                 </div>
-                <div class="col mobile-col-6" onclick="showPage('t5', document.querySelectorAll('.nav-link')[6])">
+                <div class="col mobile-col-6" onclick="showPage('t5', document.querySelectorAll('.nav-link')[9])">
                     <div class="t5-card compact-card h-100 cursor-pointer text-center">
                         <i class="bi bi-calculator fs-1 d-block mb-3 text-warning"></i>
                         <h6 class="fw-bold m-0">T5 계산기</h6>
@@ -415,7 +434,8 @@
                             <table class="table table-dark table-bordered gantt-table" id="ganttTable"></table>
                         </div>
                     </div>
-                    <div class="d-flex justify-content-between mb-5 mt-3 flex-wrap gap-2">
+                    
+                    <div class="d-none d-md-flex justify-content-between mb-5 mt-3 flex-wrap gap-2">
                         <div class="d-flex gap-2">
                             <button class="btn btn-sm btn-outline-info" onclick="addGanttTaskRow()">+ 공종(행) 추가</button>
                             <button class="btn btn-sm btn-outline-secondary" onclick="prependGanttDate()"><i class="bi bi-arrow-left"></i> 1일 연장</button>
@@ -426,6 +446,17 @@
                             <button class="btn btn-sm btn-outline-secondary" onclick="addGanttDate()">1일 연장 <i class="bi bi-arrow-right"></i></button>
                         </div>
                     </div>
+                    
+                    <div class="d-flex d-md-none flex-column gap-2 mb-4 mt-3">
+                        <button class="btn btn-sm btn-outline-info w-100 py-2 fw-bold" onclick="addGanttTaskRow()">+ 공종(행) 추가</button>
+                        <div class="d-flex gap-1 justify-content-between">
+                            <button class="btn btn-outline-secondary p-1 flex-fill" style="font-size:0.75rem;" onclick="prependGanttDate()"><i class="bi bi-arrow-left"></i> 앞연장</button>
+                            <button class="btn btn-outline-danger p-1 flex-fill" style="font-size:0.75rem;" onclick="removeFirstGanttDate()">앞축소 <i class="bi bi-arrow-right"></i></button>
+                            <button class="btn btn-outline-danger p-1 flex-fill" style="font-size:0.75rem;" onclick="removeGanttDate()"><i class="bi bi-arrow-left"></i> 뒤축소</button>
+                            <button class="btn btn-outline-secondary p-1 flex-fill" style="font-size:0.75rem;" onclick="addGanttDate()">뒤연장 <i class="bi bi-arrow-right"></i></button>
+                        </div>
+                    </div>
+
                 </div>
 
                 <hr class="border-secondary opacity-25 mt-2">
@@ -838,12 +869,8 @@
         document.getElementById('calMonth').innerHTML = moHtml;
         
         let savedTheme = localStorage.getItem('kimmoksu_theme');
-        if(savedTheme === 'light') {
-            document.body.classList.add('light-mode');
-            updateThemeUI(true);
-        } else {
-            updateThemeUI(false);
-        }
+        if(savedTheme === 'light') { document.body.classList.add('light-mode'); updateThemeUI(true); } 
+        else { updateThemeUI(false); }
     });
     
     function toggleTheme() {
@@ -854,13 +881,8 @@
     
     function updateThemeUI(isLight) {
         const btn = document.getElementById('themeToggleBtn');
-        if(isLight) {
-            btn.innerHTML = '<i class="bi bi-moon-fill"></i> <span>블랙 모드로 전환</span>';
-            btn.classList.replace('btn-outline-secondary', 'btn-outline-dark');
-        } else {
-            btn.innerHTML = '<i class="bi bi-brightness-high-fill"></i> <span>화이트 모드로 전환</span>';
-            btn.classList.replace('btn-outline-dark', 'btn-outline-secondary');
-        }
+        if(isLight) { btn.innerHTML = '<i class="bi bi-moon-fill"></i> <span>블랙 모드로 전환</span>'; btn.classList.replace('btn-outline-secondary', 'btn-outline-dark'); } 
+        else { btn.innerHTML = '<i class="bi bi-brightness-high-fill"></i> <span>화이트 모드로 전환</span>'; btn.classList.replace('btn-outline-dark', 'btn-outline-secondary'); }
     }
 
     function showPage(pageId, el, pushState = true) {
@@ -885,16 +907,21 @@
     }
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('sidebarOverlay').classList.toggle('active'); }
     
-    window.onload = () => { if(!history.state) history.replaceState({page: 'home'}, "", "#home"); };
-    window.addEventListener('popstate', (e) => {
-        if (currentSite !== "" && document.getElementById('view-detail').style.display === 'block') {
-            goBackToPunchList(false); 
-        } else if (e.state && e.state.page) {
-            let targetLink = document.querySelector(`.nav-link[onclick*="'${e.state.page}'"]`);
-            showPage(e.state.page, targetLink, false);
-        } else {
-            showPage('home', document.querySelector('.nav-link'), false);
+    // 💡 V27: 외부 링크(해시)를 통한 라우팅 완벽 호환 💡
+    window.onload = () => { 
+        let hash = window.location.hash.replace('#', '');
+        if(hash && document.getElementById('page-' + hash)) {
+            let targetLink = document.querySelector(`.nav-link[onclick*="'${hash}'"]`);
+            showPage(hash, targetLink, false);
+        } else if(!history.state) {
+            history.replaceState({page: 'home'}, "", "#home"); 
         }
+    };
+    
+    window.addEventListener('popstate', (e) => {
+        if (currentSite !== "" && document.getElementById('view-detail').style.display === 'block') { goBackToPunchList(false); } 
+        else if (e.state && e.state.page) { let targetLink = document.querySelector(`.nav-link[onclick*="'${e.state.page}'"]`); showPage(e.state.page, targetLink, false); } 
+        else { showPage('home', document.querySelector('.nav-link'), false); }
     });
 
     function applyRoleRestrictions() {
@@ -928,7 +955,6 @@
 
                 globalNoticeAdmins = tData.noticeAdmins || [];
                 globalStatusAdmins = tData.statusAdmins || [];
-
                 applyRoleRestrictions();
 
                 const members = tData.members || [];
@@ -944,13 +970,22 @@
     });
 
     function toggleAuthMode() { isLoginMode = !isLoginMode; document.getElementById('auth-title').innerText = isLoginMode ? "접속" : "가입"; document.getElementById('userNick').style.display = isLoginMode ? "none" : "block"; }
-    async function handleAuth() { const e=document.getElementById('userEmail').value, p=document.getElementById('userPw').value, n=document.getElementById('userNick').value; try { if(isLoginMode) await auth.signInWithEmailAndPassword(e,p); else { await auth.createUserWithEmailAndPassword(e,p); await db.collection("users").doc(e).set({ nickname:n, email:e, createdAt:Date.now()}); } } catch(err){alert(err.message);} }
+    
+    // 💡 V27: 자동 로그인 유지 적용 💡
+    async function handleAuth() { 
+        const e=document.getElementById('userEmail').value, p=document.getElementById('userPw').value, n=document.getElementById('userNick').value; 
+        const keepAlive = document.getElementById('autoLoginCheck') ? document.getElementById('autoLoginCheck').checked : true;
+        try { 
+            await auth.setPersistence(keepAlive ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION);
+            if(isLoginMode) await auth.signInWithEmailAndPassword(e,p); 
+            else { await auth.createUserWithEmailAndPassword(e,p); await db.collection("users").doc(e).set({ nickname:n, email:e, createdAt:Date.now()}); } 
+        } catch(err){alert(err.message);} 
+    }
     async function handleLogout() { if(confirm("로그아웃 하시겠습니까?")) { await auth.signOut(); location.reload(); } }
 
     async function openPermModal(type) {
         currentPermType = type;
         document.getElementById('permModalTitle').innerText = type === 'notice' ? '공지사항 담당자 설정' : '종합 상황판 담당자 설정';
-        
         const tDoc = await db.collection("teams").doc(myTeamId).get();
         const members = tDoc.data().members || [];
         let activeList = type === 'notice' ? globalNoticeAdmins : globalStatusAdmins;
@@ -958,23 +993,16 @@
         document.getElementById('permMemberList').innerHTML = members.map(m => {
             let nick = globalEmailToNick[m] || m;
             let checked = activeList.includes(m) ? 'checked' : '';
-            return `<label class="d-flex align-items-center gap-2 p-3 rounded perm-item-box cursor-pointer">
-                <input type="checkbox" class="form-check-input perm-check" value="${m}" ${checked} style="width:20px; height:20px;"> 
-                <span class="fw-bold">${nick} <small class="text-secondary fw-normal">(${m})</small></span>
-            </label>`;
+            return `<label class="d-flex align-items-center gap-2 p-3 rounded perm-item-box cursor-pointer"><input type="checkbox" class="form-check-input perm-check" value="${m}" ${checked} style="width:20px; height:20px;"> <span class="fw-bold">${nick} <small class="text-secondary fw-normal">(${m})</small></span></label>`;
         }).join('');
-        
         permModalInst.show();
     }
 
     async function savePerms() {
         let selected = [];
         document.querySelectorAll('.perm-check:checked').forEach(cb => selected.push(cb.value));
-        
         let updateData = {};
-        if(currentPermType === 'notice') updateData.noticeAdmins = selected;
-        else updateData.statusAdmins = selected;
-        
+        if(currentPermType === 'notice') updateData.noticeAdmins = selected; else updateData.statusAdmins = selected;
         await db.collection("teams").doc(myTeamId).update(updateData);
         permModalInst.hide();
         alert("담당자 권한이 성공적으로 저장되었습니다.\n(새로고침 시 권한이 반영됩니다.)");
@@ -989,7 +1017,6 @@
         db.collection("notices").where("teamId", "==", myTeamId).orderBy("createdAt", "desc").onSnapshot(ss => {
             let notices = ss.docs.map(doc => ({ id: doc.id, text: doc.data().text, dateStr: new Date(doc.data().createdAt).toLocaleDateString().slice(5) }));
             document.getElementById('home-notice-list').innerHTML = notices.slice(0,5).map(n => `<div class="mb-1 text-truncate">• ${n.text}</div>`).join('') || '내용 없음';
-            
             document.getElementById('manage-notice-list').innerHTML = notices.map(n => `<div class="board-item d-flex justify-content-between"><span>${n.text} <span class="small text-secondary ms-2">${n.dateStr}</span></span>${canDeleteNotice ? `<button class="btn btn-sm text-danger p-0" onclick="delOldNotice('${n.id}')"><i class="bi bi-trash"></i></button>` : ''}</div>`).join('');
         });
         db.collection("board_memos").where("teamId", "==", myTeamId).where("type", "==", "memo").orderBy("createdAt", "desc").onSnapshot(ss => {
@@ -1092,7 +1119,6 @@
         monthCounts.push({m: currentMonth, c: count});
         let monthHtml = `<tr class="gantt-month-row"><th class="gantt-task-col text-center">월 구분</th>` + monthCounts.map(mc => `<th colspan="${mc.c}" class="text-center">${mc.m + 1}월</th>`).join('') + `</tr>`;
         const thead = ganttDates.map(d => `<th class="gantt-date-th ${d.getDay()===0?'day-sun':(d.getDay()===6?'day-sat':'')}">${d.getDate()}</th>`).join('');
-        // 💡 V24: "공종(클릭 수정)" -> "공종" 텍스트 심플화 💡
         let html = `<thead>${monthHtml}<tr><th class="gantt-task-col text-secondary">공종</th>${thead}</tr></thead><tbody>`;
         ganttTasks.forEach((task, tIdx) => {
             html += `<tr><td class="gantt-task-col"><input type="text" class="task-editable" value="${task}" onchange="ganttTasks[${tIdx}]=this.value"></td>`;
@@ -1103,46 +1129,23 @@
     function toggleGantt(key) { ganttState[key] = !ganttState[key]; renderGantt(); }
     function addGanttTaskRow() { ganttTasks.push("새 공종"); renderGantt(); }
     
-    // 뒤쪽(끝) 날짜 연장/축소
     function addGanttDate() { let lastD = new Date(ganttDates[ganttDates.length-1]); lastD.setDate(lastD.getDate() + 1); ganttDates.push(lastD); renderGantt(); }
     function removeGanttDate() { if(ganttDates.length > 1) { ganttDates.pop(); renderGantt(); } } 
 
-    // 💡 V24: 앞쪽(시작일) 날짜 연장 및 데이터 우측 Shift 보존 로직 💡
     function prependGanttDate() {
         if(ganttDates.length === 0) return;
-        let firstD = new Date(ganttDates[0]);
-        firstD.setDate(firstD.getDate() - 1);
-        ganttDates.unshift(firstD); // 배열 맨 앞에 어제 날짜 추가
-        
+        let firstD = new Date(ganttDates[0]); firstD.setDate(firstD.getDate() - 1); ganttDates.unshift(firstD); 
         let newState = {};
-        // 기존 데이터를 전부 +1 인덱스(우측)로 옮겨서 날짜에 고정시킴
-        for (let tIdx = 0; tIdx < ganttTasks.length; tIdx++) {
-            for (let dIdx = 0; dIdx < ganttDates.length - 1; dIdx++) {
-                if (ganttState[`${tIdx}_${dIdx}`]) {
-                    newState[`${tIdx}_${dIdx + 1}`] = true;
-                }
-            }
-        }
-        ganttState = newState;
-        renderGantt();
+        for (let tIdx = 0; tIdx < ganttTasks.length; tIdx++) { for (let dIdx = 0; dIdx < ganttDates.length - 1; dIdx++) { if (ganttState[`${tIdx}_${dIdx}`]) { newState[`${tIdx}_${dIdx + 1}`] = true; } } }
+        ganttState = newState; renderGantt();
     }
 
-    // 💡 V24: 앞쪽(시작일) 날짜 축소 및 데이터 좌측 Shift 보존 로직 💡
     function removeFirstGanttDate() {
         if(ganttDates.length > 1) {
-            ganttDates.shift(); // 배열 맨 앞 날짜 삭제
-            
+            ganttDates.shift(); 
             let newState = {};
-            // 기존 데이터를 전부 -1 인덱스(좌측)로 당겨서 날짜에 고정시킴
-            for (let tIdx = 0; tIdx < ganttTasks.length; tIdx++) {
-                for (let dIdx = 1; dIdx <= ganttDates.length; dIdx++) {
-                    if (ganttState[`${tIdx}_${dIdx}`]) {
-                        newState[`${tIdx}_${dIdx - 1}`] = true;
-                    }
-                }
-            }
-            ganttState = newState;
-            renderGantt();
+            for (let tIdx = 0; tIdx < ganttTasks.length; tIdx++) { for (let dIdx = 1; dIdx <= ganttDates.length; dIdx++) { if (ganttState[`${tIdx}_${dIdx}`]) { newState[`${tIdx}_${dIdx - 1}`] = true; } } }
+            ganttState = newState; renderGantt();
         }
     }
 
@@ -1157,7 +1160,7 @@
         }, 200); 
     }
     
-    // 💡 V24: PC 테이블 헤더 순서와 100% 일치하도록 HTML 뼈대 순서 복구 💡
+    // 💡 V27: 삭제 버튼 [X] 축소 및 모바일 정렬 복구 💡
     function addExtraCostRow(data = {}) {
         const tr = document.createElement('tr');
         let id = Date.now() + Math.floor(Math.random()*1000);
@@ -1173,7 +1176,7 @@
                 <div class="d-md-none note-header" data-bs-toggle="collapse" data-bs-target="#note-${id}">비고 (메모) <i class="bi bi-chevron-down"></i></div>
                 <div class="collapse d-md-block" id="note-${id}"><input type="text" class="form-control form-control-sm input-dark ec-note mt-2 mt-md-0" placeholder="메모를 입력하세요" value="${data.note||''}"></div>
             </td>
-            <td class="del-td"><button class="btn btn-sm btn-outline-danger py-0 px-2 w-100" onclick="this.closest('tr').remove(); calcExtraSum();"><i class="bi bi-x"></i> <span class="d-md-none">삭제</span></button></td>
+            <td class="del-td"><button class="btn btn-sm btn-outline-danger py-0 px-2 w-100 fw-bold" onclick="this.closest('tr').remove(); calcExtraSum();"><i class="bi bi-x-lg"></i></button></td>
         `;
         document.getElementById('extraCostBody').appendChild(tr); calcExtraSum();
     }

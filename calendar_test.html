@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>김목수이야기 - 통합 스케줄러 테스트</title>
+    <title>김목수이야기 - 통합 스케줄러 (V24.5)</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -13,55 +13,69 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-    <script src="firebase-config.js"></script> <style>
-        :root { --bg-deep: #131722; --card-bg: #2a2e39; --primary-accent: #5c7cfa; }
-        body { background-color: var(--bg-deep); color: #f8fafc; font-family: 'Pretendard', sans-serif; margin: 0; padding-bottom: 80px; }
+    <script src="firebase-config.js"></script>
+
+    <style>
+        :root { --bg-deep: #131722; --sidebar-bg: #1e222d; --card-bg: #2a2e39; --primary-accent: #5c7cfa; }
+        body { background-color: var(--bg-deep); color: #f8fafc; font-family: 'Pretendard', sans-serif; margin: 0; overflow: hidden; }
+        
+        /* 전체 레이아웃 (사이드바 포함) */
+        .app-wrapper { display: flex; height: 100vh; height: 100dvh; width: 100vw; }
+        .sidebar { width: 260px; height: 100dvh; background-color: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; z-index: 1050; flex-shrink: 0; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .main-container { flex: 1; overflow-y: auto; background-color: var(--bg-deep); padding: 30px; }
+        
+        /* 💡 PC 대화면 크기 대폭 확장 💡 */
+        .content-width { max-width: 1400px; margin: 0 auto; width: 100%; }
         
         .t5-card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin-bottom: 20px; }
         .input-dark { background: #1e222d !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; font-size: 0.95rem !important; }
-        
-        /* 달력 그리드 스타일 */
-        .cal-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; font-size: 0.9rem; }
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .cal-day { background: #1e222d; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; min-height: 80px; padding: 4px; cursor: pointer; transition: 0.2s; position: relative; display: flex; flex-direction: column; gap: 2px; }
-        .cal-day:hover, .cal-day.selected { border-color: var(--primary-accent); background: rgba(92, 124, 250, 0.1); }
-        .cal-date-num { font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; text-align: left; padding-left: 4px; }
-        
-        /* 이벤트 배지 스타일 */
-        .event-badge { font-size: 0.65rem; padding: 2px 4px; border-radius: 4px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: 1.2; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
-        
-        .type-gantt { background-color: #0d6efd; } /* 파란색: 공정표 */
-        .type-status { background-color: #20c997; } /* 청록색: 상황판 */
-        .type-leave { background-color: #dc3545; } /* 빨간색: 연차 */
-        .type-construct { background-color: #6f42c1; } /* 보라색: 공사 */
-        .type-measure { background-color: #fd7e14; } /* 주황색: 실측 */
-        .type-meeting { background-color: #198754; } /* 녹색: 미팅 */
-        .type-memo { background-color: #6c757d; } /* 회색: 메모 */
 
-        /* 필터 태그 스크롤 */
-        .filter-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; white-space: nowrap; scrollbar-width: none; }
-        .filter-scroll::-webkit-scrollbar { display: none; }
+        /* 💡 통합 그리드 디자인 (얇은 선으로만 구분) 💡 */
+        .cal-border-wrap { border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; }
+        .cal-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: bold; background: #1e222d; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 12px 0; font-size: 0.9rem; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); background: rgba(255,255,255,0.1); gap: 1px; } /* gap 1px로 선 표현 */
+        .cal-day { background: #1e222d; min-height: 110px; padding: 6px 0; cursor: pointer; transition: 0.2s; position: relative; display: flex; flex-direction: column; gap: 2px; }
+        .cal-day:hover, .cal-day.selected { background: rgba(92, 124, 250, 0.1); }
+        .cal-date-num { font-size: 0.85rem; font-weight: bold; margin-bottom: 6px; padding-left: 8px; }
         
-        /* 하단 리스트 스타일 */
+        /* 💡 일정 배지 스타일 (끊기지 않게 마진 제거) 💡 */
+        .event-badge { font-size: 0.7rem; padding: 3px 8px; color: white; white-space: nowrap; overflow: hidden; text-overflow: clip; text-align: left; line-height: 1.2; margin-bottom: 1px; height: 22px; width: 100%; border-radius: 0; }
+        .event-start { border-top-left-radius: 4px; border-bottom-left-radius: 4px; margin-left: 4px; width: calc(100% - 4px); }
+        .event-end { border-top-right-radius: 4px; border-bottom-right-radius: 4px; margin-right: 4px; width: calc(100% - 4px); }
+        .event-single { border-radius: 4px; margin: 0 4px; width: calc(100% - 8px); }
+
+        .type-gantt { background-color: #0d6efd; } .type-status { background-color: #20c997; } .type-leave { background-color: #dc3545; }
+        .type-construct { background-color: #6f42c1; } .type-measure { background-color: #fd7e14; } .type-meeting { background-color: #198754; } .type-memo { background-color: #6c757d; }
+
+        /* 사이드바 네비게이션 스타일 */
+        .nav-link { color: #94a3b8; padding: 14px 20px; margin: 4px 15px; border-radius: 12px; transition: 0.3s; cursor: pointer; display: flex; align-items: center; text-decoration: none; }
+        .nav-link i { font-size: 1.2rem; margin-right: 12px; }
+        .nav-link:hover, .nav-link.active { background-color: rgba(92, 124, 250, 0.2); color: var(--primary-accent); font-weight: bold; }
+
+        /* 필터 및 하단 리스트 */
+        .filter-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; }
         .list-item { background: #1e222d; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 15px; }
         .list-item.done { opacity: 0.5; filter: grayscale(0.8); }
         .list-item.done .item-content { text-decoration: line-through; color: #adb5bd; }
         .color-bar { width: 4px; border-radius: 4px; align-self: stretch; flex-shrink: 0; }
-        
-        /* 커스텀 체크박스 */
-        .custom-check { width: 22px; height: 22px; cursor: pointer; border-radius: 6px; border: 2px solid var(--primary-accent); appearance: none; position: relative; flex-shrink: 0; background: transparent; margin-top: 2px; }
+        .custom-check { width: 22px; height: 22px; cursor: pointer; border-radius: 6px; border: 2px solid var(--primary-accent); appearance: none; position: relative; margin-top: 2px; }
         .custom-check:checked { background-color: var(--primary-accent); }
         .custom-check:checked::after { content: '✔'; position: absolute; color: white; font-size: 12px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 
-        /* 모달 (팝업) */
-        #eventModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s; }
+        #eventModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
         .modal-box { background: var(--card-bg); padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         
         #auth-overlay { position: fixed; inset: 0; background: var(--bg-deep); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .login-card { background: var(--card-bg); padding: 40px; border-radius: 24px; width: 100%; max-width: 380px; text-align: center; }
 
-        /* 플로팅 버튼 */
-        .fab-btn { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: var(--primary-accent); color: white; border: none; font-size: 1.8rem; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; }
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; transform: translateX(-100%); }
+            .sidebar.active { transform: translateX(0); }
+            .main-container { padding: 15px; }
+            .cal-day { min-height: 80px; }
+            .mobile-menu-btn { display: flex !important; }
+        }
+        .mobile-menu-btn { display: none; position: fixed; bottom: 25px; left: 25px; width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary-accent); color: white; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1030; border: none; font-size: 1.8rem; }
     </style>
 </head>
 <body>
@@ -75,46 +89,76 @@
     </div>
 </div>
 
-<div class="container py-4" style="max-width: 800px;">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold m-0"><i class="bi bi-calendar-check me-2" style="color:var(--primary-accent);"></i>마스터 스케줄러</h3>
-        <button class="btn btn-sm btn-outline-info px-3 fw-bold" onclick="captureCalendar()"><i class="bi bi-camera"></i> 캡처</button>
-    </div>
-
-    <div class="filter-scroll mb-3" id="filterContainer">
-        <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" onclick="setFilter('all')">전체 보기</button>
-        <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3" onclick="setFilter('gantt')"><span style="color:#0d6efd;">●</span> 공정표</button>
-        <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3" onclick="setFilter('status')"><span style="color:#20c997;">●</span> 상황판</button>
-        <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3" onclick="setFilter('leave')"><span style="color:#dc3545;">●</span> 연차(휴가)</button>
-        <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3" onclick="setFilter('construct')"><span style="color:#6f42c1;">●</span> 공사일정</button>
-        <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3" onclick="setFilter('measure')"><span style="color:#fd7e14;">●</span> 실측</button>
-        <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3" onclick="setFilter('meeting')"><span style="color:#198754;">●</span> 미팅</button>
-        <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3" onclick="setFilter('memo')"><span style="color:#6c757d;">●</span> 메모</button>
-    </div>
-
-    <div class="t5-card" id="captureArea">
-        <div class="d-flex justify-content-center align-items-center mb-4 gap-3">
-            <button class="btn btn-sm btn-outline-secondary" onclick="changeMonth(-1)"><i class="bi bi-chevron-left"></i></button>
-            <h4 class="fw-bold m-0" id="currentMonthDisplay">2026. 04</h4>
-            <button class="btn btn-sm btn-outline-secondary" onclick="changeMonth(1)"><i class="bi bi-chevron-right"></i></button>
+<div class="app-wrapper">
+    <nav class="sidebar" id="sidebar">
+        <div class="p-4 text-center border-bottom border-secondary border-opacity-10">
+            <img src="kimmoksu_main_logo.png" alt="로고" style="max-width: 140px; cursor: pointer;" onclick="location.href='index.html'">
         </div>
-        
-        <div class="cal-header">
-            <div class="text-danger">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="text-primary">토</div>
+        <div class="flex-grow-1 mt-3">
+            <div class="nav-link" onclick="location.href='index.html'"><i class="bi bi-house-door"></i> 홈 메인</div>
+            <div class="nav-link active"><i class="bi bi-calendar-check"></i> 통합 스케줄러</div>
+            <div class="nav-link" onclick="location.href='index.html#status'"><i class="bi bi-gear-wide-connected"></i> 종합 상황판</div>
+            <div class="nav-link" onclick="location.href='index.html#gantt'"><i class="bi bi-calendar3"></i> 공정표 & 추가공사</div>
+            <div class="nav-link" onclick="location.href='index.html#worklog'"><i class="bi bi-journal-text"></i> 작업일보</div>
+            <div class="nav-link" onclick="location.href='index.html#punch'"><i class="bi bi-ui-checks"></i> 펀치리스트</div>
+            <div class="nav-link" onclick="location.href='index.html#t5'"><i class="bi bi-calculator"></i> T5 계산기</div>
         </div>
-        <div class="cal-grid" id="calendarGrid"></div>
-    </div>
+        <div class="p-4 border-top border-secondary border-opacity-10">
+            <div class="d-flex align-items-center mb-2">
+                <i class="bi bi-person-circle fs-3 me-3" style="color:var(--primary-accent);"></i>
+                <div class="flex-grow-1 overflow-hidden">
+                    <div id="userNickDisplay" class="fw-bold text-truncate">사용자</div>
+                    <div class="small text-secondary" style="font-size:0.7rem;">접속 중</div>
+                </div>
+            </div>
+            <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="auth.signOut()">로그아웃</button>
+        </div>
+    </nav>
 
-    <div class="mt-4">
-        <div class="d-flex justify-content-between align-items-end mb-3">
-            <h5 class="fw-bold m-0" id="listTitle">📋 이달의 전체 일정</h5>
-            <button class="btn btn-sm btn-link text-secondary p-0 text-decoration-none" id="btnResetDate" style="display:none;" onclick="selectDate(null)"><i class="bi bi-arrow-counterclockwise"></i> 전체보기</button>
+    <main class="main-container">
+        <div class="content-width">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                <h3 class="fw-bold m-0"><i class="bi bi-calendar-check me-2" style="color:var(--primary-accent);"></i>마스터 스케줄러</h3>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-info px-3 fw-bold" onclick="captureCalendar()"><i class="bi bi-camera"></i> 캡처</button>
+                    <button class="btn btn-primary px-4 fw-bold" onclick="openEventModal()"><i class="bi bi-plus-lg"></i> 일정 추가</button>
+                </div>
+            </div>
+
+            <div class="filter-scroll mb-3" id="filterContainer">
+                <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" onclick="setFilter('all')">전체 보기</button>
+                <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3" onclick="setFilter('gantt')"><span style="color:#0d6efd;">●</span> 공정표</button>
+                <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3" onclick="setFilter('status')"><span style="color:#20c997;">●</span> 상황판</button>
+                <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3" onclick="setFilter('leave')"><span style="color:#dc3545;">●</span> 연차</button>
+                <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3" onclick="setFilter('construct')"><span style="color:#6f42c1;">●</span> 공사</button>
+                <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3" onclick="setFilter('measure')"><span style="color:#fd7e14;">●</span> 실측</button>
+                <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3" onclick="setFilter('meeting')"><span style="color:#198754;">●</span> 미팅</button>
+            </div>
+
+            <div class="t5-card p-0 cal-border-wrap" id="captureArea">
+                <div class="d-flex justify-content-center align-items-center py-4 gap-4 bg-dark bg-opacity-25">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="changeMonth(-1)"><i class="bi bi-chevron-left"></i></button>
+                    <h4 class="fw-bold m-0" id="currentMonthDisplay">2026. 04</h4>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="changeMonth(1)"><i class="bi bi-chevron-right"></i></button>
+                </div>
+                
+                <div class="cal-header">
+                    <div class="text-danger">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="text-primary">토</div>
+                </div>
+                <div class="cal-grid" id="calendarGrid"></div>
+            </div>
+
+            <div class="mt-4">
+                <div class="d-flex justify-content-between align-items-end mb-3">
+                    <h5 class="fw-bold m-0" id="listTitle">📋 이달의 전체 일정</h5>
+                    <button class="btn btn-sm btn-link text-secondary p-0 text-decoration-none" id="btnResetDate" style="display:none;" onclick="selectDate(null)"><i class="bi bi-arrow-counterclockwise"></i> 전체보기</button>
+                </div>
+                <div id="eventList"></div>
+            </div>
         </div>
-        <div id="eventList"></div>
-    </div>
+    </main>
+    <button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('active')"><i class="bi bi-list"></i></button>
 </div>
-
-<button class="fab-btn" onclick="openEventModal()"><i class="bi bi-plus-lg"></i></button>
 
 <div id="eventModal">
     <div class="modal-box">
@@ -129,11 +173,11 @@
                     <option value="construct">공사 일정 (기간)</option>
                 </select>
             </div>
-            <div class="col-12" id="date1Container">
+            <div class="col-6">
                 <label class="small text-secondary mb-1" id="date1Label">날짜</label>
                 <input type="date" id="evDate1" class="form-control input-dark">
             </div>
-            <div class="col-12" id="date2Container" style="display:none;">
+            <div class="col-6" id="date2Container" style="display:none;">
                 <label class="small text-secondary mb-1">종료일</label>
                 <input type="date" id="evDate2" class="form-control input-dark">
             </div>
@@ -155,10 +199,8 @@
     let selectedDateStr = null;
     let activeFilter = 'all';
     let globalEmailToNick = {};
-    
-    // 데이터 저장소
     let allEvents = []; 
-    // 형태: { id, type, title, start: 'YYYY-MM-DD', end: 'YYYY-MM-DD'(선택), isDone: boolean, source: 'gantt'|'status'|'leave'|'custom' }
+    let eventStorage = { gantt:[], status:[], leave:[], custom:[] };
 
     document.addEventListener("DOMContentLoaded", () => {
         let td = new Date();
@@ -171,22 +213,19 @@
             document.getElementById('auth-overlay').style.display = 'none';
             const uDoc = await db.collection("users").doc(myEmail).get(); 
             userNickname = uDoc.exists ? uDoc.data().nickname : "관리자";
+            document.getElementById('userNickDisplay').innerText = userNickname;
             
             const q = await db.collection("teams").where("members", "array-contains", myEmail).get();
             if (!q.empty) { 
-                const tDoc = q.docs[0]; myTeamId = tDoc.id; const tData = tDoc.data();
-                
-                const members = tData.members || [];
+                myTeamId = q.docs[0].id;
+                const members = q.docs[0].data().members || [];
                 await Promise.all(members.map(async m => {
                     try { const u = await db.collection("users").doc(m).get(); globalEmailToNick[m] = u.exists ? u.data().nickname : m.split('@')[0]; }
                     catch(e) { globalEmailToNick[m] = m.split('@')[0]; }
                 }));
-
-                fetchAllData(); // 5대 데이터 끌어오기 시작
+                fetchAllData();
             }
-        } else { 
-            document.getElementById('auth-overlay').style.display = 'flex'; 
-        }
+        } else { document.getElementById('auth-overlay').style.display = 'flex'; }
     });
 
     async function handleAuth() { 
@@ -194,272 +233,162 @@
         try { await auth.signInWithEmailAndPassword(e,p); } catch(err){alert(err.message);} 
     }
 
-    // ==========================================
-    // 데이터 파싱 (가져오기) 배관
-    // ==========================================
     function fetchAllData() {
-        // 1. 공정표 데이터
         db.collection("gantt_logs").where("teamId","==",myTeamId).onSnapshot(ss => {
             let gantts = [];
             ss.docs.forEach(doc => {
                 let d = doc.data();
                 if(d.dates && d.dates.length > 0) {
-                    let start = d.dates[0].split('T')[0];
-                    let end = d.dates[d.dates.length-1].split('T')[0];
-                    gantts.push({ id: doc.id, type: 'gantt', title: `[공정] ${d.site}`, start: start, end: end, isDone: false, source: 'gantt' });
+                    gantts.push({ id: doc.id, type: 'gantt', title: d.site, start: d.dates[0].split('T')[0], end: d.dates[d.dates.length-1].split('T')[0], source: 'gantt' });
                 }
             });
             updateEvents('gantt', gantts);
         });
 
-        // 2. 상황판 데이터
         db.collection("site_status").where("teamId", "==", myTeamId).onSnapshot(ss => {
             let statuses = [];
             ss.docs.forEach(doc => {
                 let d = doc.data();
-                if(d.date1) statuses.push({ id: doc.id+'_1', type: 'status', title: `[${d.status==='ongoing'?'착공':(d.status==='scheduled'?'착공예정':'마감')}] ${d.siteName}`, start: d.date1, source: 'status' });
+                if(d.date1) statuses.push({ id: doc.id+'_1', type: 'status', title: `[착공] ${d.siteName}`, start: d.date1, source: 'status' });
                 if(d.date2) statuses.push({ id: doc.id+'_2', type: 'status', title: `[준공] ${d.siteName}`, start: d.date2, source: 'status' });
             });
             updateEvents('status', statuses);
         });
 
-        // 3. 연차 (승인된 것만)
         db.collection("leave_records").where("teamId","==",myTeamId).where("approved","==",true).onSnapshot(ss => {
             let leaves = [];
             ss.docs.forEach(doc => {
                 let d = doc.data();
                 let nick = globalEmailToNick[d.userEmail] || d.userEmail.split('@')[0];
-                let txt = d.amount === 1 ? '종일' : (d.type === 'am' ? '오전' : '오후');
-                leaves.push({ id: doc.id, type: 'leave', title: `[휴가] ${nick} ${txt}`, start: d.date, source: 'leave' });
+                leaves.push({ id: doc.id, type: 'leave', title: `[휴가] ${nick}`, start: d.date, source: 'leave' });
             });
             updateEvents('leave', leaves);
         });
 
-        // 4. 달력 커스텀 데이터 (메모, 미팅, 실측, 공사)
         db.collection("calendar_events").where("teamId","==",myTeamId).onSnapshot(ss => {
-            let customs = [];
-            ss.docs.forEach(doc => {
-                let d = doc.data();
-                customs.push({ id: doc.id, type: d.type, title: d.text, start: d.startDate, end: d.endDate, isDone: d.isDone||false, source: 'custom' });
-            });
+            let customs = ss.docs.map(doc => ({ id: doc.id, ...doc.data(), title: doc.data().text, start: doc.data().startDate, end: doc.data().endDate, source: 'custom' }));
             updateEvents('custom', customs);
         });
     }
 
-    let eventStorage = { gantt:[], status:[], leave:[], custom:[] };
     function updateEvents(key, data) {
         eventStorage[key] = data;
         allEvents = [...eventStorage.gantt, ...eventStorage.status, ...eventStorage.leave, ...eventStorage.custom];
         renderCalendar();
     }
 
-    // ==========================================
-    // 달력 그리기 배관
-    // ==========================================
-    function changeMonth(diff) {
-        currentDate.setMonth(currentDate.getMonth() + diff);
-        selectedDateStr = null; // 달 넘기면 선택 해제
-        document.getElementById('btnResetDate').style.display = 'none';
-        renderCalendar();
-    }
+    function changeMonth(diff) { currentDate.setMonth(currentDate.getMonth() + diff); selectedDateStr = null; renderCalendar(); }
 
     function renderCalendar() {
-        let year = currentDate.getFullYear();
-        let month = currentDate.getMonth();
+        let year = currentDate.getFullYear(), month = currentDate.getMonth();
         document.getElementById('currentMonthDisplay').innerText = `${year}. ${String(month+1).padStart(2,'0')}`;
-        
-        let firstDay = new Date(year, month, 1).getDay();
-        let daysInMonth = new Date(year, month + 1, 0).getDate();
+        let firstDay = new Date(year, month, 1).getDay(), daysInMonth = new Date(year, month + 1, 0).getDate();
         
         let html = '';
-        for(let i=0; i<firstDay; i++) html += `<div></div>`; // 빈칸
+        for(let i=0; i<firstDay; i++) html += `<div class="cal-day" style="background:rgba(0,0,0,0.1); cursor:default;"></div>`;
         
         for(let i=1; i<=daysInMonth; i++) {
             let dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
             let dw = new Date(year, month, i).getDay();
-            let color = dw===0 ? '#e03131' : (dw===6 ? '#5c7cfa' : '#94a3b8');
             let isSelected = dateStr === selectedDateStr ? 'selected' : '';
             
-            // 이 날짜에 포함되는 이벤트 찾기 (필터 적용)
             let dayEvents = allEvents.filter(ev => {
                 if(activeFilter !== 'all' && ev.type !== activeFilter) return false;
-                if(ev.end) { return dateStr >= ev.start && dateStr <= ev.end; } // 기간 일정
-                else { return dateStr === ev.start; } // 단일 일정
+                return ev.end ? (dateStr >= ev.start && dateStr <= ev.end) : (dateStr === ev.start);
             });
             
             let badgesHtml = dayEvents.map(ev => {
-                let badgeClass = `type-${ev.type}`;
-                let text = ev.title;
-                // 완료된 일정은 취소선
-                let strike = ev.isDone ? 'text-decoration:line-through; opacity:0.6;' : '';
-                return `<div class="event-badge ${badgeClass}" style="${strike}">${text}</div>`;
+                // 💡 V24.5 핵심 로직: 시작일에만 이름 표시, 기간 중에는 띠만 표시 💡
+                let isStart = (dateStr === ev.start);
+                let isEnd = (dateStr === ev.end || !ev.end);
+                let isSingle = (!ev.end || ev.start === ev.end);
+                
+                let roundedClass = isSingle ? 'event-single' : (isStart ? 'event-start' : (isEnd ? 'event-end' : ''));
+                let titleText = (isStart || isSingle) ? ev.title : '&nbsp;'; 
+                let strike = ev.isDone ? 'text-decoration:line-through; opacity:0.5;' : '';
+                
+                return `<div class="event-badge type-${ev.type} ${roundedClass}" style="${strike}">${titleText}</div>`;
             }).join('');
 
-            html += `<div class="cal-day ${isSelected}" onclick="selectDate('${dateStr}')"><div class="cal-date-num" style="color:${color}">${i}</div>${badgesHtml}</div>`;
+            html += `<div class="cal-day ${isSelected}" onclick="selectDate('${dateStr}')">
+                <div class="cal-date-num" style="color:${dw===0?'#e03131':(dw===6?'#5c7cfa':'#94a3b8')}">${i}</div>
+                ${badgesHtml}
+            </div>`;
         }
         document.getElementById('calendarGrid').innerHTML = html;
-        
         renderEventList();
     }
 
-    // ==========================================
-    // 필터링 및 리스트 배관
-    // ==========================================
     function setFilter(type) {
         activeFilter = type;
-        // 버튼 색상 갱신
-        let btns = document.querySelectorAll('#filterContainer .btn');
-        btns.forEach(b => { b.classList.remove('btn-primary', 'fw-bold'); b.classList.add('btn-outline-secondary', 'text-white'); });
-        event.currentTarget.classList.remove('btn-outline-secondary', 'text-white');
-        event.currentTarget.classList.add('btn-primary', 'fw-bold');
-        
+        document.querySelectorAll('#filterContainer .btn').forEach(b => { 
+            b.classList.remove('btn-primary', 'fw-bold'); b.classList.add('btn-outline-secondary', 'text-white'); 
+        });
+        event.currentTarget.classList.replace('btn-outline-secondary', 'btn-primary');
+        event.currentTarget.classList.add('fw-bold');
         renderCalendar();
     }
 
     function selectDate(dStr) {
         selectedDateStr = dStr;
-        if(dStr) {
-            document.getElementById('listTitle').innerHTML = `📍 ${dStr} 상세 일정`;
-            document.getElementById('btnResetDate').style.display = 'inline-block';
-        } else {
-            document.getElementById('listTitle').innerHTML = `📋 이달의 전체 일정`;
-            document.getElementById('btnResetDate').style.display = 'none';
-        }
-        renderCalendar(); // 달력 선택 표시 갱신
+        document.getElementById('listTitle').innerHTML = dStr ? `📍 ${dStr} 상세 일정` : `📋 이달의 전체 일정`;
+        document.getElementById('btnResetDate').style.display = dStr ? 'inline-block' : 'none';
+        renderCalendar();
     }
 
     function renderEventList() {
-        let year = currentDate.getFullYear();
-        let month = String(currentDate.getMonth()+1).padStart(2,'0');
-        let prefix = `${year}-${month}`;
-
+        let prefix = `${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}`;
         let listEvents = allEvents.filter(ev => {
             if(activeFilter !== 'all' && ev.type !== activeFilter) return false;
-            
-            if(selectedDateStr) {
-                if(ev.end) return selectedDateStr >= ev.start && selectedDateStr <= ev.end;
-                return ev.start === selectedDateStr;
-            } else {
-                // 이달의 이벤트만
-                if(ev.end) return ev.start.startsWith(prefix) || ev.end.startsWith(prefix) || (prefix >= ev.start.substring(0,7) && prefix <= ev.end.substring(0,7));
-                return ev.start.startsWith(prefix);
-            }
-        });
-
-        // 날짜순 정렬
-        listEvents.sort((a,b) => a.start.localeCompare(b.start));
+            if(selectedDateStr) return ev.end ? (selectedDateStr >= ev.start && selectedDateStr <= ev.end) : (ev.start === selectedDateStr);
+            return ev.end ? (ev.start.startsWith(prefix) || ev.end.startsWith(prefix)) : ev.start.startsWith(prefix);
+        }).sort((a,b) => a.start.localeCompare(b.start));
 
         let html = listEvents.map(ev => {
-            let colorHex = '';
-            if(ev.type === 'gantt') colorHex = '#0d6efd';
-            else if(ev.type === 'status') colorHex = '#20c997';
-            else if(ev.type === 'leave') colorHex = '#dc3545';
-            else if(ev.type === 'construct') colorHex = '#6f42c1';
-            else if(ev.type === 'measure') colorHex = '#fd7e14';
-            else if(ev.type === 'meeting') colorHex = '#198754';
-            else colorHex = '#6c757d';
-
-            let dateTxt = ev.end ? `${ev.start} ~ ${ev.end}` : ev.start;
-            let doneClass = ev.isDone ? 'done' : '';
-            
-            // 완료 체크박스는 custom 이벤트이면서 (공사,실측,미팅,메모) 일때만
-            let checkHtml = '';
-            let delHtml = '';
-            if(ev.source === 'custom') {
-                checkHtml = `<input type="checkbox" class="custom-check" ${ev.isDone?'checked':''} onclick="toggleDone('${ev.id}', ${ev.isDone})">`;
-                delHtml = `<button class="btn btn-sm text-danger p-0 ms-auto" onclick="deleteCustomEvent('${ev.id}')"><i class="bi bi-trash"></i></button>`;
-            }
-
-            return `<div class="list-item ${doneClass}">
-                        <div class="color-bar" style="background-color: ${colorHex};"></div>
-                        ${checkHtml}
-                        <div class="item-content d-flex flex-column flex-grow-1">
-                            <span class="small" style="color:#adb5bd;">${dateTxt}</span>
-                            <span class="fw-bold text-white" style="font-size:1.05rem;">${ev.title}</span>
-                        </div>
-                        ${delHtml}
-                    </div>`;
+            let colors = { gantt:'#0d6efd', status:'#20c997', leave:'#dc3545', construct:'#6f42c1', measure:'#fd7e14', meeting:'#198754', memo:'#6c757d' };
+            return `<div class="list-item ${ev.isDone?'done':''}">
+                <div class="color-bar" style="background:${colors[ev.type]}"></div>
+                ${ev.source==='custom' ? `<input type="checkbox" class="custom-check" ${ev.isDone?'checked':''} onclick="toggleDone('${ev.id}', ${ev.isDone})">` : ''}
+                <div class="item-content d-flex flex-column flex-grow-1">
+                    <span class="small text-secondary">${ev.end ? ev.start+' ~ '+ev.end : ev.start}</span>
+                    <span class="fw-bold text-white">${ev.title}</span>
+                </div>
+                ${ev.source==='custom' ? `<button class="btn btn-sm text-danger p-0 ms-auto" onclick="deleteCustomEvent('${ev.id}')"><i class="bi bi-trash"></i></button>` : ''}
+            </div>`;
         }).join('');
-
-        if(!html) html = `<p class="text-secondary text-center py-4">해당하는 일정이 없습니다.</p>`;
-        document.getElementById('eventList').innerHTML = html;
+        document.getElementById('eventList').innerHTML = html || `<p class="text-secondary text-center py-4">일정이 없습니다.</p>`;
     }
 
-    // ==========================================
-    // 커스텀 이벤트 추가 / 삭제 / 체크 배관
-    // ==========================================
     function toggleDateInput() {
-        let val = document.getElementById('evType').value;
-        if(val === 'construct') {
-            document.getElementById('date2Container').style.display = 'block';
-            document.getElementById('date1Label').innerText = '시작일';
-        } else {
-            document.getElementById('date2Container').style.display = 'none';
-            document.getElementById('date1Label').innerText = '날짜';
-        }
+        let isPeriod = document.getElementById('evType').value === 'construct';
+        document.getElementById('date2Container').style.display = isPeriod ? 'block' : 'none';
+        document.getElementById('date1Label').innerText = isPeriod ? '시작일' : '날짜';
     }
 
     function openEventModal() {
         let td = selectedDateStr || new Date().toISOString().split('T')[0];
-        document.getElementById('evDate1').value = td;
-        document.getElementById('evDate2').value = td;
-        document.getElementById('evText').value = '';
-        document.getElementById('evType').value = 'memo';
-        toggleDateInput();
-        document.getElementById('eventModal').style.display = 'flex';
+        document.getElementById('evDate1').value = td; document.getElementById('evDate2').value = td;
+        document.getElementById('evText').value = ''; document.getElementById('evType').value = 'memo';
+        toggleDateInput(); document.getElementById('eventModal').style.display = 'flex';
     }
 
     async function saveEvent() {
-        let type = document.getElementById('evType').value;
-        let d1 = document.getElementById('evDate1').value;
-        let d2 = document.getElementById('evDate2').value;
-        let txt = document.getElementById('evText').value.trim();
-
+        let type = document.getElementById('evType').value, d1 = document.getElementById('evDate1').value, d2 = document.getElementById('evDate2').value, txt = document.getElementById('evText').value.trim();
         if(!d1 || !txt) return alert("날짜와 내용을 입력하세요.");
-        if(type === 'construct' && d1 > d2) return alert("종료일이 시작일보다 빠를 수 없습니다.");
-
-        let data = {
-            teamId: myTeamId,
-            type: type,
-            startDate: d1,
-            endDate: type === 'construct' ? d2 : null,
-            text: txt,
-            isDone: false,
-            createdAt: Date.now()
-        };
-
-        await db.collection("calendar_events").add(data);
+        await db.collection("calendar_events").add({ teamId: myTeamId, type, startDate: d1, endDate: type === 'construct' ? d2 : null, text: txt, isDone: false, createdAt: Date.now() });
         document.getElementById('eventModal').style.display = 'none';
     }
 
-    async function toggleDone(id, currentStatus) {
-        await db.collection("calendar_events").doc(id).update({ isDone: !currentStatus });
-    }
+    async function toggleDone(id, cur) { await db.collection("calendar_events").doc(id).update({ isDone: !cur }); }
+    async function deleteCustomEvent(id) { if(confirm("이 일정을 삭제하시겠습니까?")) await db.collection("calendar_events").doc(id).delete(); }
 
-    async function deleteCustomEvent(id) {
-        if(confirm("이 일정을 삭제하시겠습니까?")) {
-            await db.collection("calendar_events").doc(id).delete();
-        }
-    }
-
-    // ==========================================
-    // 캡처 공유 기능
-    // ==========================================
     function captureCalendar() {
         const area = document.getElementById('captureArea');
-        // 캡처 전에 버튼 숨기기
-        const btns = area.querySelectorAll('.btn');
-        btns.forEach(b => b.style.display = 'none');
-        
-        setTimeout(() => {
-            html2canvas(area, { backgroundColor: '#1e222d', scale: 2 }).then(canvas => {
-                btns.forEach(b => b.style.display = 'inline-block'); // 복구
-                let link = document.createElement('a'); 
-                link.download = `김목수이야기_${currentDate.getFullYear()}년_${currentDate.getMonth()+1}월_스케줄.png`; 
-                link.href = canvas.toDataURL(); 
-                link.click();
-            });
-        }, 100);
+        html2canvas(area, { backgroundColor: '#131722', scale: 2 }).then(canvas => {
+            let link = document.createElement('a');
+            link.download = `김목수이야기_스케줄_${currentDate.getFullYear()}_${currentDate.getMonth()+1}.png`;
+            link.href = canvas.toDataURL(); link.click();
+        });
     }
 </script>
 </body>

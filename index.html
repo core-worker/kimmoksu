@@ -816,6 +816,14 @@
     // 💡 V30: 작업일보 아코디언 상태 보존용 메모리 객체 💡
     let worklogCollapsedStates = {};
 
+    // 💡 V31 FIX: 작업일보 초기 데이터 (teamData 전역 선언) - 목수/도장/필름/전기 4대 공정 기본 세팅 💡
+    let teamData = [
+        { teamName: "목수", workers: [] },
+        { teamName: "도장", workers: [] },
+        { teamName: "필름", workers: [] },
+        { teamName: "전기", workers: [] }
+    ];
+
     document.addEventListener("DOMContentLoaded", function() { 
         siteModal = new bootstrap.Modal(document.getElementById('siteModal')); 
         ganttModal = new bootstrap.Modal(document.getElementById('ganttCreateModal')); 
@@ -849,7 +857,8 @@
 
         if(pageId === 'team') checkTeamUI();
         if(pageId === 'profile') { document.getElementById('editNickname').value = userNickname; document.getElementById('editEmail').value = myEmail; }
-        if(pageId === 'checklist') { goBackToPunchList(false); loadPunchSummaryCards(); }
+        // 💡 V31 FIX: 존재하지 않는 'checklist' 페이지 참조 제거 (실제 ID는 'punch') 💡
+        if(pageId === 'punch') { loadPunchSummaryCards(); }
     }
     
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('sidebarOverlay').classList.toggle('active'); }
@@ -1082,7 +1091,7 @@
         }).join('');
     }
     
-    // 💡 V30: 상황판 위아래 자리바꿈 로직 💡
+    // 💡 V31 FIX: 상황판 위아래 자리바꿈 로직 (order 필드 null 방어 + 재할당) 💡
     async function changeStatusOrder(statusKey, currentIdx, direction) {
         let items = globalStatusData.filter(d => d.status === statusKey);
         let targetIdx = currentIdx + direction;
@@ -1091,9 +1100,11 @@
         let currentItem = items[currentIdx];
         let targetItem = items[targetIdx];
 
+        // order 값이 없거나 중복될 경우를 대비해 항상 새로운 타임스탬프 기반 값 할당
+        const now = Date.now();
         const batch = db.batch();
-        batch.update(db.collection("site_status").doc(currentItem.id), { order: targetItem.order || targetIdx });
-        batch.update(db.collection("site_status").doc(targetItem.id), { order: currentItem.order || currentIdx });
+        batch.update(db.collection("site_status").doc(currentItem.id), { order: now + (direction > 0 ? 1 : -1) });
+        batch.update(db.collection("site_status").doc(targetItem.id), { order: now });
         await batch.commit();
     }
     
@@ -1242,10 +1253,10 @@
             // 💡 V30: 아코디언 상태 확인 및 클래스 적용 💡
             let showClass = worklogCollapsedStates[colId] === true ? '' : 'show';
 
-            // 💡 V30: 타이틀바 Flex 구조 수정 (우측 정렬 완벽 시공) 💡
+            // 💡 V31 FIX: 아코디언 토글 이중 실행 제거 - Bootstrap의 collapse 이벤트로 상태 관리 💡
             return `<div class="mb-4 t5-card p-3" style="background: rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.05);">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <div class="flex-grow-1 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#${colId}" onclick="worklogCollapsedStates['${colId}'] = !worklogCollapsedStates['${colId}']">
+                    <div class="flex-grow-1 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#${colId}">
                         <h6 class="m-0 fw-bold d-flex align-items-center">
                             ${team.teamName}
                         </h6>
@@ -1253,7 +1264,7 @@
                     <div class="d-flex align-items-center gap-3">
                         <button onclick="event.stopPropagation(); addWorker(${tIdx})" class="t5-btn-small fw-bold px-2 py-1" style="font-size:0.9rem;">[+]</button>
                         <span class="badge bg-primary px-3 py-2" style="font-size:0.85rem;">총 ${teamTotal} 공수</span>
-                        <div class="cursor-pointer text-secondary px-2" data-bs-toggle="collapse" data-bs-target="#${colId}" onclick="worklogCollapsedStates['${colId}'] = !worklogCollapsedStates['${colId}']"><i class="bi bi-chevron-down fs-5"></i></div>
+                        <div class="cursor-pointer text-secondary px-2" data-bs-toggle="collapse" data-bs-target="#${colId}"><i class="bi bi-chevron-down fs-5"></i></div>
                     </div>
                 </div>
                 <div class="collapse ${showClass} mt-3" id="${colId}">
@@ -1262,6 +1273,12 @@
             </div>`;
         }).join(''); 
         bindLongPress();
+        
+        // 💡 V31 FIX: 아코디언 상태 저장 (이벤트 위임으로 한 번만 실행) 💡
+        document.querySelectorAll('#team-container .collapse').forEach(el => {
+            el.addEventListener('shown.bs.collapse', function() { worklogCollapsedStates[this.id] = false; });
+            el.addEventListener('hidden.bs.collapse', function() { worklogCollapsedStates[this.id] = true; });
+        });
     }
     
     function loopDays(y, m, s, e, type, tIdx, wIdx, max=31) { 
@@ -1273,7 +1290,41 @@
         } 
         return html; 
     }
-    function handleCellClick(el) { const { t, w, d } = el.dataset; teamData[t].workers[w].days[d] = teamData[t].workers[w].days[d]==1?'':1; renderAllTeams(); }
+    // 💡 V31 FIX: 공수 클릭 시 전체 재렌더링 대신 해당 셀만 업데이트 (성능 개선) 💡
+    function handleCellClick(el) { 
+        const { t, w, d } = el.dataset; 
+        let newVal = teamData[t].workers[w].days[d]==1?'':1; 
+        teamData[t].workers[w].days[d] = newVal; 
+        
+        // 해당 셀만 부분 업데이트
+        el.innerText = newVal;
+        let bgClass = newVal ? (parseFloat(newVal) > 2 ? 'g-red' : (parseFloat(newVal) > 1 ? 'g-yellow' : 'g-green')) : '';
+        el.className = `gongsu-cell ${bgClass}`;
+        
+        // 팀 합계만 갱신 (전체 재렌더링 X)
+        updateTeamTotals();
+    }
+    
+    // 팀 합계 배지만 갱신 (전체 DOM 재생성 없이)
+    function updateTeamTotals() {
+        teamData.forEach((team, tIdx) => {
+            let teamTotal = 0;
+            team.workers.forEach((w, wIdx) => {
+                let pSum = 0;
+                Object.values(w.days).forEach(v => pSum += parseFloat(v||0));
+                teamTotal += pSum;
+                // 각 worker의 계 셀 찾아서 업데이트
+                let tables = document.querySelectorAll(`#team-col-${tIdx} .excel-table`);
+                if(tables[wIdx]) {
+                    let sumCell = tables[wIdx].querySelector('tr:last-child td:last-child');
+                    if(sumCell) sumCell.innerText = pSum;
+                }
+            });
+            // 팀 전체 배지 업데이트
+            let badge = document.querySelectorAll('#team-container .badge.bg-primary')[tIdx];
+            if(badge) badge.innerText = `총 ${teamTotal} 공수`;
+        });
+    }
     function bindLongPress() { document.querySelectorAll('.gongsu-cell').forEach(cell => { let timer; cell.onmousedown=cell.ontouchstart=()=>timer=setTimeout(()=>{ const { t, w, d } = cell.dataset; const input = prompt("공수", teamData[t].workers[w].days[d]); if(input!==null){ teamData[t].workers[w].days[d]=input; renderAllTeams(); } }, 600); cell.onmouseup=cell.ontouchend=()=>clearTimeout(timer); }); }
     function addTeam() { const n = prompt("공정명"); if(n){ teamData.push({teamName:n, workers:[]}); renderAllTeams(); } }
     function addWorker(t) { teamData[t].workers.push({name:"", days:{}}); renderAllTeams(); }
@@ -1288,13 +1339,24 @@
     async function deleteLog(id) { if(confirm("이 작업일보를 완전히 삭제하시겠습니까?")) { await db.collection("monthly_logs").doc(id).delete(); } }
     async function exportToExcel(id) { 
         const d_raw = (await db.collection("monthly_logs").doc(id).get()).data(); const [year, monthNum] = d_raw.month.split('-'); const lastDayNum = new Date(year, monthNum, 0).getDate(); 
-        const wb = XLSX.utils.book_new(); const wsData = Array.from({ length: 5 }, () => Array(36).fill("")); 
-        wsData[0][0] = `${year}년 ${monthNum}월 현장 작업 일보 (김목수이야기)`; wsData[1][0] = `현장명: ${d_raw.site}`; wsData[3] = ["NO", "공정", "이 름", ...Array.from({length:31},(_,i)=>i+1), "계", "비고"]; 
-        let curR = 5, totalNo = 1; 
+        const wb = XLSX.utils.book_new(); 
+        // 💡 V31 FIX: 엑셀 행 번호 정확히 계산 - wsData 초기화 후 헤더 push 방식으로 통일 💡
+        const wsData = [];
+        wsData.push([`${year}년 ${monthNum}월 현장 작업 일보 (김목수이야기)`]);  // 1행
+        wsData.push([`현장명: ${d_raw.site}`]);                                     // 2행
+        wsData.push([]);                                                            // 3행 (공백)
+        wsData.push(["NO", "공정", "이 름", ...Array.from({length:31},(_,i)=>i+1), "계", "비고"]);  // 4행 (헤더)
+        
+        let totalNo = 1; 
         d_raw.teamData.forEach(team => { 
-            let startR = curR + 1; 
-            team.workers.forEach(w => { wsData.push([totalNo++, team.teamName, w.name, ...Array.from({length:31},(_,i)=>parseFloat(w.days[i+1]||0)|| ""), {t:'n', f:`SUM(D${curR+1}:AH${curR+1})`}]); curR++; }); 
-            wsData.push(["", team.teamName, "공정소계", ...Array(31).fill(""), {t:'n', f:`SUM(AI${startR}:AI${curR})`}]); curR += 2; 
+            let startR = wsData.length + 1;  // 팀 시작 행 (엑셀 1-based)
+            team.workers.forEach(w => { 
+                let currentExcelRow = wsData.length + 1;  // 현재 worker 행
+                wsData.push([totalNo++, team.teamName, w.name, ...Array.from({length:31},(_,i)=>parseFloat(w.days[i+1]||0)|| ""), {t:'n', f:`SUM(D${currentExcelRow}:AH${currentExcelRow})`}]); 
+            }); 
+            let endR = wsData.length;  // 팀 종료 행
+            wsData.push(["", team.teamName, "공정소계", ...Array(31).fill(""), {t:'n', f:`SUM(AI${startR}:AI${endR})`}]); 
+            wsData.push([]);  // 팀 구분 공백행
         }); 
         const ws = XLSX.utils.aoa_to_sheet(wsData); XLSX.utils.book_append_sheet(wb, ws, "근무현황"); XLSX.writeFile(wb, `${d_raw.site}_${monthNum}월.xlsx`); 
     }
@@ -1350,7 +1412,16 @@
     function loadT5History() { db.collection("t5_logs").where("teamId","==",myTeamId).orderBy("updatedAt","desc").limit(20).onSnapshot(ss => { document.getElementById('t5-history-list').innerHTML = ss.docs.map(d => { const doc = d.data(); let modifyBtns = `<button class="t5-btn-small bg-secondary text-white" style="flex:1;" onclick="editT5Log('${d.id}')">수정</button><button class="t5-btn-small bg-primary text-white" style="flex:1;" onclick="copyAndNewT5Log('${d.id}')">복사</button><button class="t5-btn-small bg-success text-white" style="flex:1;" onclick="copyT5Order('${doc.siteName}', '${doc.resultText}')">발주용</button><button class="t5-btn-small bg-danger text-white" style="flex:1;" onclick="deleteT5Log('${d.id}')">삭제</button>`; return `<div class="history-card"><h6 class="fw-bold">${doc.siteName} <span class="small text-secondary ms-2">${doc.writer}</span></h6><p class="small text-secondary mb-3">${doc.resultText}</p><div class="d-flex gap-2 flex-wrap">${modifyBtns}</div></div>`; }).join(''); }); }
     async function editT5Log(id) { const d = (await db.collection("t5_logs").doc(id).get()).data(); t5EditingId = id; document.getElementById('t5-site-title').value = d.siteName; const container = document.getElementById('t5-input-container'); container.innerHTML = ''; d.rows.forEach(r => { let div = document.createElement('div'); div.className = "row g-2 mb-2 t5-row-item"; div.innerHTML = `<div class="col-6"><input type="text" class="form-control input-dark t5-section-name" value="${r.section}"></div><div class="col-6"><input type="number" class="form-control input-dark t5-length-val" value="${r.length}"></div>`; container.appendChild(div); }); showPage('t5'); window.scrollTo(0,0); }
     async function copyAndNewT5Log(id) { const d = (await db.collection("t5_logs").doc(id).get()).data(); t5EditingId = null; document.getElementById('t5-site-title').value = d.siteName + " (복사)"; const container = document.getElementById('t5-input-container'); container.innerHTML = ''; d.rows.forEach(r => { let div = document.createElement('div'); div.className = "row g-2 mb-2 t5-row-item"; div.innerHTML = `<div class="col-6"><input type="text" class="form-control input-dark t5-section-name" value="${r.section}"></div><div class="col-6"><input type="number" class="form-control input-dark t5-length-val" value="${r.length}"></div>`; container.appendChild(div); }); showPage('t5'); alert("복사되었습니다."); window.scrollTo(0,0); }
-    function copyT5Order(site, text) { const fmt = site + '\n' + text.split(' / ').join('\n'); const t = document.createElement("textarea"); document.body.appendChild(t); t.value = fmt; t.select(); document.execCommand('copy'); document.body.removeChild(t); alert("복사 완료!\n\n" + fmt); }
+    // 💡 V31 FIX: T5 발주용 복사도 최신 Clipboard API 사용 💡
+    function copyT5Order(site, text) { 
+        const fmt = site + '\n' + text.split(' / ').join('\n'); 
+        if(navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(fmt).then(() => alert("복사 완료!\n\n" + fmt)).catch(() => { fallbackCopy(fmt); });
+        } else {
+            fallbackCopy(fmt);
+            alert("복사 완료!\n\n" + fmt);
+        }
+    }
     async function deleteT5Log(id) { if(confirm("삭제하시겠습니까?")) await db.collection("t5_logs").doc(id).delete(); }
 
     // 메모장
@@ -1414,7 +1485,20 @@
 
     // 내 정보 수정
     async function updateProfile() { await db.collection("users").doc(myEmail).update({ nickname: document.getElementById('editNickname').value }); location.reload(); }
-    function copyText(t) { navigator.clipboard.writeText(t); alert("복사됨"); }
+    // 💡 V31 FIX: Clipboard API 최신 방식으로 업그레이드 (execCommand deprecated 대응) 💡
+    function copyText(t) { 
+        if(navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(t).then(() => alert("복사됨")).catch(() => fallbackCopy(t));
+        } else {
+            fallbackCopy(t);
+        }
+    }
+    function fallbackCopy(t) {
+        const ta = document.createElement("textarea"); ta.value = t; ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); alert("복사됨"); } catch(e) { alert("복사 실패: 수동으로 복사해주세요."); }
+        document.body.removeChild(ta);
+    }
     async function changePassword() { try { await auth.currentUser.updatePassword(document.getElementById('newPasswordInput').value); alert("성공"); } catch(e){ alert(e.message); } }
 
     document.getElementById('logMonth').onchange = renderAllTeams; 

@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
+    <!-- 💡 V31 FIX: 모바일 차단 스크립트를 head 최상단으로 이동 + body 숨김 처리 💡 -->
+    <script>
+        if (window.innerWidth <= 768) {
+            alert("마스터 스케줄러는 PC의 넓은 화면 전용입니다.\n모바일에서는 메인 홈으로 이동합니다.");
+            location.replace('index.html');
+        }
+    </script>
+    
     <meta property="og:type" content="website">
     <meta property="og:title" content="김목수이야기 - 마스터 스케줄러">
     <meta property="og:description" content="전체 현장 일정을 한눈에 확인하세요.">
@@ -93,13 +101,6 @@
 </head>
 <body>
 
-<script>
-    if (window.innerWidth <= 768) {
-        alert("마스터 스케줄러는 PC의 넓은 화면 전용입니다.\n모바일에서는 메인 홈으로 이동합니다.");
-        location.replace('index.html');
-    }
-</script>
-
 <div id="auth-overlay" style="display: none; position: fixed; inset: 0; background: var(--bg-deep); z-index: 9999; align-items: center; justify-content: center;">
     <div class="t5-card text-center" style="width: 100%; max-width: 380px;">
         <h3 class="mb-4 fw-bold">스케줄러 접속</h3>
@@ -131,7 +132,7 @@
             <div class="nav-link" onclick="location.href='index.html#worklog'"><i class="bi bi-journal-text"></i> 작업일보</div>
             <div class="nav-link" onclick="location.href='index.html#punch'"><i class="bi bi-ui-checks"></i> 펀치리스트</div>
             <div class="nav-link" onclick="location.href='index.html#t5'"><i class="bi bi-calculator"></i> T5 계산기</div>
-            <div class="nav-link" onclick="location.href='index.html#leave'"><i class="bi bi-calendar2-check"></i> 연차 관리</div>
+            <div class="nav-link" onclick="location.href='leave.html'"><i class="bi bi-calendar2-check"></i> 연차 관리</div>
             <div class="nav-link" onclick="location.href='index.html#memo'"><i class="bi bi-stickies"></i> 메모장</div>
             <div class="nav-link" onclick="location.href='index.html#profile'"><i class="bi bi-person-gear"></i> 내 정보 수정</div>
         </div>
@@ -148,7 +149,7 @@
                     <div class="small text-secondary" style="font-size:0.7rem;">접속 중</div>
                 </div>
             </div>
-            <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="auth.signOut()">로그아웃</button>
+            <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="handleLogoutCal()">로그아웃</button>
         </div>
     </nav>
 
@@ -323,6 +324,14 @@
             await auth.sendPasswordResetEmail(e);
             alert("입력하신 이메일로 비밀번호 재설정 링크를 발송했습니다. 이메일함을 확인해주세요!");
         } catch(err) { alert("이메일 발송 실패: " + err.message); }
+    }
+    
+    // 💡 V31 FIX: 로그아웃 후 reload 처리 (로그인 화면으로 복귀) 💡
+    async function handleLogoutCal() {
+        if(confirm("로그아웃 하시겠습니까?")) {
+            await auth.signOut();
+            location.href = 'index.html';
+        }
     }
 
     function parseDateObj(str) {

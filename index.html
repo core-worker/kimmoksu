@@ -6,7 +6,7 @@
     
     <meta property="og:type" content="website">
     <meta property="og:title" content="김목수이야기 - 통합 ERP 시스템">
-    <meta property="og:description" content="현장 관리, 공정표, 작업일보, 연차 관리 시스템">
+    <meta property="og:description" content="현장 관리, 공정표, 작업일보 통합 시스템">
     <meta property="og:image" content="https://idong2300.github.io/kimmoksu/og-image.png">
     <meta property="og:locale" content="ko_KR">
 
@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1e222d">
 
-    <title>김목수이야기 - 통합 ERP 시스템</title>
+    <title>김목수이야기 - 메인 지휘소</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -45,12 +45,14 @@
         .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1040; backdrop-filter: blur(2px); transition: 0.3s; opacity: 0; }
         .sidebar-overlay.active { display: block; opacity: 1; }
         
+        /* 화이트 모드 설정 */
         body.light-mode { background-color: #f4f6f8; color: #212529; }
         body.light-mode .main-container, body.light-mode #auth-overlay { background-color: #f4f6f8; }
         body.light-mode .sidebar { background-color: #ffffff; border-right: 1px solid #dee2e6; }
         body.light-mode .sidebar-overlay { background: rgba(255,255,255,0.8); }
         body.light-mode .t5-card, body.light-mode .modal-content, body.light-mode .modal-box, body.light-mode .mobile-site-card, body.light-mode .login-card, body.light-mode .cal-accordion-content, body.light-mode .monthly-list-box, body.light-mode .summary-card, body.light-mode .history-card { background-color: #ffffff !important; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #dee2e6 !important; }
         
+        /* 💡 V28/V30: T5 결과창 화이트 모드 복구 💡 */
         body.light-mode #t5-temp-result { background-color: #ffffff !important; border: 1px solid #dee2e6 !important; }
         body.light-mode #res-site-display { color: #212529 !important; }
         body.light-mode .res-gap { color: #d97706 !important; } 
@@ -147,20 +149,29 @@
         .mobile-card-date { font-size: 0.8rem; color: #94a3b8; font-weight: 600; }
         
         .mobile-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; background: rgba(0,0,0,0.25); padding: 10px 5px; border-radius: 8px; }
+        .mobile-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: center; background: rgba(0,0,0,0.25); padding: 10px 5px; border-radius: 8px; }
         .mobile-grid-label { font-size: 0.65rem; color: #94a3b8; margin-bottom: 3px; }
         .mobile-grid-val { font-size: 0.85rem; color: #f8fafc; font-weight: bold; }
 
         .gantt-container { overflow-x: auto; overflow-y: hidden; background: transparent; max-width: 100%; padding-bottom: 10px; }
+        
+        /* 💡 V28: 공정표 십자선 (Crosshair) 하이라이트 CSS 💡 */
         .gantt-table { margin: 0; white-space: nowrap; font-size: 0.7rem; border-collapse: separate; border-spacing: 0; min-width: max-content; position: relative; z-index: 1; }
         .gantt-table th, .gantt-table td { border: 1px solid rgba(255,255,255,0.05); padding: 5px 0 !important; text-align: center; vertical-align: middle; }
         .gantt-cell, .gantt-date-th { min-width: 25px; max-width: 25px; width: 25px; transition: 0.1s; cursor: pointer; position: relative; }
-        .gantt-cell::after { content: ''; position: absolute; left: 0; top: -5000px; height: 10000px; width: 100%; background: transparent; z-index: 1; pointer-events: none; transition: 0.1s; }
+        
+        /* 세로(열) 하이라이트 */
+        .gantt-cell::after { content: ''; position: absolute; left: 0; top: -5000px; height: 10000px; width: 100%; background: transparent; z-index: -1; pointer-events: none; transition: 0.1s; }
         .gantt-cell:hover::after { background: rgba(255,255,255,0.05); }
+        /* 가로(행) 하이라이트 */
         .gantt-table tbody tr:hover td { background: rgba(255,255,255,0.05); }
+        
+        /* 화이트모드 대응 십자선 */
         body.light-mode .gantt-cell:hover::after { background: rgba(0,0,0,0.05); }
         body.light-mode .gantt-table tbody tr:hover td { background: rgba(0,0,0,0.05); }
         
         .gantt-task-col { position: sticky; left: 0; background: var(--card-bg) !important; z-index: 10; min-width: 65px; max-width: 65px; width: 65px; text-align: left !important; border-right: 2px solid var(--primary-accent) !important; padding: 0 5px !important; }
+        
         .gantt-month-row th { background: #181b24; color: #ced4da; font-weight: bold; border-bottom: 2px solid rgba(255,255,255,0.1); }
         .day-sat { background-color: rgba(92, 124, 250, 0.08) !important; color: #5c7cfa !important; }
         .day-sun { background-color: rgba(224, 49, 49, 0.08) !important; color: #e03131 !important; }
@@ -221,7 +232,7 @@
         
         .monthly-list-box { background: #181b24; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); padding: 15px; }
 
-        #addTaskModal, #ganttCreateModal, #leaveApplyModal, #permModal, #memoCreateModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s; }
+        #addTaskModal, #ganttCreateModal, #permModal, #memoCreateModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s; }
         .modal-box { background: var(--card-bg); padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
         #auth-overlay { position: fixed; inset: 0; background: var(--bg-deep); z-index: 9999; display: flex; align-items: center; justify-content: center; }
@@ -278,7 +289,8 @@
             <div class="nav-link" onclick="showPage('worklog', this)"><i class="bi bi-journal-text"></i> 작업일보</div>
             <div class="nav-link" onclick="showPage('punch', this)"><i class="bi bi-ui-checks"></i> 펀치리스트</div>
             <div class="nav-link" onclick="showPage('t5', this)"><i class="bi bi-calculator"></i> T5 계산기</div>
-            <div class="nav-link" onclick="showPage('leave', this)"><i class="bi bi-calendar2-check"></i> 연차 관리</div>
+            <div class="nav-link" onclick="location.href='leave.html'"><i class="bi bi-calendar2-check"></i> 연차 관리</div>
+            <div class="nav-link" onclick="showPage('memo', this)"><i class="bi bi-stickies"></i> 메모장</div>
             <div class="nav-link" onclick="showPage('profile', this)"><i class="bi bi-person-gear"></i> 내 정보 수정</div>
         </div>
         
@@ -367,19 +379,19 @@
                         <h6 class="fw-bold m-0">펀치리스트</h6>
                     </div>
                 </div>
-                <div class="col mobile-col-6" onclick="showPage('leave', document.querySelectorAll('.nav-link')[8])">
+                <div class="col mobile-col-6" onclick="location.href='leave.html'">
                     <div class="t5-card compact-card h-100 cursor-pointer text-center">
                         <i class="bi bi-calendar2-check fs-1 d-block mb-3" style="color: #9b59b6;"></i>
                         <h6 class="fw-bold m-0">연차 관리</h6>
                     </div>
                 </div>
-                <div class="col mobile-col-6" onclick="showPage('memo', document.querySelectorAll('.nav-link')[7])">
+                <div class="col mobile-col-6" onclick="showPage('memo', document.querySelectorAll('.nav-link')[8])">
                     <div class="t5-card compact-card h-100 cursor-pointer text-center">
                         <i class="bi bi-stickies fs-1 d-block mb-3" style="color: #e67e22;"></i>
                         <h6 class="fw-bold m-0">메모장</h6>
                     </div>
                 </div>
-                <div class="col mobile-col-6" onclick="showPage('t5', document.querySelectorAll('.nav-link')[9])">
+                <div class="col mobile-col-6" onclick="showPage('t5', document.querySelectorAll('.nav-link')[7])">
                     <div class="t5-card compact-card h-100 cursor-pointer text-center">
                         <i class="bi bi-calculator fs-1 d-block mb-3 text-warning"></i>
                         <h6 class="fw-bold m-0">T5 계산기</h6>
@@ -633,67 +645,6 @@
             <div class="memo-grid" id="memoContainer"></div>
         </section>
 
-        <section id="page-leave" class="page-section">
-            <h3 class="fw-bold mb-4">김목수 이야기 연차 현황</h3>
-            
-            <div class="t5-card p-3 mb-4">
-                <div class="d-flex justify-content-between align-items-center border-bottom border-secondary border-opacity-25 pb-3 mb-3">
-                    <div class="d-flex align-items-center gap-3 flex-wrap">
-                        <h6 class="fw-bold text-white m-0"><i class="bi bi-calendar-check me-2"></i>휴가 달력</h6>
-                        <div class="d-flex gap-2" id="calSelectBox">
-                            <select id="calYear" class="form-select form-select-sm input-dark" style="width:auto; min-width:80px;" onchange="renderLeaveCalendar()"></select>
-                            <select id="calMonth" class="form-select form-select-sm input-dark" style="width:auto; min-width:70px;" onchange="renderLeaveCalendar()"></select>
-                        </div>
-                    </div>
-                </div>
-                <div id="leaveCalendar" class="text-center" style="font-size:0.8rem;"></div>
-                
-                <div id="calAccordionArea" style="display:none;">
-                    <div class="cal-accordion-content" id="calAccordionContent"></div>
-                </div>
-                
-                <div class="mt-4 border-top border-secondary border-opacity-25 pt-4">
-                    <h6 class="fw-bold text-info mb-3"><i class="bi bi-list-check me-2"></i>이번 달 연차 신청/사용 현황</h6>
-                    <div class="monthly-list-box" id="monthlyLeaveList"></div>
-                </div>
-            </div>
-            
-            <div class="t5-card border border-warning border-opacity-50" id="leaveAdminPanel" style="display:none;">
-                <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#leaveAdminCollapse">
-                    <h6 class="fw-bold text-warning m-0"><i class="bi bi-gear me-2"></i>[관리자용] 연차 정보 관리</h6>
-                    <i class="bi bi-chevron-down text-warning"></i>
-                </div>
-                <div class="collapse mt-3" id="leaveAdminCollapse">
-                    <div class="table-responsive">
-                        <table class="table table-dark table-sm align-middle text-center mb-0">
-                            <thead class="text-secondary">
-                                <tr><th>이름</th><th>입사일</th><th>기본 부여</th><th>추가 부여</th></tr>
-                            </thead>
-                            <tbody id="leaveAdminBody"></tbody>
-                        </table>
-                    </div>
-                    <div class="text-end mt-3"><button class="btn btn-sm btn-outline-warning py-1" onclick="saveLeaveSettings()">설정 저장</button></div>
-                </div>
-            </div>
-
-            <div class="t5-card">
-                <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#leaveStatusCollapse">
-                    <h6 class="fw-bold m-0"><i class="bi bi-person-check me-2"></i>남은 연차 현황</h6>
-                    <i class="bi bi-chevron-down"></i>
-                </div>
-                <div class="collapse mt-3" id="leaveStatusCollapse">
-                    <div class="table-responsive">
-                        <table class="table table-dark table-sm align-middle text-center mb-0">
-                            <thead class="text-secondary">
-                                <tr><th>이름</th><th>초기화일</th><th>부여(기본+추가)</th><th>사용</th><th>잔여</th></tr>
-                            </thead>
-                            <tbody id="leaveStatusBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
-
         <section id="page-team" class="page-section">
             <h3 class="fw-bold mb-4">팀원 및 조직 관리</h3>
             <div id="no-team-section" style="display:none;">
@@ -823,38 +774,6 @@
     </div>
 </div>
 
-<div class="modal fade" id="leaveApplyModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="background: var(--card-bg); border-radius: 20px;">
-            <div class="modal-body p-4">
-                <h5 class="fw-bold mb-4">휴가 신청</h5>
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="small text-secondary mb-1">선택된 날짜</label>
-                        <input type="text" id="applyLeaveDate" class="form-control input-dark fw-bold text-primary" readonly>
-                    </div>
-                    <div class="col-12">
-                        <label class="small text-secondary mb-1">종류 선택</label>
-                        <select id="applyLeaveType" class="form-select input-dark">
-                            <option value="1">종일 (1일)</option>
-                            <option value="0.5_am">오전 반차 (0.5일)</option>
-                            <option value="0.5_pm">오후 반차 (0.5일)</option>
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label class="small text-secondary mb-1">사유 입력</label>
-                        <input type="text" id="applyLeaveReason" class="form-control input-dark" placeholder="예: 개인사정, 병원 등">
-                    </div>
-                </div>
-                <div class="d-flex gap-2 mt-4">
-                    <button class="btn btn-secondary w-50 py-2 fw-bold" data-bs-dismiss="modal">취소</button>
-                    <button class="btn btn-success w-50 py-2 fw-bold" onclick="submitLeaveRequest()">신청하기</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div id="addTaskModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; align-items:center; justify-content:center; backdrop-filter:blur(2px);">
     <div class="modal-box" style="background:var(--card-bg); padding:25px; border-radius:20px; width:90%; max-width:400px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
         <h5 class="fw-bold mb-3 text-white">새로운 마감 항목</h5>
@@ -888,27 +807,19 @@
     let myEmail, myTeamId, userNickname = "관리자";
     let isLoginMode = true; let myRole = "member"; 
     let globalEmailToNick = {}; 
-    let siteModal, ganttModal, leaveModal, permModalInst;
+    let siteModal, ganttModal, permModalInst;
     
     let globalNoticeAdmins = [];
     let globalStatusAdmins = [];
     let currentPermType = '';
     
-    // 💡 V30: 작업일보 아코디언 상태 보존용 💡
+    // 💡 V30: 작업일보 아코디언 상태 보존용 메모리 객체 💡
     let worklogCollapsedStates = {};
 
     document.addEventListener("DOMContentLoaded", function() { 
         siteModal = new bootstrap.Modal(document.getElementById('siteModal')); 
         ganttModal = new bootstrap.Modal(document.getElementById('ganttCreateModal')); 
-        leaveModal = new bootstrap.Modal(document.getElementById('leaveApplyModal')); 
         permModalInst = new bootstrap.Modal(document.getElementById('permModal')); 
-
-        let yrHtml = '', moHtml = '';
-        let ty = new Date().getFullYear();
-        for(let y=ty-1; y<=ty+5; y++) yrHtml += `<option value="${y}">${y}년</option>`;
-        for(let m=1; m<=12; m++) moHtml += `<option value="${m}">${m}월</option>`;
-        document.getElementById('calYear').innerHTML = yrHtml;
-        document.getElementById('calMonth').innerHTML = moHtml;
         
         let savedTheme = localStorage.getItem('kimmoksu_theme');
         if(savedTheme === 'light') { document.body.classList.add('light-mode'); updateThemeUI(true); } 
@@ -939,14 +850,8 @@
         if(pageId === 'team') checkTeamUI();
         if(pageId === 'profile') { document.getElementById('editNickname').value = userNickname; document.getElementById('editEmail').value = myEmail; }
         if(pageId === 'checklist') { goBackToPunchList(false); loadPunchSummaryCards(); }
-        if(pageId === 'leave') {
-            let td = new Date();
-            document.getElementById('calYear').value = td.getFullYear();
-            document.getElementById('calMonth').value = td.getMonth() + 1;
-            document.getElementById('calAccordionArea').style.display = 'none';
-            renderLeaveCalendar();
-        }
     }
+    
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('sidebarOverlay').classList.toggle('active'); }
     
     window.onload = () => { 
@@ -1004,7 +909,7 @@
                     catch(e) { globalEmailToNick[m] = m.split('@')[0]; }
                 }));
 
-                loadBoardMemos(); loadAllStatusData(); loadGanttList(); loadWorklogs(); loadPunchSummaryCards(); loadT5History(); loadMemos(); loadLeaveData(tData);
+                loadBoardMemos(); loadAllStatusData(); loadGanttList(); loadWorklogs(); loadPunchSummaryCards(); loadT5History(); loadMemos(); 
             }
             checkTeamUI(); 
         } else { document.getElementById('auth-overlay').style.display = 'flex'; }
@@ -1022,6 +927,7 @@
         } catch(err){alert(err.message);} 
     }
     
+    // 💡 V30: 비밀번호 찾기 기능 정상화 💡
     async function resetPassword() {
         const e = document.getElementById('userEmail').value.trim();
         if(!e) return alert("비밀번호를 찾을 이메일을 먼저 입력해주세요.");
@@ -1086,7 +992,7 @@
     async function delOldNotice(id) { if(confirm("삭제하시겠습니까?")) await db.collection("notices").doc(id).delete(); }
     async function delBoardItem(id) { if(confirm("삭제하시겠습니까?")) await db.collection("board_memos").doc(id).delete(); }
 
-    // 종합상황판
+    // 상황판
     let siteEditingId = null;
     let globalStatusData = [];
     let isStatusEditMode = false;
@@ -1099,7 +1005,7 @@
 
     function loadAllStatusData() { 
         db.collection("site_status").where("teamId", "==", myTeamId).onSnapshot(ss => { 
-            // 💡 V30: order 필드가 있으면 그것으로 정렬, 없으면 createdAt 기준 💡
+            // 💡 V30: order 필드 기준 정렬 (수직 화살표용) 💡
             globalStatusData = ss.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b) => (a.order || a.createdAt) - (b.order || b.createdAt)); 
             renderAllSections(globalStatusData); 
         }); 
@@ -1120,7 +1026,7 @@
             const items = data.filter(d => d.status === sec.key);
             
             let tableRows = items.length === 0 ? `<tr><td colspan="10" class="text-secondary py-4">등록된 데이터가 없습니다.</td></tr>` : items.map((item, idx) => {
-                // 💡 V30: 컴팩트한 수직 화살표 버튼 💡
+                // 💡 V30: 수직 화살표 정렬 버튼 (상하 배치) 💡
                 let orderBtns = (isStatusEditMode && canEditStatus) ? `
                     <div class="order-btn-group me-1">
                         <button class="btn btn-dark btn-order-v" onclick="changeStatusOrder('${sec.key}', ${idx}, -1)"><i class="bi bi-caret-up-fill"></i></button>
@@ -1176,7 +1082,7 @@
         }).join('');
     }
     
-    // 💡 V30: 상황판 순서 변경 로직 💡
+    // 💡 V30: 상황판 위아래 자리바꿈 로직 💡
     async function changeStatusOrder(statusKey, currentIdx, direction) {
         let items = globalStatusData.filter(d => d.status === statusKey);
         let targetIdx = currentIdx + direction;
@@ -1190,7 +1096,7 @@
         batch.update(db.collection("site_status").doc(targetItem.id), { order: currentItem.order || currentIdx });
         await batch.commit();
     }
-
+    
     function openSiteAddModal(targetStatus = 'ongoing') { siteEditingId = null; document.getElementById('modalTitle').innerText = "신규 현장 등록"; document.getElementById('siteForm').querySelectorAll('input, textarea').forEach(i => i.value = ''); document.getElementById('f_status').value = targetStatus; toggleSiteFormFields(targetStatus); siteModal.show(); }
     async function openSiteEditModal(id) { siteEditingId = id; document.getElementById('modalTitle').innerText = "데이터 수정 및 단계 변경"; const d = (await db.collection("site_status").doc(id).get()).data(); document.getElementById('f_status').value = d.status; document.getElementById('f_siteName').value = d.siteName; document.getElementById('f_date1').value = d.date1 || ''; document.getElementById('f_date2').value = d.date2 || ''; document.getElementById('f_site_manager').value = d.site_manager || ''; document.getElementById('f_designer').value = d.designer || ''; document.getElementById('f_designer_sign').value = d.designer_sign || ''; document.getElementById('f_etc').value = d.etc || ''; toggleSiteFormFields(d.status); siteModal.show(); }
     function handleStatusChange(val) { document.getElementById('f_date1').value = ''; document.getElementById('f_date2').value = ''; document.getElementById('f_site_manager').value = ''; document.getElementById('f_designer').value = ''; document.getElementById('f_designer_sign').value = ''; toggleSiteFormFields(val); }
@@ -1274,7 +1180,7 @@
             <td class="check-td-tax"><label class="d-md-none me-1">계산서</label><input class="form-check-input ec-tax" type="checkbox" ${data.tax?'checked':''}></td>
             <td class="note-td">
                 <div class="d-md-none note-header" data-bs-toggle="collapse" data-bs-target="#note-${id}">비고 <i class="bi bi-chevron-down"></i></div>
-                <div class="collapse d-md-block" id="note-${id}"><input type="text" class="form-control form-control-sm input-dark ec-note mt-2 mt-md-0" placeholder="메모" value="${data.note||''}"></div>
+                <div class="collapse d-md-block" id="note-${id}"><input type="text" class="form-control form-control-sm input-dark ec-note mt-2 mt-md-0" placeholder="메모를 입력하세요" value="${data.note||''}"></div>
             </td>
             <td class="del-td"><button class="btn btn-sm btn-outline-danger py-0 px-2 w-100 fw-bold" onclick="this.closest('tr').remove(); calcExtraSum();"><i class="bi bi-x-lg"></i></button></td>
         `;
@@ -1316,13 +1222,8 @@
     async function loadGanttDoc(id) { const d = (await db.collection("gantt_logs").doc(id).get()).data(); currentGanttId = id; document.getElementById('ganttSiteName').value = d.site; ganttTasks = d.tasks; ganttState = d.state; ganttDates = d.dates.map(str => new Date(str)); document.getElementById('extraCostBody').innerHTML = ''; d.extra.forEach(ex => addExtraCostRow(ex)); document.getElementById('ganttDashboard').style.display = 'block'; renderGantt(); calcExtraSum(); window.scrollTo(0,0); }
     async function deleteGantt() { if(confirm("이 공정표를 삭제하시겠습니까?")) { if(currentGanttId) await db.collection("gantt_logs").doc(currentGanttId).delete(); document.getElementById('ganttDashboard').style.display = 'none'; currentGanttId=null; } }
 
-    // 💡 V30: 작업일보 총공수 표기 및 상태 보존 드롭다운 💡
-    let teamData = [
-        { teamName: "목수", workers: [] },
-        { teamName: "도장", workers: [] },
-        { teamName: "필름", workers: [] },
-        { teamName: "전기", workers: [] }
-    ];
+    // 작업일보 (V30: 우측 정렬 + 아코디언 상태 보존 로직 추가)
+    let editingId = null; 
     
     function renderAllTeams() {
         const container = document.getElementById('team-container'); 
@@ -1337,21 +1238,22 @@
             }).join('');
             
             let colId = `team-col-${tIdx}`;
-            // 💡 V30: 상태 메모리 기반 접기/펴기 💡
+            
+            // 💡 V30: 아코디언 상태 확인 및 클래스 적용 💡
             let showClass = worklogCollapsedStates[colId] === true ? '' : 'show';
 
+            // 💡 V30: 타이틀바 Flex 구조 수정 (우측 정렬 완벽 시공) 💡
             return `<div class="mb-4 t5-card p-3" style="background: rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.05);">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <div class="flex-grow-1 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#${colId}" onclick="worklogCollapsedStates['${colId}'] = !worklogCollapsedStates['${colId}']">
                         <h6 class="m-0 fw-bold d-flex align-items-center">
                             ${team.teamName}
-                            <i class="bi bi-chevron-down ms-2 text-secondary" style="font-size:0.8rem;"></i>
                         </h6>
                     </div>
                     <div class="d-flex align-items-center gap-3">
-                        <button onclick="event.stopPropagation(); addWorker(${tIdx})" class="t5-btn-small fw-bold">[+]</button>
-                        <span class="badge bg-primary px-3 py-2">총 ${teamTotal} 공수</span>
-                        <div class="cursor-pointer text-secondary px-2" data-bs-toggle="collapse" data-bs-target="#${colId}"><i class="bi bi-list"></i></div>
+                        <button onclick="event.stopPropagation(); addWorker(${tIdx})" class="t5-btn-small fw-bold px-2 py-1" style="font-size:0.9rem;">[+]</button>
+                        <span class="badge bg-primary px-3 py-2" style="font-size:0.85rem;">총 ${teamTotal} 공수</span>
+                        <div class="cursor-pointer text-secondary px-2" data-bs-toggle="collapse" data-bs-target="#${colId}" onclick="worklogCollapsedStates['${colId}'] = !worklogCollapsedStates['${colId}']"><i class="bi bi-chevron-down fs-5"></i></div>
                     </div>
                 </div>
                 <div class="collapse ${showClass} mt-3" id="${colId}">
@@ -1431,6 +1333,7 @@
     function closePunchAddModal() { document.getElementById('addTaskModal').style.display = 'none'; }
     async function saveNewPunchTask() { const t = document.getElementById('newTaskInput').value.trim(); if(!t) return; await db.collection("punch_lists").add({ teamId: myTeamId, siteName: currentSite, text: t, done: false, writer: userNickname, createdAt: Date.now() }); closePunchAddModal(); }
 
+    // T5 계산기
     function toggleT5Specs() { const el = document.getElementById('t5-spec-container'); el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
     function addNewSpec() { let n=prompt("규격"), a=prompt("치수"); if(n&&a) document.getElementById('t5-spec-list').insertAdjacentHTML('beforeend', `<div class="col-4 col-md-auto spec-item"><label class="small">${n}용</label><input type="number" class="form-control input-dark spec-actual" data-nominal="${n}" value="${a}"></div>`); }
     function addT5Row() { document.getElementById('t5-input-container').insertAdjacentHTML('beforeend', `<div class="row g-2 mb-2 t5-row-item"><div class="col-6"><input type="text" class="form-control input-dark t5-section-name" placeholder="구간 (예: 거실)"></div><div class="col-6"><input type="number" class="form-control input-dark t5-length-val" placeholder="길이 (mm)"></div></div>`); }
@@ -1450,6 +1353,7 @@
     function copyT5Order(site, text) { const fmt = site + '\n' + text.split(' / ').join('\n'); const t = document.createElement("textarea"); document.body.appendChild(t); t.value = fmt; t.select(); document.execCommand('copy'); document.body.removeChild(t); alert("복사 완료!\n\n" + fmt); }
     async function deleteT5Log(id) { if(confirm("삭제하시겠습니까?")) await db.collection("t5_logs").doc(id).delete(); }
 
+    // 메모장
     let currentMemoTab = 'private';
     function loadMemos() {
         db.collection("team_memos").where("teamId", "==", myTeamId).onSnapshot(ss => {
@@ -1478,172 +1382,7 @@
     }
     async function delMemo(id) { if(confirm("삭제하시겠습니까?")) await db.collection("team_memos").doc(id).delete(); }
 
-    let teamMembersInfo = {}; let globalLeaveRecords = [];
-    function loadLeaveData(teamData) {
-        teamMembersInfo = teamData.membersInfo || {};
-        if(myRole === "owner" || myRole === "admin") {
-            document.getElementById('leaveAdminPanel').style.display = 'block';
-            document.getElementById('leaveAdminBody').innerHTML = (teamData.members||[]).map(mEmail => {
-                let nick = globalEmailToNick[mEmail] || mEmail.split('@')[0];
-                let info = teamMembersInfo[mEmail] || { joinDate: '', base: 15, bonus: 0 };
-                return `<tr>
-                    <td class="small fw-bold">${nick}</td>
-                    <td><input type="date" class="form-control form-control-sm input-dark leave-join" data-email="${mEmail}" value="${info.joinDate||''}"></td>
-                    <td><input type="number" class="form-control form-control-sm input-dark text-center leave-base" data-email="${mEmail}" value="${info.base||15}" style="width:60px; margin:auto;"></td>
-                    <td><input type="number" class="form-control form-control-sm input-dark text-center leave-bonus" data-email="${mEmail}" value="${info.bonus||0}" style="width:60px; margin:auto;"></td>
-                </tr>`;
-            }).join('');
-        }
-        db.collection("leave_records").where("teamId","==",myTeamId).onSnapshot(ss => {
-            let used = {}; globalLeaveRecords = [];
-            ss.docs.forEach(doc => { let d = doc.data(); d.id = doc.id; used[d.userEmail] = (used[d.userEmail]||0) + parseFloat(d.amount); globalLeaveRecords.push(d); });
-            document.getElementById('leaveStatusBody').innerHTML = (teamData.members||[]).map(mEmail => {
-                let nick = globalEmailToNick[mEmail] || mEmail.split('@')[0];
-                let info = teamMembersInfo[mEmail] || { joinDate: '-', base: 15, bonus: 0 };
-                let resetDate = info.joinDate !== '-' && info.joinDate ? info.joinDate.substring(5) : '-';
-                
-                let totalGrant = parseFloat(info.base||15) + parseFloat(info.bonus||0);
-                let usedAmt = used[mEmail]||0;
-                
-                return `<tr>
-                    <td class="fw-bold">${nick}</td>
-                    <td class="text-secondary">${resetDate}</td>
-                    <td class="text-info">${totalGrant} <span class="small text-secondary">(${info.base||15}+${info.bonus||0})</span></td>
-                    <td class="text-danger">${usedAmt}</td>
-                    <td class="text-success fw-bold">${totalGrant - usedAmt}</td>
-                </tr>`;
-            }).join('');
-            renderLeaveCalendar();
-        });
-    }
-
-    function renderLeaveCalendar() {
-        let year = parseInt(document.getElementById('calYear').value);
-        let month = parseInt(document.getElementById('calMonth').value) - 1;
-        let firstDay = new Date(year, month, 1).getDay();
-        let daysInMonth = new Date(year, month + 1, 0).getDate();
-        
-        let html = '<div class="d-grid" style="grid-template-columns: repeat(7, 1fr); gap: 5px;">';
-        const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
-        weekDays.forEach((w, i) => html += `<div class="fw-bold pb-2 border-bottom border-secondary border-opacity-25 ${i===0?'text-danger':i===6?'text-primary':'text-secondary'}">${w}</div>`);
-        
-        for(let i=0; i<firstDay; i++) html += `<div></div>`;
-        
-        let monthlyListData = [];
-
-        for(let i=1; i<=daysInMonth; i++) {
-            let dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-            let matchRecs = globalLeaveRecords.filter(r => r.date === dateStr);
-            
-            let barHtml = `<div class="cal-bar-container">` + matchRecs.map(r => {
-                monthlyListData.push(r); 
-                let colorClass = r.approved ? 'bar-approved' : 'bar-pending';
-                let typeClass = r.amount === 1 ? 'bar-full' : (r.type === 'am' ? 'bar-am' : 'bar-pm');
-                return `<div class="cal-bar ${colorClass} ${typeClass}"></div>`;
-            }).join('') + `</div>`;
-
-            let dw = new Date(year, month, i).getDay();
-            html += `<div class="cal-day-box" onclick="toggleCalAccordion('${dateStr}')"><div class="cal-date-num" style="color:${dw===0?'#e03131':dw===6?'#5c7cfa':'#94a3b8'}">${i}</div>${barHtml}</div>`;
-        }
-        document.getElementById('leaveCalendar').innerHTML = html + '</div>';
-
-        renderMonthlyLeaveList(monthlyListData);
-    }
-
-    function renderMonthlyLeaveList(records) {
-        let listContainer = document.getElementById('monthlyLeaveList');
-        if(records.length === 0) {
-            listContainer.innerHTML = '<p class="text-secondary text-center m-0 small">이번 달은 등록된 연차 현황이 없습니다.</p>';
-            return;
-        }
-
-        records.sort((a,b) => a.date.localeCompare(b.date)); 
-        
-        let listHtml = records.map(r => {
-            let nick = globalEmailToNick[r.userEmail] || r.userEmail.split('@')[0];
-            let typeStr = r.amount === 1 ? '종일' : (r.type === 'am' ? '오전반차' : '오후반차');
-            let reasonStr = r.reason ? ` - ${r.reason}` : '';
-            let isOwnerOrAdmin = (myRole === 'owner' || myRole === 'admin');
-            let canDelete = r.approved ? isOwnerOrAdmin : (isOwnerOrAdmin || r.userEmail === myEmail);
-            let rowClass = r.approved ? 'approved-row' : '';
-
-            return `<div class="leave-detail-item ${rowClass}">
-                        <div class="d-flex flex-column">
-                            <span class="text-secondary small">${r.date}</span>
-                            <span class="fw-bold">${nick} <span class="text-info small ms-1">${typeStr}</span><span class="text-secondary small">${reasonStr}</span></span>
-                        </div>
-                        <div class="d-flex align-items-center gap-3">
-                            <label class="m-0 d-flex align-items-center gap-1 small cursor-pointer">
-                                <input type="checkbox" class="form-check-input m-0" ${r.approved?'checked':''} ${isOwnerOrAdmin?'':'disabled'} onchange="toggleLeaveApprove('${r.id}', ${r.approved||false})">
-                                ${r.approved ? '<span class="text-success fw-bold">승인 ✅</span>' : '<span class="text-secondary">대기중</span>'}
-                            </label>
-                            ${canDelete ? `<button class="btn btn-sm btn-danger py-0 px-2" onclick="deleteLeaveRecord('${r.id}', '${r.userEmail}', ${r.approved||false})"><i class="bi bi-x"></i></button>` : ''}
-                        </div>
-                    </div>`;
-        }).join('');
-
-        listContainer.innerHTML = listHtml;
-    }
-
-    function toggleCalAccordion(dateStr) {
-        const area = document.getElementById('calAccordionArea'); const content = document.getElementById('calAccordionContent');
-        let matchRecs = globalLeaveRecords.filter(r => r.date === dateStr);
-        let listHtml = matchRecs.map(r => {
-            let txt = r.amount === 1 ? '종일' : (r.type === 'am' ? '오전반차' : '오후반차');
-            let nick = globalEmailToNick[r.userEmail] || r.userEmail.split('@')[0];
-            let isOwnerOrAdmin = (myRole === 'owner' || myRole === 'admin');
-            let canDelete = r.approved ? isOwnerOrAdmin : (isOwnerOrAdmin || r.userEmail === myEmail);
-            let rowClass = r.approved ? 'approved-row' : '';
-            return `<div class="leave-detail-item ${rowClass}">
-                        <div class="fw-bold">${nick} <span class="text-secondary small ms-2">${txt} ${r.reason ? `(${r.reason})` : ''}</span></div>
-                        <div class="d-flex align-items-center gap-3">
-                            <label class="m-0 d-flex align-items-center gap-1 small cursor-pointer">
-                                <input type="checkbox" class="form-check-input m-0" ${r.approved?'checked':''} ${isOwnerOrAdmin?'':'disabled'} onchange="toggleLeaveApprove('${r.id}', ${r.approved||false})">
-                                ${r.approved ? '<span class="text-success fw-bold">승인 ✅</span>' : '<span class="text-secondary">대기중</span>'}
-                            </label>
-                            ${canDelete ? `<button class="btn btn-sm btn-danger py-0 px-2" onclick="deleteLeaveRecord('${r.id}', '${r.userEmail}', ${r.approved||false})"><i class="bi bi-x"></i></button>` : ''}
-                        </div>
-                    </div>`;
-        }).join('');
-        if(!listHtml) listHtml = `<p class="text-secondary small text-center m-0">해당 일자에 신청 내역이 없습니다.</p>`;
-        content.innerHTML = `<h6 class="fw-bold text-primary mb-3">${dateStr}</h6>${listHtml}<button class="btn btn-outline-success w-100 mt-3 py-2 fw-bold" onclick="openLeaveModal('${dateStr}')">+ 이 날짜로 휴가 신청하기</button>`;
-        area.style.display = 'block'; area.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    async function toggleLeaveApprove(id, current) {
-        if(myRole !== 'owner' && myRole !== 'admin') return alert("관리자만 승인할 수 있습니다.");
-        await db.collection("leave_records").doc(id).update({ approved: !current });
-    }
-    async function deleteLeaveRecord(id, email, approved) {
-        let isOwnerOrAdmin = (myRole === 'owner' || myRole === 'admin');
-        if (approved && !isOwnerOrAdmin) return alert("승인된 연차는 관리자만 삭제 가능합니다.");
-        if (!approved && !isOwnerOrAdmin && email !== myEmail) return alert("본인의 신청 내역만 삭제할 수 있습니다.");
-        if (confirm("이 휴가 신청을 취소/삭제하시겠습니까?")) { await db.collection("leave_records").doc(id).delete(); document.getElementById('calAccordionArea').style.display = 'none'; }
-    }
-    
-    function openLeaveModal(d) { 
-        document.getElementById('applyLeaveDate').value = d; 
-        document.getElementById('applyLeaveReason').value = '';
-        leaveModal.show(); 
-    }
-    
-    async function submitLeaveRequest() {
-        let d = document.getElementById('applyLeaveDate').value; 
-        let tVal = document.getElementById('applyLeaveType').value;
-        let reason = document.getElementById('applyLeaveReason').value.trim();
-
-        await db.collection("leave_records").add({ teamId: myTeamId, userEmail: myEmail, date: d, amount: tVal==='1'?1:0.5, type: tVal==='1'?'full':(tVal==='0.5_am'?'am':'pm'), reason: reason, approved: false, createdAt: Date.now() }); 
-        leaveModal.hide(); document.getElementById('calAccordionArea').style.display = 'none';
-    }
-    
-    async function saveLeaveSettings() {
-        let newInfo = {};
-        document.querySelectorAll('.leave-join').forEach(el => { let email = el.getAttribute('data-email'); if(!newInfo[email]) newInfo[email]={}; newInfo[email].joinDate = el.value; });
-        document.querySelectorAll('.leave-base').forEach(el => { let email = el.getAttribute('data-email'); if(!newInfo[email]) newInfo[email]={}; newInfo[email].base = parseFloat(el.value||15); });
-        document.querySelectorAll('.leave-bonus').forEach(el => { let email = el.getAttribute('data-email'); if(!newInfo[email]) newInfo[email]={}; newInfo[email].bonus = parseFloat(el.value||0); });
-        await db.collection("teams").doc(myTeamId).update({ membersInfo: newInfo }); alert("설정 저장 완료");
-    }
-
+    // 팀 관리
     function checkTeamUI() {
         if(myTeamId) { document.getElementById('no-team-section').style.display = 'none'; document.getElementById('has-team-section').style.display = 'block'; loadTeamMembers(); } 
         else { document.getElementById('no-team-section').style.display = 'block'; document.getElementById('has-team-section').style.display = 'none'; }
@@ -1673,6 +1412,7 @@
     async function kickMember(tEmail) { if(confirm("팀에서 내보내시겠습니까?")) { const tDoc = await db.collection("teams").doc(myTeamId).get(); let m = tDoc.data().members.filter(x => x !== tEmail); let a = (tDoc.data().admins || []).filter(x => x !== tEmail); await db.collection("teams").doc(myTeamId).update({ members: m, admins: a }); loadTeamMembers(); alert("팀원이 삭제되었습니다."); } }
     async function toggleAdmin(tEmail, isPro) { const tDoc = await db.collection("teams").doc(myTeamId).get(); let a = tDoc.data().admins || []; if(isPro) { if(!a.includes(tEmail)) a.push(tEmail); } else { a = a.filter(x => x !== tEmail); } await db.collection("teams").doc(myTeamId).update({ admins: a }); loadTeamMembers(); }
 
+    // 내 정보 수정
     async function updateProfile() { await db.collection("users").doc(myEmail).update({ nickname: document.getElementById('editNickname').value }); location.reload(); }
     function copyText(t) { navigator.clipboard.writeText(t); alert("복사됨"); }
     async function changePassword() { try { await auth.currentUser.updatePassword(document.getElementById('newPasswordInput').value); alert("성공"); } catch(e){ alert(e.message); } }

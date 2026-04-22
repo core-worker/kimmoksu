@@ -10,7 +10,7 @@
     <meta property="og:image" content="https://idong2300.github.io/kimmoksu/og-image.png">
     <meta property="og:locale" content="ko_KR">
 
-    <title>김목수이야기 - 마스터 스케줄러 (V29)</title>
+    <title>김목수이야기 - 마스터 스케줄러 (V30)</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -165,7 +165,6 @@
 
             <div class="filter-scroll mb-3" id="filterContainer">
                 <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold filter-btn" data-type="all" onclick="toggleFilter('all')">전체 보기</button>
-                <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3 filter-btn" data-type="gantt" onclick="toggleFilter('gantt')"><span id="dot-gantt">●</span> 공정표</button>
                 <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3 filter-btn" data-type="status" onclick="toggleFilter('status')"><span id="dot-status">●</span> 상황판</button>
                 <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3 filter-btn" data-type="leave" onclick="toggleFilter('leave')"><span id="dot-leave">●</span> 연차</button>
                 <button class="btn btn-sm btn-outline-secondary text-white rounded-pill px-3 filter-btn" data-type="construct" onclick="toggleFilter('construct')"><span id="dot-construct">●</span> 공사</button>
@@ -249,12 +248,12 @@
     let selectedDateStr = null;
     let globalEmailToNick = {};
     let allEvents = []; 
-    let eventStorage = { gantt:[], status:[], leave:[], custom:[] };
+    let eventStorage = { status:[], leave:[], custom:[] };
     
     let activeFilters = new Set(['all']);
-    let defaultColors = { gantt:'#0d6efd', status:'#20c997', leave:'#dc3545', construct:'#6f42c1', measure:'#fd7e14', meeting:'#198754', memo:'#6c757d' };
+    let defaultColors = { status:'#20c997', leave:'#dc3545', construct:'#6f42c1', measure:'#fd7e14', meeting:'#198754', memo:'#6c757d' };
     let themeColors = { ...defaultColors };
-    let colorNames = { gantt:'공정표', status:'상황판', leave:'연차', construct:'공사일정', measure:'실측', meeting:'미팅', memo:'메모' };
+    let colorNames = { status:'상황판', leave:'연차', construct:'공사일정', measure:'실측', meeting:'미팅', memo:'메모' };
 
     document.addEventListener("DOMContentLoaded", () => {
         let td = new Date();
@@ -317,16 +316,13 @@
         } catch(err){alert(err.message);} 
     }
     
-    // 💡 V29: 비밀번호 찾기 (초기화) 로직 💡
     async function resetPassword() {
         const e = document.getElementById('userEmail').value.trim();
         if(!e) return alert("비밀번호를 찾을 이메일을 먼저 입력해주세요.");
         try {
             await auth.sendPasswordResetEmail(e);
             alert("입력하신 이메일로 비밀번호 재설정 링크를 발송했습니다. 이메일함을 확인해주세요!");
-        } catch(err) {
-            alert("이메일 발송 실패: " + err.message);
-        }
+        } catch(err) { alert("이메일 발송 실패: " + err.message); }
     }
 
     function parseDateObj(str) {
@@ -339,17 +335,7 @@
     }
 
     function fetchAllData() {
-        db.collection("gantt_logs").where("teamId","==",myTeamId).onSnapshot(ss => {
-            let gantts = [];
-            ss.docs.forEach(doc => {
-                let d = doc.data();
-                if(d.dates && d.dates.length > 0) {
-                    gantts.push({ id: doc.id+'_s', type: 'gantt', title: `[착공] ${d.site}`, start: d.dates[0].split('T')[0], source: 'gantt' });
-                    gantts.push({ id: doc.id+'_e', type: 'gantt', title: `[준공] ${d.site}`, start: d.dates[d.dates.length-1].split('T')[0], source: 'gantt' });
-                }
-            });
-            updateEvents('gantt', gantts);
-        });
+        // 💡 V30: 공정표 연동 철거 (요청사항 반영) 💡
 
         db.collection("site_status").where("teamId", "==", myTeamId).onSnapshot(ss => {
             let statuses = [];
@@ -380,7 +366,7 @@
 
     function updateEvents(key, data) {
         eventStorage[key] = data;
-        allEvents = [...eventStorage.gantt, ...eventStorage.status, ...eventStorage.leave, ...eventStorage.custom];
+        allEvents = [...(eventStorage.status||[]), ...(eventStorage.leave||[]), ...(eventStorage.custom||[])];
         renderCalendar();
     }
 
@@ -398,12 +384,10 @@
             let btnType = btn.getAttribute('data-type');
             if(activeFilters.has(btnType)) {
                 btn.classList.replace('btn-outline-secondary', 'btn-primary');
-                btn.classList.replace('text-white', 'text-light');
                 btn.classList.add('fw-bold');
             } else {
                 btn.classList.replace('btn-primary', 'btn-outline-secondary');
-                btn.classList.remove('fw-bold', 'text-light');
-                btn.classList.add('text-white');
+                btn.classList.remove('fw-bold');
             }
         });
         renderCalendar();
@@ -443,7 +427,7 @@
                 let bgStyle = `background-color: ${bgColor};`;
                 let titleText = (isStart || isSingle) ? ev.title : '&nbsp;'; 
                 
-                // 💡 V29: 오전/오후반차 텍스트를 무조건 [반차]로 통합 (그래픽은 유지) 💡
+                // 💡 V30: 반차 텍스트 통합 💡
                 if(ev.type === 'leave') {
                     let prefix = ev.leaveType === 'full' ? '[연차]' : '[반차]';
                     titleText = `${prefix} ${ev.title}`;
@@ -493,7 +477,6 @@
             let colorHex = themeColors[ev.type];
             let dateTxt = ev.end ? `${ev.start} ~ ${ev.end}` : ev.start;
             
-            // 💡 V29: 하단 리스트도 [반차]로 텍스트 통합 💡
             let extTxt = "";
             if(ev.type === 'leave') extTxt = ev.leaveType === 'full' ? '(종일)' : '(반차)';
 

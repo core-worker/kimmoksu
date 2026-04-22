@@ -32,14 +32,16 @@
         body { background-color: var(--bg-deep); color: #f8fafc; font-family: 'Pretendard', sans-serif; margin: 0; overflow: hidden; transition: background-color 0.3s, color 0.3s; }
         .app-wrapper { display: flex; height: 100vh; height: 100dvh; width: 100vw; position: relative; }
         
-        .sidebar { width: 260px; height: 100dvh; background-color: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s; z-index: 1050; overflow-y: auto; flex-shrink: 0; }
+        /* 💡 V32: 사이드바 너비 축소 + 스크롤 방지 💡 */
+        .sidebar { width: 240px; height: 100dvh; background-color: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s; z-index: 1050; overflow-y: hidden; flex-shrink: 0; }
         .main-container { flex: 1; overflow-y: auto; background-color: var(--bg-deep); width: 100%; transition: background-color 0.3s; }
         .page-section { display: none; animation: fadeIn 0.2s ease-out; padding: 30px; max-width: 1400px; margin: 0 auto; width: 100%; padding-bottom: 80px; }
         .page-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        .nav-link { color: #94a3b8; padding: 14px 20px; margin: 4px 15px; border-radius: 12px; transition: 0.3s; cursor: pointer; display: flex; align-items: center; text-decoration: none; }
-        .nav-link i { font-size: 1.2rem; margin-right: 12px; }
+        /* 💡 V32: nav-link 간격 축소 💡 */
+        .nav-link { color: #94a3b8; padding: 9px 16px; margin: 2px 10px; border-radius: 10px; transition: 0.3s; cursor: pointer; display: flex; align-items: center; text-decoration: none; font-size: 0.92rem; }
+        .nav-link i { font-size: 1.05rem; margin-right: 10px; }
         .nav-link:hover, .nav-link.active { background-color: rgba(92, 124, 250, 0.2); color: var(--primary-accent); font-weight: bold; }
 
         .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1040; backdrop-filter: blur(2px); transition: 0.3s; opacity: 0; }
@@ -168,6 +170,7 @@
         
         /* 화이트모드 대응 십자선 */
         body.light-mode .gantt-cell:hover::after { background: rgba(0,0,0,0.05); }
+        body.light-mode .drag-handle { color: #adb5bd !important; }
         body.light-mode .gantt-table tbody tr:hover td { background: rgba(0,0,0,0.05); }
         
         .gantt-task-col { position: sticky; left: 0; background: var(--card-bg) !important; z-index: 10; min-width: 65px; max-width: 65px; width: 65px; text-align: left !important; border-right: 2px solid var(--primary-accent) !important; padding: 0 5px !important; }
@@ -244,6 +247,15 @@
         .order-btn-group { display: flex; flex-direction: column; gap: 1px; align-items: center; }
         .btn-order-v { padding: 0 !important; font-size: 0.65rem !important; height: 16px; width: 22px; line-height: 1; border-radius: 3px; display: flex; align-items: center; justify-content: center; }
 
+
+        /* 💡 V32: 드래그앤드롭 공통 스타일 💡 */
+        .sortable-ghost { opacity: 0.4; background: rgba(92,124,250,0.2) !important; border-radius: 8px; }
+        .sortable-drag { opacity: 0.9; box-shadow: 0 8px 25px rgba(0,0,0,0.4) !important; }
+        .drag-handle { cursor: grab; color: #4b5563; padding: 0 6px; font-size: 1rem; }
+        .drag-handle:active { cursor: grabbing; }
+        .drag-handle:hover { color: var(--primary-accent); }
+        body.light-mode .drag-handle { color: #adb5bd; }
+        body.light-mode .drag-handle:hover { color: var(--primary-accent); }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
@@ -276,10 +288,10 @@
     <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
     <nav class="sidebar" id="sidebar">
-        <div class="p-4 text-center border-bottom border-secondary border-opacity-10">
-            <img src="kimmoksu_main_logo.png" alt="로고" style="max-width: 140px; cursor: pointer;" onclick="location.reload()">
+        <div class="px-4 py-3 text-center border-bottom border-secondary border-opacity-10">
+            <img src="kimmoksu_main_logo.png" alt="로고" style="max-width: 120px; cursor: pointer;" onclick="location.reload()">
         </div>
-        <div class="flex-grow-1 mt-3">
+        <div class="flex-grow-1 mt-1">
             <div class="nav-link active" onclick="showPage('home', this)"><i class="bi bi-house-door"></i> 홈 메인</div>
             <div class="nav-link text-warning" onclick="showPage('team', this)"><i class="bi bi-people-fill"></i> 팀원 및 조직 관리</div>
             <hr class="border-secondary border-opacity-25 mx-3">
@@ -294,13 +306,13 @@
             <div class="nav-link" onclick="showPage('profile', this)"><i class="bi bi-person-gear"></i> 내 정보 수정</div>
         </div>
         
-        <div class="px-4 py-3 mt-auto">
+        <div class="px-3 py-2 mt-auto">
             <button class="btn btn-outline-secondary btn-sm w-100 d-flex justify-content-center align-items-center gap-2" id="themeToggleBtn" onclick="toggleTheme()">
                 <i class="bi bi-brightness-high-fill"></i> <span>화이트 모드로 전환</span>
             </button>
         </div>
 
-        <div class="p-4 border-top border-secondary border-opacity-10">
+        <div class="px-3 py-2 border-top border-secondary border-opacity-10">
             <div class="d-flex align-items-center mb-2">
                 <i class="bi bi-person-circle fs-3 me-3" style="color:var(--primary-accent);"></i>
                 <div class="flex-grow-1 overflow-hidden">
@@ -802,6 +814,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- 💡 V32: SortableJS - 드래그앤드롭 순서 편집용 💡 -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
 <script>
     let myEmail, myTeamId, userNickname = "관리자";
@@ -976,26 +990,92 @@
         location.reload(); 
     }
 
-    // 게시판
+    // 💡 V32: 게시판 (공지/전달내용 드래그앤드롭 순서 편집 추가) 💡
+    let noticeSortable = null;
+    let memoSortable = null;
+
     function loadBoardMemos() {
         let isSuper = (myRole === 'owner' || myRole === 'admin');
         let canDeleteNotice = isSuper || globalNoticeAdmins.includes(myEmail);
+        let canEditBoard = isSuper || globalNoticeAdmins.includes(myEmail);
 
-        db.collection("notices").where("teamId", "==", myTeamId).orderBy("createdAt", "desc").onSnapshot(ss => {
-            let notices = ss.docs.map(doc => ({ id: doc.id, text: doc.data().text, dateStr: new Date(doc.data().createdAt).toLocaleDateString().slice(5) }));
+        db.collection("notices").where("teamId", "==", myTeamId).orderBy("order", "asc").onSnapshot(ss => {
+            // order 필드가 없는 구버전 데이터도 createdAt 기준으로 폴백
+            let notices = ss.docs.map(doc => ({ id: doc.id, ...doc.data(), dateStr: new Date(doc.data().createdAt).toLocaleDateString().slice(5) }))
+                .sort((a,b) => (a.order ?? a.createdAt) - (b.order ?? b.createdAt));
             document.getElementById('home-notice-list').innerHTML = notices.slice(0,5).map(n => `<div class="mb-1 text-truncate">• ${n.text}</div>`).join('') || '내용 없음';
-            document.getElementById('manage-notice-list').innerHTML = notices.map(n => `<div class="board-item d-flex justify-content-between"><span>${n.text} <span class="small text-secondary ms-2">${n.dateStr}</span></span>${canDeleteNotice ? `<button class="btn btn-sm text-danger p-0" onclick="delOldNotice('${n.id}')"><i class="bi bi-trash"></i></button>` : ''}</div>`).join('');
+            
+            let dragHandle = canEditBoard ? `<i class="bi bi-grip-vertical drag-handle me-2"></i>` : '';
+            document.getElementById('manage-notice-list').innerHTML = notices.map(n =>
+                `<div class="board-item d-flex justify-content-between align-items-center" data-id="${n.id}">
+                    <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+                        ${dragHandle}
+                        <span class="text-truncate">${n.text} <span class="small text-secondary ms-2">${n.dateStr}</span></span>
+                    </div>
+                    ${canDeleteNotice ? `<button class="btn btn-sm text-danger p-0 ms-2 flex-shrink-0" onclick="delOldNotice('${n.id}')"><i class="bi bi-trash"></i></button>` : ''}
+                </div>`
+            ).join('');
+
+            // Sortable 초기화 (편집 권한 있을 때만)
+            if(canEditBoard) {
+                if(noticeSortable) noticeSortable.destroy();
+                noticeSortable = Sortable.create(document.getElementById('manage-notice-list'), {
+                    handle: '.drag-handle',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    dragClass: 'sortable-drag',
+                    onEnd: async function(evt) {
+                        const items = document.querySelectorAll('#manage-notice-list .board-item');
+                        const batch = db.batch();
+                        items.forEach((el, idx) => {
+                            batch.update(db.collection("notices").doc(el.getAttribute('data-id')), { order: idx });
+                        });
+                        await batch.commit();
+                    }
+                });
+            }
         });
-        db.collection("board_memos").where("teamId", "==", myTeamId).where("type", "==", "memo").orderBy("createdAt", "desc").onSnapshot(ss => {
-            let memos = ss.docs.map(doc => ({ id: doc.id, text: doc.data().text, dateStr: doc.data().dateStr }));
+
+        db.collection("board_memos").where("teamId", "==", myTeamId).where("type", "==", "memo").onSnapshot(ss => {
+            let memos = ss.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a,b) => (a.order ?? a.createdAt) - (b.order ?? b.createdAt));
             document.getElementById('home-msg-list').innerHTML = memos.slice(0,5).map(n => `<div class="mb-1 text-truncate">• ${n.text}</div>`).join('') || '내용 없음';
-            document.getElementById('manage-memo-list').innerHTML = memos.map(n => `<div class="board-item d-flex justify-content-between" style="border-color:var(--success-btn);"><span>${n.text} <span class="small text-secondary ms-2">${n.dateStr}</span></span><button class="btn btn-sm text-danger p-0" onclick="delBoardItem('${n.id}')"><i class="bi bi-trash"></i></button></div>`).join('');
+
+            let dragHandle = canEditBoard ? `<i class="bi bi-grip-vertical drag-handle me-2"></i>` : '';
+            document.getElementById('manage-memo-list').innerHTML = memos.map(n =>
+                `<div class="board-item d-flex justify-content-between align-items-center" style="border-color:var(--success-btn);" data-id="${n.id}">
+                    <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+                        ${dragHandle}
+                        <span class="text-truncate">${n.text} <span class="small text-secondary ms-2">${n.dateStr}</span></span>
+                    </div>
+                    <button class="btn btn-sm text-danger p-0 ms-2 flex-shrink-0" onclick="delBoardItem('${n.id}')"><i class="bi bi-trash"></i></button>
+                </div>`
+            ).join('');
+
+            if(canEditBoard) {
+                if(memoSortable) memoSortable.destroy();
+                memoSortable = Sortable.create(document.getElementById('manage-memo-list'), {
+                    handle: '.drag-handle',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    dragClass: 'sortable-drag',
+                    onEnd: async function(evt) {
+                        const items = document.querySelectorAll('#manage-memo-list .board-item');
+                        const batch = db.batch();
+                        items.forEach((el, idx) => {
+                            batch.update(db.collection("board_memos").doc(el.getAttribute('data-id')), { order: idx });
+                        });
+                        await batch.commit();
+                    }
+                });
+            }
         });
     }
+
     async function addBoardItem(type) {
         let input = document.getElementById(`input-${type}`); let text = input.value.trim(); if(!text) return;
-        if(type === 'notice') { await db.collection("notices").add({ teamId: myTeamId, text: text, writer: userNickname, createdAt: Date.now() }); } 
-        else { let today = new Date(); let dStr = `0${today.getMonth()+1}`.slice(-2)+"."+`0${today.getDate()}`.slice(-2); await db.collection("board_memos").add({ teamId: myTeamId, type: type, text: text, dateStr: dStr, createdAt: Date.now() }); }
+        if(type === 'notice') { await db.collection("notices").add({ teamId: myTeamId, text: text, writer: userNickname, createdAt: Date.now(), order: Date.now() }); } 
+        else { let today = new Date(); let dStr = `0${today.getMonth()+1}`.slice(-2)+"."+`0${today.getDate()}`.slice(-2); await db.collection("board_memos").add({ teamId: myTeamId, type: type, text: text, dateStr: dStr, createdAt: Date.now(), order: Date.now() }); }
         input.value = '';
     }
     async function delOldNotice(id) { if(confirm("삭제하시겠습니까?")) await db.collection("notices").doc(id).delete(); }
@@ -1020,93 +1100,141 @@
         }); 
     }
     
+    // 💡 V32: 상황판 렌더링 - 드래그앤드롭 방식으로 전면 교체 💡
+    let statusSortables = {};
+
     function renderAllSections(data) {
         let isSuper = (myRole === 'owner' || myRole === 'admin');
         let canEditStatus = isSuper || globalStatusAdmins.includes(myEmail);
 
         const sections = [
-            { key: 'ongoing', icon: 'bi-tools', title: '공사 진행 중', h: '<tr><th style="width:18%;">현장명</th><th style="width:12%;">착공일</th><th style="width:12%;">예정준공일</th><th style="width:12%;">소장</th><th style="width:12%;">디자이너</th><th style="width:12%;">싸인</th><th>비고</th><th style="width:100px;">관리</th></tr>' }, 
-            { key: 'scheduled', icon: 'bi-calendar-event', title: '공사 착공 예정', h: '<tr><th style="width:20%;">상호명</th><th style="width:15%;">착공예정</th><th style="width:15%;">준공예정</th><th style="width:15%;">예상소장</th><th>비고</th><th style="width:100px;">관리</th></tr>' }, 
-            { key: 'designing', icon: 'bi-palette', title: '디자인 진행 중', h: '<tr><th style="width:20%;">상호명</th><th style="width:15%;">디자인마감</th><th style="width:15%;">착공예정</th><th style="width:15%;">디자이너</th><th>비고</th><th style="width:100px;">관리</th></tr>' }, 
-            { key: 'pre-design', icon: 'bi-pencil-square', title: '디자인 예정', h: '<tr><th style="width:25%;">상호명</th><th style="width:20%;">마감시기</th><th>비고</th><th style="width:100px;">관리</th></tr>' }
+            { key: 'ongoing', icon: 'bi-tools', title: '공사 진행 중', h: '<tr><th style="width:18%;">현장명</th><th style="width:12%;">착공일</th><th style="width:12%;">예정준공일</th><th style="width:12%;">소장</th><th style="width:12%;">디자이너</th><th style="width:12%;">싸인</th><th>비고</th><th style="width:90px;">관리</th></tr>' }, 
+            { key: 'scheduled', icon: 'bi-calendar-event', title: '공사 착공 예정', h: '<tr><th style="width:20%;">상호명</th><th style="width:15%;">착공예정</th><th style="width:15%;">준공예정</th><th style="width:15%;">예상소장</th><th>비고</th><th style="width:90px;">관리</th></tr>' }, 
+            { key: 'designing', icon: 'bi-palette', title: '디자인 진행 중', h: '<tr><th style="width:20%;">상호명</th><th style="width:15%;">디자인마감</th><th style="width:15%;">착공예정</th><th style="width:15%;">디자이너</th><th>비고</th><th style="width:90px;">관리</th></tr>' }, 
+            { key: 'pre-design', icon: 'bi-pencil-square', title: '디자인 예정', h: '<tr><th style="width:25%;">상호명</th><th style="width:20%;">마감시기</th><th>비고</th><th style="width:90px;">관리</th></tr>' }
         ];
         
         document.getElementById('all-status-containers').innerHTML = sections.map(sec => {
             const items = data.filter(d => d.status === sec.key);
             
-            let tableRows = items.length === 0 ? `<tr><td colspan="10" class="text-secondary py-4">등록된 데이터가 없습니다.</td></tr>` : items.map((item, idx) => {
-                // 💡 V30: 수직 화살표 정렬 버튼 (상하 배치) 💡
-                let orderBtns = (isStatusEditMode && canEditStatus) ? `
-                    <div class="order-btn-group me-1">
-                        <button class="btn btn-dark btn-order-v" onclick="changeStatusOrder('${sec.key}', ${idx}, -1)"><i class="bi bi-caret-up-fill"></i></button>
-                        <button class="btn btn-dark btn-order-v" onclick="changeStatusOrder('${sec.key}', ${idx}, 1)"><i class="bi bi-caret-down-fill"></i></button>
-                    </div>
-                ` : '';
-
-                return `<tr>
-                    <td class="fw-bold" style="color:var(--primary-accent);">${item.siteName}</td>
-                    <td>${item.date1 || '-'}</td>
-                    ${sec.key !== 'pre-design' ? `<td>${item.date2 || '-'}</td>` : ''}
-                    ${sec.key === 'ongoing' ? `<td>${item.site_manager || '-'}</td><td>${item.designer || '-'}</td><td>${item.designer_sign || '-'}</td>` : ''}
-                    ${sec.key === 'scheduled' ? `<td>${item.site_manager || '-'}</td>` : ''}
-                    ${sec.key === 'designing' ? `<td>${item.designer || '-'}</td>` : ''}
-                    <td class="text-secondary text-start ps-3">${item.etc || '-'}</td>
-                    <td class="text-nowrap d-flex align-items-center justify-content-center" style="padding:0 5px;">
-                        ${orderBtns}
-                        ${canEditStatus ? `<button class="btn btn-sm btn-outline-primary py-0 px-2 me-1" onclick="openSiteEditModal('${item.id}')"><i class="bi bi-pencil-square"></i></button>` : ''}
-                        ${(canEditStatus && isStatusEditMode) ? `<button class="btn btn-sm btn-danger py-0 px-2" onclick="deleteSite('${item.id}')">삭제</button>` : ''}
-                    </td>
-                </tr>`;
-            }).join('');
+            // PC 테이블 행 (드래그 핸들 포함)
+            let tableRows = items.length === 0 
+                ? `<tr><td colspan="10" class="text-secondary py-4">등록된 데이터가 없습니다.</td></tr>` 
+                : items.map((item) => {
+                    let dragHandle = (isStatusEditMode && canEditStatus) 
+                        ? `<td style="width:28px; padding:0 4px !important; cursor:grab;"><i class="bi bi-grip-vertical drag-handle text-secondary"></i></td>` 
+                        : '';
+                    return `<tr data-id="${item.id}">
+                        ${dragHandle}
+                        <td class="fw-bold" style="color:var(--primary-accent);">${item.siteName}</td>
+                        <td>${item.date1 || '-'}</td>
+                        ${sec.key !== 'pre-design' ? `<td>${item.date2 || '-'}</td>` : ''}
+                        ${sec.key === 'ongoing' ? `<td>${item.site_manager || '-'}</td><td>${item.designer || '-'}</td><td>${item.designer_sign || '-'}</td>` : ''}
+                        ${sec.key === 'scheduled' ? `<td>${item.site_manager || '-'}</td>` : ''}
+                        ${sec.key === 'designing' ? `<td>${item.designer || '-'}</td>` : ''}
+                        <td class="text-secondary text-start ps-3">${item.etc || '-'}</td>
+                        <td class="text-nowrap" style="padding:0 5px;">
+                            ${canEditStatus ? `<button class="btn btn-sm btn-outline-primary py-0 px-2 me-1" onclick="openSiteEditModal('${item.id}')"><i class="bi bi-pencil-square"></i></button>` : ''}
+                            ${(canEditStatus && isStatusEditMode) ? `<button class="btn btn-sm btn-danger py-0 px-2" onclick="deleteSite('${item.id}')">삭제</button>` : ''}
+                        </td>
+                    </tr>`;
+                }).join('');
             
-            let cards = items.length === 0 ? `<p class="text-center text-secondary py-3 small" style="background:#1e222d; border-radius:12px;">등록된 데이터가 없습니다.</p>` : items.map((item, idx) => {
-                const btnHTML = `
-                    <div class="d-flex gap-1 align-items-center">
-                        ${(isStatusEditMode && canEditStatus) ? `
-                            <div class="order-btn-group me-1">
-                                <button class="btn btn-dark btn-order-v" onclick="changeStatusOrder('${sec.key}', ${idx}, -1)"><i class="bi bi-caret-up-fill"></i></button>
-                                <button class="btn btn-dark btn-order-v" onclick="changeStatusOrder('${sec.key}', ${idx}, 1)"><i class="bi bi-caret-down-fill"></i></button>
-                            </div>
-                        ` : ''}
-                        ${canEditStatus ? `<button class="btn btn-sm btn-outline-primary px-2 py-0" onclick="openSiteEditModal('${item.id}')"><i class="bi bi-pencil-square"></i> 수정</button>` : ''}
-                        ${(canEditStatus && isStatusEditMode) ? `<button class="btn btn-sm btn-danger px-2 py-0" onclick="deleteSite('${item.id}')">삭제</button>` : ''}
-                    </div>`;
-                let etcHTML = ''; if(item.etc) { if(sec.key === 'pre-design') etcHTML = `<div class="text-secondary small mt-2 text-truncate">${item.etc}</div>`; else { const cid = `etc-${item.id}`; etcHTML = `<div class="text-secondary small mt-2 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#${cid}"><i class="bi bi-chat-square-text"></i> 메모 보기 <i class="bi bi-chevron-down"></i></div><div class="collapse" id="${cid}"><div class="mt-2 text-secondary small bg-dark p-2 rounded">${item.etc}</div></div>`; } }
-                
-                let dateStr = "";
-                if(sec.key === 'ongoing') dateStr = `${item.date1 || '-'} ~ ${item.date2 || '-'}`;
-                else if(sec.key === 'scheduled') dateStr = `착공: ${item.date1 || '-'} | 준공: ${item.date2 || '-'}`;
-                else if(sec.key === 'designing') dateStr = `디자인: ${item.date1 || '-'} | 착공: ${item.date2 || '-'}`;
-                else dateStr = `마감: ${item.date1 || '-'}`;
-
-                let gridHTML = "";
-                if(sec.key === 'ongoing') gridHTML = `<div class="mobile-grid-3"><div><div class="mobile-grid-label">담당소장</div><div class="mobile-grid-val">${item.site_manager || '-'}</div></div><div><div class="mobile-grid-label">디자이너</div><div class="mobile-grid-val">${item.designer || '-'}</div></div><div><div class="mobile-grid-label">싸인담당</div><div class="mobile-grid-val">${item.designer_sign || '-'}</div></div></div>`;
-                else if(sec.key === 'scheduled') gridHTML = `<div class="mobile-grid-3" style="grid-template-columns:1fr;"><div class="text-start ps-2"><span class="mobile-grid-label me-2">예상소장:</span><span class="mobile-grid-val">${item.site_manager || '-'}</span></div></div>`;
-                else if(sec.key === 'designing') gridHTML = `<div class="mobile-grid-3" style="grid-template-columns:1fr;"><div class="text-start ps-2"><span class="mobile-grid-label me-2">디자이너:</span><span class="mobile-grid-val">${item.designer || '-'}</span></div></div>`;
-
-                return `<div class="mobile-site-card"><h6 class="mobile-card-title">${item.siteName}</h6><div class="mobile-card-subtitle"><span class="mobile-card-date">${dateStr}</span>${btnHTML}</div>${gridHTML}${etcHTML}</div>`;
-            }).join('');
+            // 모바일 카드
+            let cards = items.length === 0 
+                ? `<p class="text-center text-secondary py-3 small" style="background:#1e222d; border-radius:12px;">등록된 데이터가 없습니다.</p>` 
+                : items.map((item) => {
+                    let dragHandle = (isStatusEditMode && canEditStatus) 
+                        ? `<i class="bi bi-grip-vertical drag-handle fs-5 me-2 text-secondary"></i>` : '';
+                    const btnHTML = `
+                        <div class="d-flex gap-1 align-items-center">
+                            ${canEditStatus ? `<button class="btn btn-sm btn-outline-primary px-2 py-0" onclick="openSiteEditModal('${item.id}')"><i class="bi bi-pencil-square"></i> 수정</button>` : ''}
+                            ${(canEditStatus && isStatusEditMode) ? `<button class="btn btn-sm btn-danger px-2 py-0" onclick="deleteSite('${item.id}')">삭제</button>` : ''}
+                        </div>`;
+                    let etcHTML = ''; 
+                    if(item.etc) { 
+                        if(sec.key === 'pre-design') etcHTML = `<div class="text-secondary small mt-2 text-truncate">${item.etc}</div>`; 
+                        else { const cid = `etc-${item.id}`; etcHTML = `<div class="text-secondary small mt-2 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#${cid}"><i class="bi bi-chat-square-text"></i> 메모 보기 <i class="bi bi-chevron-down"></i></div><div class="collapse" id="${cid}"><div class="mt-2 text-secondary small bg-dark p-2 rounded">${item.etc}</div></div>`; } 
+                    }
+                    let dateStr = "";
+                    if(sec.key === 'ongoing') dateStr = `${item.date1 || '-'} ~ ${item.date2 || '-'}`;
+                    else if(sec.key === 'scheduled') dateStr = `착공: ${item.date1 || '-'} | 준공: ${item.date2 || '-'}`;
+                    else if(sec.key === 'designing') dateStr = `디자인: ${item.date1 || '-'} | 착공: ${item.date2 || '-'}`;
+                    else dateStr = `마감: ${item.date1 || '-'}`;
+                    let gridHTML = "";
+                    if(sec.key === 'ongoing') gridHTML = `<div class="mobile-grid-3"><div><div class="mobile-grid-label">담당소장</div><div class="mobile-grid-val">${item.site_manager || '-'}</div></div><div><div class="mobile-grid-label">디자이너</div><div class="mobile-grid-val">${item.designer || '-'}</div></div><div><div class="mobile-grid-label">싸인담당</div><div class="mobile-grid-val">${item.designer_sign || '-'}</div></div></div>`;
+                    else if(sec.key === 'scheduled') gridHTML = `<div class="mobile-grid-3" style="grid-template-columns:1fr;"><div class="text-start ps-2"><span class="mobile-grid-label me-2">예상소장:</span><span class="mobile-grid-val">${item.site_manager || '-'}</span></div></div>`;
+                    else if(sec.key === 'designing') gridHTML = `<div class="mobile-grid-3" style="grid-template-columns:1fr;"><div class="text-start ps-2"><span class="mobile-grid-label me-2">디자이너:</span><span class="mobile-grid-val">${item.designer || '-'}</span></div></div>`;
+                    return `<div class="mobile-site-card" data-id="${item.id}"><div class="d-flex align-items-center">${dragHandle}<div class="flex-grow-1"><h6 class="mobile-card-title">${item.siteName}</h6><div class="mobile-card-subtitle"><span class="mobile-card-date">${dateStr}</span>${btnHTML}</div>${gridHTML}${etcHTML}</div></div></div>`;
+                }).join('');
             
-            return `<div class="mb-5"><div class="d-flex justify-content-between align-items-center mb-3"><h5 class="fw-bold m-0"><i class="bi ${sec.icon} me-2 text-primary"></i>${sec.title} <span class="badge rounded-pill bg-dark ms-2" style="font-size:0.7rem;">${items.length}건</span></h5><button class="btn btn-sm btn-outline-success px-3 fw-bold" onclick="openSiteAddModal('${sec.key}')">+ 추가</button></div><div class="d-none d-md-block t5-card p-0 overflow-hidden"><table class="status-table"><thead>${sec.h}</thead><tbody>${tableRows}</tbody></table></div><div class="d-md-none">${cards}</div></div>`;
+            return `<div class="mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold m-0"><i class="bi ${sec.icon} me-2 text-primary"></i>${sec.title} <span class="badge rounded-pill bg-dark ms-2" style="font-size:0.7rem;">${items.length}건</span></h5>
+                    <button class="btn btn-sm btn-outline-success px-3 fw-bold" onclick="openSiteAddModal('${sec.key}')">+ 추가</button>
+                </div>
+                <div class="d-none d-md-block t5-card p-0 overflow-hidden">
+                    <table class="status-table" id="status-table-${sec.key}"><thead>${sec.h}</thead><tbody id="status-tbody-${sec.key}">${tableRows}</tbody></table>
+                </div>
+                <div class="d-md-none" id="status-cards-${sec.key}">${cards}</div>
+            </div>`;
         }).join('');
+
+        // 편집 모드일 때 Sortable 초기화
+        if(isStatusEditMode && canEditStatus) {
+            sections.forEach(sec => {
+                const items = data.filter(d => d.status === sec.key);
+                if(items.length === 0) return;
+
+                // PC 테이블 Sortable
+                const tbody = document.getElementById(`status-tbody-${sec.key}`);
+                if(tbody && !statusSortables[`table-${sec.key}`]) {
+                    statusSortables[`table-${sec.key}`] = Sortable.create(tbody, {
+                        handle: '.drag-handle',
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        onEnd: async function() { await saveStatusOrder(sec.key); }
+                    });
+                }
+
+                // 모바일 카드 Sortable
+                const cards = document.getElementById(`status-cards-${sec.key}`);
+                if(cards && !statusSortables[`cards-${sec.key}`]) {
+                    statusSortables[`cards-${sec.key}`] = Sortable.create(cards, {
+                        handle: '.drag-handle',
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        onEnd: async function() { await saveStatusOrder(sec.key); }
+                    });
+                }
+            });
+        } else {
+            // 편집 모드 해제 시 Sortable 제거
+            Object.keys(statusSortables).forEach(k => { statusSortables[k].destroy(); });
+            statusSortables = {};
+        }
     }
-    
-    // 💡 V31 FIX: 상황판 위아래 자리바꿈 로직 (order 필드 null 방어 + 재할당) 💡
-    async function changeStatusOrder(statusKey, currentIdx, direction) {
-        let items = globalStatusData.filter(d => d.status === statusKey);
-        let targetIdx = currentIdx + direction;
-        if (targetIdx < 0 || targetIdx >= items.length) return;
 
-        let currentItem = items[currentIdx];
-        let targetItem = items[targetIdx];
-
-        // order 값이 없거나 중복될 경우를 대비해 항상 새로운 타임스탬프 기반 값 할당
-        const now = Date.now();
+    // 💡 V32: Sortable 순서 Firebase 저장 💡
+    async function saveStatusOrder(secKey) {
         const batch = db.batch();
-        batch.update(db.collection("site_status").doc(currentItem.id), { order: now + (direction > 0 ? 1 : -1) });
-        batch.update(db.collection("site_status").doc(targetItem.id), { order: now });
+        // PC 테이블 기준으로 저장 (모바일 카드와 동기화)
+        const rows = document.querySelectorAll(`#status-tbody-${secKey} tr[data-id]`);
+        if(rows.length > 0) {
+            rows.forEach((row, idx) => {
+                batch.update(db.collection("site_status").doc(row.getAttribute('data-id')), { order: idx });
+            });
+        } else {
+            // 모바일 카드 기준으로 저장
+            const cards = document.querySelectorAll(`#status-cards-${secKey} [data-id]`);
+            cards.forEach((card, idx) => {
+                batch.update(db.collection("site_status").doc(card.getAttribute('data-id')), { order: idx });
+            });
+        }
         await batch.commit();
     }
+
+        // 💡 V32: changeStatusOrder 제거 - 드래그앤드롭(saveStatusOrder)으로 대체됨 💡
     
     function openSiteAddModal(targetStatus = 'ongoing') { siteEditingId = null; document.getElementById('modalTitle').innerText = "신규 현장 등록"; document.getElementById('siteForm').querySelectorAll('input, textarea').forEach(i => i.value = ''); document.getElementById('f_status').value = targetStatus; toggleSiteFormFields(targetStatus); siteModal.show(); }
     async function openSiteEditModal(id) { siteEditingId = id; document.getElementById('modalTitle').innerText = "데이터 수정 및 단계 변경"; const d = (await db.collection("site_status").doc(id).get()).data(); document.getElementById('f_status').value = d.status; document.getElementById('f_siteName').value = d.siteName; document.getElementById('f_date1').value = d.date1 || ''; document.getElementById('f_date2').value = d.date2 || ''; document.getElementById('f_site_manager').value = d.site_manager || ''; document.getElementById('f_designer').value = d.designer || ''; document.getElementById('f_designer_sign').value = d.designer_sign || ''; document.getElementById('f_etc').value = d.etc || ''; toggleSiteFormFields(d.status); siteModal.show(); }

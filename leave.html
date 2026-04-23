@@ -25,6 +25,7 @@
         body { background-color: var(--bg-deep); color: #f8fafc; font-family: 'Pretendard', sans-serif; margin: 0; overflow: hidden; transition: background-color 0.3s, color 0.3s; }
         
         .app-wrapper { display: flex; height: 100vh; height: 100dvh; width: 100vw; }
+        /* 💡 V32: 사이드바 너비 축소 💡 */
         .sidebar { width: 240px; height: 100dvh; background-color: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; z-index: 1050; flex-shrink: 0; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .main-container { flex: 1; overflow-y: auto; background-color: var(--bg-deep); padding: 30px; transition: background-color 0.3s; }
         .content-width { max-width: 1000px; margin: 0 auto; width: 100%; padding-bottom: 80px; }
@@ -32,6 +33,7 @@
         .t5-card { background: var(--card-bg); border-radius: 16px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; }
         .input-dark { background: #1e222d !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; font-size: 0.95rem !important; }
         
+        /* 💡 V32: nav-link 간격 축소 💡 */
         .nav-link { color: #94a3b8; padding: 9px 16px; margin: 2px 10px; border-radius: 10px; transition: 0.3s; cursor: pointer; display: flex; align-items: center; text-decoration: none; font-size: 0.92rem; }
         .nav-link i { font-size: 1.05rem; margin-right: 10px; }
         .nav-link:hover, .nav-link.active { background-color: rgba(92, 124, 250, 0.2); color: var(--primary-accent); font-weight: bold; }
@@ -146,7 +148,7 @@
                     <div id="userRoleDisplay" class="small text-secondary" style="font-size:0.7rem;">로딩중...</div>
                 </div>
             </div>
-            <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="auth.signOut(); location.reload();">로그아웃</button>
+            <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="handleLogoutLeave()">로그아웃</button>
         </div>
     </nav>
 
@@ -217,6 +219,9 @@
     </main>
     <button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('active')"><i class="bi bi-list"></i></button>
 </div>
+
+<!-- 💡 V31: Bootstrap JS 추가 (아코디언 collapse 작동) 💡 -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <div class="modal-backdrop-custom" id="leaveApplyModal">
     <div class="modal-box">
@@ -320,6 +325,14 @@
         } catch(err) { alert("이메일 발송 실패: " + err.message); }
     }
 
+    // 💡 V31: 로그아웃 후 index.html 복귀 💡
+    async function handleLogoutLeave() {
+        if(confirm("로그아웃 하시겠습니까?")) {
+            await auth.signOut();
+            location.href = 'index.html';
+        }
+    }
+
     // 💡 연차 데이터 로드 및 관리자 패널 셋팅 💡
     function loadLeaveData(teamData) {
         teamMembersInfo = teamData.membersInfo || {};
@@ -372,7 +385,7 @@
         });
     }
 
-    // 💡 연차 전용 달력 렌더링 💡
+    // 💡 V31: 연차 달력 렌더링 (중복 집계 버그 수정) 💡
     function renderLeaveCalendar() {
         let year = parseInt(document.getElementById('calYear').value);
         let month = parseInt(document.getElementById('calMonth').value) - 1;
@@ -385,14 +398,15 @@
         
         for(let i=0; i<firstDay; i++) html += `<div></div>`;
         
-        let monthlyListData = [];
+        // 💡 V31 FIX: 날짜 루프 밖에서 한 번에 필터링 (중복 push 제거) 💡
+        let monthPrefix = `${year}-${String(month+1).padStart(2,'0')}`;
+        let monthlyListData = globalLeaveRecords.filter(r => r.date && r.date.startsWith(monthPrefix));
 
         for(let i=1; i<=daysInMonth; i++) {
             let dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
             let matchRecs = globalLeaveRecords.filter(r => r.date === dateStr);
             
             let barHtml = `<div class="cal-bar-container">` + matchRecs.map(r => {
-                monthlyListData.push(r); 
                 let colorClass = r.approved ? 'bar-approved' : 'bar-pending';
                 let typeClass = r.amount === 1 ? 'bar-full' : (r.type === 'am' ? 'bar-am' : 'bar-pm');
                 return `<div class="cal-bar ${colorClass} ${typeClass}"></div>`;

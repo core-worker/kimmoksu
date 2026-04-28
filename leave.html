@@ -11,6 +11,11 @@
     <meta property="og:locale" content="ko_KR">
 
     <title>김목수이야기 - 연차 관리</title>
+    <!-- ============================================
+         📋 김목수이야기 - 연차 관리: V1.4.0
+         📅 마지막 업데이트: 회계연도 기준 자동 계산 시스템 도입
+         📝 변경: 입사일만 입력 → 기본/가산 연차 자동 산출
+         ============================================ -->
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -25,17 +30,15 @@
         body { background-color: var(--bg-deep); color: #f8fafc; font-family: 'Pretendard', sans-serif; margin: 0; overflow: hidden; transition: background-color 0.3s, color 0.3s; }
         
         .app-wrapper { display: flex; height: 100vh; height: 100dvh; width: 100vw; }
-        /* 💡 V32: 사이드바 너비 축소 💡 */
-        .sidebar { width: 240px; height: 100dvh; background-color: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; z-index: 1050; flex-shrink: 0; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .sidebar { width: 260px; height: 100dvh; background-color: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; z-index: 1050; flex-shrink: 0; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .main-container { flex: 1; overflow-y: auto; background-color: var(--bg-deep); padding: 30px; transition: background-color 0.3s; }
         .content-width { max-width: 1000px; margin: 0 auto; width: 100%; padding-bottom: 80px; }
         
         .t5-card { background: var(--card-bg); border-radius: 16px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; }
         .input-dark { background: #1e222d !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; font-size: 0.95rem !important; }
         
-        /* 💡 V32: nav-link 간격 축소 💡 */
-        .nav-link { color: #94a3b8; padding: 9px 16px; margin: 2px 10px; border-radius: 10px; transition: 0.3s; cursor: pointer; display: flex; align-items: center; text-decoration: none; font-size: 0.92rem; }
-        .nav-link i { font-size: 1.05rem; margin-right: 10px; }
+        .nav-link { color: #94a3b8; padding: 14px 20px; margin: 4px 15px; border-radius: 12px; transition: 0.3s; cursor: pointer; display: flex; align-items: center; text-decoration: none; }
+        .nav-link i { font-size: 1.2rem; margin-right: 12px; }
         .nav-link:hover, .nav-link.active { background-color: rgba(92, 124, 250, 0.2); color: var(--primary-accent); font-weight: bold; }
 
         /* 연차 달력 스타일 */
@@ -118,14 +121,14 @@
 
 <div class="app-wrapper">
     <nav class="sidebar" id="sidebar">
-        <div class="px-4 py-3 text-center border-bottom border-secondary border-opacity-10">
-            <img src="kimmoksu_main_logo.png" alt="로고" style="max-width: 120px; cursor: pointer;" onclick="location.href='index.html'">
+        <div class="p-4 text-center border-bottom border-secondary border-opacity-10">
+            <img src="kimmoksu_main_logo.png" alt="로고" style="max-width: 140px; cursor: pointer;" onclick="location.href='index.html'">
         </div>
-        <div class="flex-grow-1 mt-1">
+        <div class="flex-grow-1 mt-3">
             <div class="nav-link" onclick="location.href='index.html#home'"><i class="bi bi-house-door"></i> 홈 메인</div>
             <div class="nav-link text-warning" onclick="location.href='index.html#team'"><i class="bi bi-people-fill"></i> 팀원 및 조직 관리</div>
             <hr class="border-secondary border-opacity-25 mx-3">
-            <div class="nav-link" onclick="location.href='calendar.html'" style="justify-content:space-between;"><span><i class="bi bi-calendar-check"></i> 마스터 스케줄러</span><i class="bi bi-box-arrow-up-right" style="font-size:0.75rem; opacity:0.5;"></i></div>
+            <div class="nav-link" onclick="location.href='calendar.html'"><i class="bi bi-calendar-check"></i> 마스터 스케줄러</div>
             <div class="nav-link" onclick="location.href='index.html#status'"><i class="bi bi-gear-wide-connected"></i> 종합 상황판</div>
             <div class="nav-link" onclick="location.href='index.html#gantt'"><i class="bi bi-calendar3"></i> 공정표 & 추가공사</div>
             <div class="nav-link" onclick="location.href='index.html#worklog'"><i class="bi bi-journal-text"></i> 작업일보</div>
@@ -135,12 +138,12 @@
             <div class="nav-link" onclick="location.href='index.html#memo'"><i class="bi bi-stickies"></i> 메모장</div>
             <div class="nav-link" onclick="location.href='index.html#profile'"><i class="bi bi-person-gear"></i> 내 정보 수정</div>
         </div>
-        <div class="px-3 py-2 mt-auto">
+        <div class="px-4 py-3 mt-auto">
             <button class="btn btn-outline-secondary btn-sm w-100 d-flex justify-content-center align-items-center gap-2" onclick="toggleTheme()">
                 <i class="bi bi-brightness-high-fill"></i> <span>화이트/블랙 전환</span>
             </button>
         </div>
-        <div class="px-3 py-2 border-top border-secondary border-opacity-10">
+        <div class="p-4 border-top border-secondary border-opacity-10">
             <div class="d-flex align-items-center mb-2">
                 <i class="bi bi-person-circle fs-3 me-3" style="color:var(--primary-accent);"></i>
                 <div class="flex-grow-1 overflow-hidden">
@@ -148,7 +151,7 @@
                     <div id="userRoleDisplay" class="small text-secondary" style="font-size:0.7rem;">로딩중...</div>
                 </div>
             </div>
-            <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="handleLogoutLeave()">로그아웃</button>
+            <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="auth.signOut(); location.reload();">로그아웃</button>
         </div>
     </nav>
 
@@ -185,16 +188,21 @@
                     <i class="bi bi-chevron-down text-warning fs-5"></i>
                 </div>
                 <div class="collapse mt-4" id="leaveAdminCollapse">
+                    <p class="small text-secondary mb-3">
+                        <i class="bi bi-info-circle me-1"></i>
+                        <b>회계연도(매년 1월 1일) 기준</b>으로 자동 계산됩니다. 입사일만 정확히 입력해 주세요.<br>
+                        <span class="text-warning small">· 1년차 미만: 매월 개근 1일씩 (최대 11일) · 2년차: 전년 근무일 비례 · 3년차+: 15일 + 근속 가산 (최대 25일)</span>
+                    </p>
                     <div class="table-responsive">
                         <table class="table table-dark align-middle text-center mb-0">
                             <thead class="text-secondary">
-                                <tr><th>팀원 이름</th><th>입사일(초기화기준)</th><th>기본 부여(일)</th><th>추가 부여(일)</th></tr>
+                                <tr><th>팀원 이름</th><th>입사일</th><th>기본 (자동)</th><th>가산 (자동)</th><th>총 부여</th></tr>
                             </thead>
                             <tbody id="leaveAdminBody"></tbody>
                         </table>
                     </div>
                     <div class="text-end mt-4">
-                        <button class="btn btn-warning fw-bold px-4" onclick="saveLeaveSettings()">설정 최종 저장</button>
+                        <button class="btn btn-warning fw-bold px-4" onclick="saveLeaveSettings()">입사일 저장</button>
                     </div>
                 </div>
             </div>
@@ -208,7 +216,7 @@
                     <div class="table-responsive">
                         <table class="table table-dark align-middle text-center mb-0 fs-6">
                             <thead class="text-secondary">
-                                <tr><th>이름</th><th>입사/초기화일</th><th>총 부여 (기본+추가)</th><th>사용 일수</th><th>남은 연차</th></tr>
+                                <tr><th>이름</th><th>입사일</th><th>총 부여 (기본+가산)</th><th>사용 일수</th><th>남은 연차</th></tr>
                             </thead>
                             <tbody id="leaveStatusBody"></tbody>
                         </table>
@@ -219,9 +227,6 @@
     </main>
     <button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('active')"><i class="bi bi-list"></i></button>
 </div>
-
-<!-- 💡 V31: Bootstrap JS 추가 (아코디언 collapse 작동) 💡 -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <div class="modal-backdrop-custom" id="leaveApplyModal">
     <div class="modal-box">
@@ -325,67 +330,161 @@
         } catch(err) { alert("이메일 발송 실패: " + err.message); }
     }
 
-    // 💡 V31: 로그아웃 후 index.html 복귀 💡
-    async function handleLogoutLeave() {
-        if(confirm("로그아웃 하시겠습니까?")) {
-            await auth.signOut();
-            location.href = 'index.html';
+    // ============================================================
+    // 💡 V1.4.0: 연차 자동 계산 핵심 함수 (회계연도 = 매년 1월 1일 기준) 💡
+    // ============================================================
+    // [입력] joinDateStr: 'YYYY-MM-DD' 형식
+    // [출력] { base: 기본일수, bonus: 가산일수, total: 총합, yearsOfService: 근속년수, label: 설명 }
+    //
+    // 규칙:
+    //  · 1년차 미만(입사 후 1년 X): 1개월 개근 시 1일씩 (최대 11일)
+    //  · 2년차(입사 후 1년~2년): Math.ceil(15 * 전년근무일수 / 365)
+    //  · 3년차+ (입사 후 2년 이상): 기본 15일 + 3년차 1일 추가, 이후 매 2년마다 1일 추가, 최대 25일
+    function calculateAnnualLeave(joinDateStr) {
+        if(!joinDateStr) return { base: 0, bonus: 0, total: 0, yearsOfService: 0, label: '입사일 미입력' };
+
+        const joinDate = new Date(joinDateStr);
+        if(isNaN(joinDate.getTime())) return { base: 0, bonus: 0, total: 0, yearsOfService: 0, label: '날짜 오류' };
+
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        // 회계연도 시작일 (올해 1월 1일)
+        const fiscalStart = new Date(currentYear, 0, 1);
+        // 작년 1월 1일 (전년근무일수 계산용)
+        const lastFiscalStart = new Date(currentYear - 1, 0, 1);
+        const lastFiscalEnd = new Date(currentYear - 1, 11, 31);
+
+        // 입사 후 경과 일수 / 년수 (오늘 기준, 회계연도와 별개)
+        const msPerDay = 1000 * 60 * 60 * 24;
+        const daysSinceJoin = Math.floor((today - joinDate) / msPerDay);
+        const yearsOfService = Math.floor(daysSinceJoin / 365);
+
+        let base = 0, bonus = 0, label = '';
+
+        if(yearsOfService < 1) {
+            // 1년차 미만: 입사 후 만 개월 수만큼 1일씩, 최대 11일
+            // (입사일~오늘 사이에 완료된 달 수)
+            let monthsCompleted = (today.getFullYear() - joinDate.getFullYear()) * 12 + (today.getMonth() - joinDate.getMonth());
+            // 일자가 입사일보다 작으면 아직 한 달이 안 지난 것
+            if(today.getDate() < joinDate.getDate()) monthsCompleted -= 1;
+            if(monthsCompleted < 0) monthsCompleted = 0;
+            base = Math.min(monthsCompleted, 11);
+            bonus = 0;
+            label = `1년차 미만 (${monthsCompleted}개월 개근)`;
+        } else if(yearsOfService < 2) {
+            // 2년차: 전년도 근무일수 비례 (Math.ceil(15 * 근무일/365))
+            // 전년도 근무 시작 = max(입사일, 작년 1월 1일)
+            const lastWorkStart = joinDate > lastFiscalStart ? joinDate : lastFiscalStart;
+            const lastWorkDays = Math.floor((lastFiscalEnd - lastWorkStart) / msPerDay) + 1;
+            const safeDays = Math.max(0, Math.min(lastWorkDays, 365));
+            base = Math.ceil(15 * safeDays / 365);
+            bonus = 0;
+            label = `2년차 (전년 근무 ${safeDays}일 비례)`;
+        } else {
+            // 3년차 이상: 기본 15일 + 가산 (3년차에 1일 추가, 이후 2년마다 1일씩)
+            base = 15;
+            // yearsOfService=2(만 2년 = 3년차 시작)일 때 +1
+            // yearsOfService=4(만 4년 = 5년차)일 때 +2 ...
+            // 공식: bonus = Math.floor((yearsOfService - 2) / 2) + 1
+            bonus = Math.floor((yearsOfService - 2) / 2) + 1;
+            // 법정 최대: 기본+가산 ≤ 25일
+            if(base + bonus > 25) bonus = 25 - base;
+            if(bonus < 0) bonus = 0;
+            label = `${yearsOfService + 1}년차 (근속 ${yearsOfService}년)`;
         }
+
+        return {
+            base, bonus, total: base + bonus,
+            yearsOfService, label
+        };
     }
 
-    // 💡 연차 데이터 로드 및 관리자 패널 셋팅 💡
+    // ============================================================
+    // 💡 V1.4.0: 연차 데이터 로드 + 관리자 패널 + 잔여 현황판 (자동 계산) 💡
+    // ============================================================
     function loadLeaveData(teamData) {
         teamMembersInfo = teamData.membersInfo || {};
-        
-        // 관리자 패널 활성화
+
+        // ----- 관리자 패널: 입사일만 받고 기본/가산은 자동 표시 -----
         if(myRole === "owner" || myRole === "admin") {
             document.getElementById('leaveAdminPanel').style.display = 'block';
             document.getElementById('leaveAdminBody').innerHTML = (teamData.members||[]).map(mEmail => {
                 let nick = globalEmailToNick[mEmail] || mEmail.split('@')[0];
-                let info = teamMembersInfo[mEmail] || { joinDate: '', base: 15, bonus: 0 };
-                return `<tr>
+                let info = teamMembersInfo[mEmail] || { joinDate: '' };
+                let calc = calculateAnnualLeave(info.joinDate || '');
+
+                return `<tr data-email="${mEmail}">
                     <td class="fw-bold">${nick}</td>
-                    <td><input type="date" class="form-control input-dark leave-join" data-email="${mEmail}" value="${info.joinDate||''}"></td>
-                    <td><input type="number" class="form-control input-dark text-center leave-base" data-email="${mEmail}" value="${info.base||15}" style="width:80px; margin:auto;"></td>
-                    <td><input type="number" class="form-control input-dark text-center leave-bonus" data-email="${mEmail}" value="${info.bonus||0}" style="width:80px; margin:auto;"></td>
+                    <td>
+                        <input type="date" class="form-control input-dark leave-join" data-email="${mEmail}"
+                               value="${info.joinDate||''}"
+                               onchange="recalcLeavePreview('${mEmail}')">
+                    </td>
+                    <td class="text-info fw-bold leave-calc-base">${calc.base}</td>
+                    <td class="text-warning fw-bold leave-calc-bonus">${calc.bonus}</td>
+                    <td class="text-success fw-bold leave-calc-total">${calc.total} 일</td>
                 </tr>`;
             }).join('');
         }
 
-        // 연차 사용 기록 로드 및 계산
+        // ----- 연차 사용 기록 로드 + 잔여 현황판 -----
         db.collection("leave_records").where("teamId","==",myTeamId).onSnapshot(ss => {
             let used = {}; globalLeaveRecords = [];
-            ss.docs.forEach(doc => { 
-                let d = doc.data(); d.id = doc.id; 
+            ss.docs.forEach(doc => {
+                let d = doc.data(); d.id = doc.id;
                 // 승인된 연차만 사용 일수에 합산
                 if(d.approved) { used[d.userEmail] = (used[d.userEmail] || 0) + parseFloat(d.amount); }
-                globalLeaveRecords.push(d); 
+                globalLeaveRecords.push(d);
             });
 
-            // 잔여 현황판 렌더링
+            // 잔여 현황판: 자동 계산된 값 사용
             document.getElementById('leaveStatusBody').innerHTML = (teamData.members||[]).map(mEmail => {
                 let nick = globalEmailToNick[mEmail] || mEmail.split('@')[0];
-                let info = teamMembersInfo[mEmail] || { joinDate: '-', base: 15, bonus: 0 };
-                let resetDate = info.joinDate !== '-' && info.joinDate ? info.joinDate.substring(5) : '-';
-                
-                let totalGrant = parseFloat(info.base||15) + parseFloat(info.bonus||0);
+                let info = teamMembersInfo[mEmail] || { joinDate: '' };
+                let calc = calculateAnnualLeave(info.joinDate || '');
+
                 let usedAmt = used[mEmail] || 0;
-                let remainAmt = totalGrant - usedAmt;
-                
+                let remainAmt = calc.total - usedAmt;
+                let displayDate = info.joinDate || '-';
+
+                // 입사일 미입력 시 안내 행
+                if(!info.joinDate) {
+                    return `<tr>
+                        <td class="fw-bold fs-6">${nick}</td>
+                        <td class="text-secondary">미입력</td>
+                        <td colspan="3" class="text-secondary small">관리자 패널에서 입사일을 등록해주세요</td>
+                    </tr>`;
+                }
+
                 return `<tr>
                     <td class="fw-bold fs-6">${nick}</td>
-                    <td class="text-secondary">${resetDate}</td>
-                    <td class="text-info">${totalGrant} <span class="small text-secondary">(${info.base||15}+${info.bonus||0})</span></td>
+                    <td class="text-secondary">${displayDate}<br><span class="small">${calc.label}</span></td>
+                    <td class="text-info">${calc.total} <span class="small text-secondary">(기본 ${calc.base} + 가산 ${calc.bonus})</span></td>
                     <td class="text-danger fw-bold">${usedAmt} 일</td>
-                    <td class="text-success fw-bold fs-5">${remainAmt} 일</td>
+                    <td class="${remainAmt < 0 ? 'text-danger' : 'text-success'} fw-bold fs-5">${remainAmt} 일</td>
                 </tr>`;
             }).join('');
-            
+
             renderLeaveCalendar();
         });
     }
 
-    // 💡 V31: 연차 달력 렌더링 (중복 집계 버그 수정) 💡
+    // 💡 V1.4.0: 관리자 패널에서 입사일 변경 시 즉시 미리보기 갱신 💡
+    function recalcLeavePreview(mEmail) {
+        const row = document.querySelector(`#leaveAdminBody tr[data-email="${mEmail}"]`);
+        if(!row) return;
+        const dateInput = row.querySelector('.leave-join');
+        const newDate = dateInput ? dateInput.value : '';
+        const calc = calculateAnnualLeave(newDate);
+        const baseCell = row.querySelector('.leave-calc-base');
+        const bonusCell = row.querySelector('.leave-calc-bonus');
+        const totalCell = row.querySelector('.leave-calc-total');
+        if(baseCell) baseCell.innerText = calc.base;
+        if(bonusCell) bonusCell.innerText = calc.bonus;
+        if(totalCell) totalCell.innerText = calc.total + ' 일';
+    }
+
+    // 💡 연차 전용 달력 렌더링 💡
     function renderLeaveCalendar() {
         let year = parseInt(document.getElementById('calYear').value);
         let month = parseInt(document.getElementById('calMonth').value) - 1;
@@ -398,15 +497,14 @@
         
         for(let i=0; i<firstDay; i++) html += `<div></div>`;
         
-        // 💡 V31 FIX: 날짜 루프 밖에서 한 번에 필터링 (중복 push 제거) 💡
-        let monthPrefix = `${year}-${String(month+1).padStart(2,'0')}`;
-        let monthlyListData = globalLeaveRecords.filter(r => r.date && r.date.startsWith(monthPrefix));
+        let monthlyListData = [];
 
         for(let i=1; i<=daysInMonth; i++) {
             let dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
             let matchRecs = globalLeaveRecords.filter(r => r.date === dateStr);
             
             let barHtml = `<div class="cal-bar-container">` + matchRecs.map(r => {
+                monthlyListData.push(r); 
                 let colorClass = r.approved ? 'bar-approved' : 'bar-pending';
                 let typeClass = r.amount === 1 ? 'bar-full' : (r.type === 'am' ? 'bar-am' : 'bar-pm');
                 return `<div class="cal-bar ${colorClass} ${typeClass}"></div>`;
@@ -532,14 +630,20 @@
         alert("휴가 신청이 완료되었습니다. 관리자 승인을 기다려주세요.");
     }
     
+    // 💡 V1.4.0: 저장은 입사일만 (기본/가산은 매 로드 시 자동 계산) 💡
     async function saveLeaveSettings() {
-        let newInfo = {};
-        document.querySelectorAll('.leave-join').forEach(el => { let email = el.getAttribute('data-email'); if(!newInfo[email]) newInfo[email]={}; newInfo[email].joinDate = el.value; });
-        document.querySelectorAll('.leave-base').forEach(el => { let email = el.getAttribute('data-email'); if(!newInfo[email]) newInfo[email]={}; newInfo[email].base = parseFloat(el.value||15); });
-        document.querySelectorAll('.leave-bonus').forEach(el => { let email = el.getAttribute('data-email'); if(!newInfo[email]) newInfo[email]={}; newInfo[email].bonus = parseFloat(el.value||0); });
-        
-        await db.collection("teams").doc(myTeamId).update({ membersInfo: newInfo }); 
-        alert("팀원 연차 셋팅값이 저장되었습니다.");
+        // 기존 membersInfo를 보존하면서 joinDate만 갱신 (다른 데이터 안전)
+        const tDoc = await db.collection("teams").doc(myTeamId).get();
+        let existingInfo = (tDoc.data() && tDoc.data().membersInfo) || {};
+
+        document.querySelectorAll('.leave-join').forEach(el => {
+            let email = el.getAttribute('data-email');
+            if(!existingInfo[email]) existingInfo[email] = {};
+            existingInfo[email].joinDate = el.value || '';
+        });
+
+        await db.collection("teams").doc(myTeamId).update({ membersInfo: existingInfo });
+        alert("입사일이 저장되었습니다.\n잠시 후 자동 계산된 연차가 반영됩니다.");
     }
 </script>
 </body>

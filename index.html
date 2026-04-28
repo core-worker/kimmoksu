@@ -17,15 +17,13 @@
 
     <title>김목수이야기 - 메인 지휘소</title>
     <!-- ============================================
-         📋 김목수이야기 통합 ERP - 버전: V1.4.0
-         📅 마지막 업데이트: UI/UX 대규모 개선 + 연차 시스템 전면 개편
+         📋 김목수이야기 통합 ERP - 버전: V1.3.0
+         📅 마지막 업데이트: 공정표 커스텀 툴팁 & 메모장 고도화 적용
          🏗️ 베이스라인 V1.0 = 기존 V30
          📝 변경 이력:
             V1.2 - 공정표 메모 기능 (기능 추가)
             V1.2.1 - 메모 모달 버그 + 모달화
-            V1.3.0 - 공정표 커스텀 툴팁 + 메모장 수정/색상
-            V1.4.0 - 사이드바 초기화 / 작업일보 기본 4팀 / 통합 편집 모드 /
-                     공정표 캡처 품질 개선 / 오늘 날짜 강조 / 연차 회계연도 자동계산
+            V1.3.0 - 공정표 커스텀 툴팁 + 메모장 수정/색상 (기능 추가)
          ============================================ -->
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -974,12 +972,12 @@
     // 💡 V30: 작업일보 아코디언 상태 보존용 메모리 객체 💡
     let worklogCollapsedStates = {};
 
-    // 💡 V1.4.0: 작업일보 기본 4팀 (목수/도장/전기/필름 순서로 통일) 💡
+    // 💡 V31 FIX: 작업일보 초기 데이터 (teamData 전역 선언) - 목수/도장/필름/전기 4대 공정 기본 세팅 💡
     let teamData = [
         { teamName: "목수", workers: [] },
         { teamName: "도장", workers: [] },
-        { teamName: "전기", workers: [] },
-        { teamName: "필름", workers: [] }
+        { teamName: "필름", workers: [] },
+        { teamName: "전기", workers: [] }
     ];
 
     document.addEventListener("DOMContentLoaded", function() { 
@@ -1004,92 +1002,19 @@
         else { btn.innerHTML = '<i class="bi bi-brightness-high-fill"></i> <span>화이트 모드로 전환</span>'; btn.classList.replace('btn-outline-dark', 'btn-outline-secondary'); }
     }
 
-    // 💡 V1.4.0: 페이지 전환 시 편집 상태 + 입력창 전부 백지화 💡
     function showPage(pageId, el, pushState = true) {
-        // STEP A: 페이지 전환 전에 모든 편집 모드/상태/입력창 초기화
-        resetAllEditingStates();
-
         document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
         document.getElementById('page-' + pageId).classList.add('active');
         if(el) { document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active')); el.classList.add('active'); }
         document.getElementById('sidebar').classList.remove('active');
         document.getElementById('sidebarOverlay').classList.remove('active');
-
+        
         if(pushState) history.pushState({page: pageId}, "", "#" + pageId);
 
-        // STEP B: 페이지별 진입 처리
         if(pageId === 'team') checkTeamUI();
         if(pageId === 'profile') { document.getElementById('editNickname').value = userNickname; document.getElementById('editEmail').value = myEmail; }
+        // 💡 V31 FIX: 존재하지 않는 'checklist' 페이지 참조 제거 (실제 ID는 'punch') 💡
         if(pageId === 'punch') { loadPunchSummaryCards(); }
-        // 💡 V1.4.0: 작업일보 진입 시 기본 4팀 자동 세팅 + 새 화면 💡
-        if(pageId === 'worklog') { initWorklogPage(); }
-        // 💡 V1.4.0: 공정표 진입 시 대시보드 숨김 (백지 상태) 💡
-        if(pageId === 'gantt') { document.getElementById('ganttDashboard').style.display = 'none'; }
-    }
-
-    // 💡 V1.4.0: 페이지 전환 시 편집용 전역 변수 + 입력창 일괄 초기화 💡
-    function resetAllEditingStates() {
-        // 작업일보
-        editingId = null;
-        // 공정표
-        currentGanttId = null;
-        ganttDates = []; ganttState = {}; ganttMemos = {};
-        // 상황판
-        siteEditingId = null;
-        if(isStatusEditMode) {
-            isStatusEditMode = false;
-            const btnEdit = document.getElementById('btnEditStatus');
-            if(btnEdit) btnEdit.classList.remove('active');
-        }
-        // T5
-        t5EditingId = null; calculatedData = null;
-        // 펀치
-        currentSite = "";
-        // 메모
-        editingMemoId = null;
-
-        // 입력창들 비우기 (있을 때만)
-        const safeClear = (id) => { const el = document.getElementById(id); if(el) el.value = ''; };
-        safeClear('siteName'); safeClear('searchSiteInput');
-        safeClear('ganttSiteName'); safeClear('newGanttName'); safeClear('newGanttDate');
-        safeClear('t5-site-title');
-
-        // T5 결과/저장버튼 숨김
-        const tRes = document.getElementById('t5-temp-result');
-        if(tRes) tRes.style.display = 'none';
-        const tSave = document.getElementById('t5-save-btn');
-        if(tSave) tSave.style.display = 'none';
-
-        // 펀치 상세 화면 닫기
-        const vDetail = document.getElementById('view-detail');
-        const vList = document.getElementById('view-list');
-        if(vDetail) vDetail.style.display = 'none';
-        if(vList) vList.style.display = 'block';
-
-        // 상황판 데이터 다시 그려서 편집 모드 UI 해제
-        if(typeof globalStatusData !== 'undefined' && globalStatusData.length > 0) {
-            renderAllSections(globalStatusData);
-        }
-        // 게시판도 편집 모드 해제 반영
-        if(typeof loadBoardMemos === 'function' && myTeamId) loadBoardMemos();
-    }
-
-    // 💡 V1.4.0: 작업일보 페이지 진입/리셋 시 기본 4팀(목수/도장/전기/필름) 세팅 💡
-    function initWorklogPage() {
-        // 편집 중이 아닐 때만 백지화 (수정 모드는 보존)
-        if(!editingId) {
-            teamData = [
-                { teamName: "목수", workers: [] },
-                { teamName: "도장", workers: [] },
-                { teamName: "전기", workers: [] },
-                { teamName: "필름", workers: [] }
-            ];
-            const sName = document.getElementById('siteName');
-            if(sName) sName.value = '';
-            const lMonth = document.getElementById('logMonth');
-            if(lMonth && !lMonth.value) lMonth.value = new Date().toISOString().substring(0, 7);
-            renderAllTeams();
-        }
     }
     
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('sidebarOverlay').classList.toggle('active'); }
@@ -1213,11 +1138,8 @@
 
     function loadBoardMemos() {
         let isSuper = (myRole === 'owner' || myRole === 'admin');
-        // 권한 보유 여부 (기본 베이스)
-        let hasNoticePerm = isSuper || globalNoticeAdmins.includes(myEmail);
-        // 💡 V1.4.0: 통합 편집 모드일 때만 삭제 아이콘 + 드래그 핸들 노출 💡
-        let canDeleteNotice = hasNoticePerm && isStatusEditMode;
-        let canEditBoard = hasNoticePerm && isStatusEditMode;
+        let canDeleteNotice = isSuper || globalNoticeAdmins.includes(myEmail);
+        let canEditBoard = isSuper || globalNoticeAdmins.includes(myEmail);
 
         db.collection("notices").where("teamId", "==", myTeamId).orderBy("createdAt", "desc").onSnapshot(ss => {
             // 💡 V32 FIX: createdAt 기준 로드 후 order 필드 있으면 재정렬 (기존 데이터 보호) 💡
@@ -1307,13 +1229,10 @@
     let globalStatusData = [];
     let isStatusEditMode = false;
 
-    // 💡 V1.4.0: 통합 편집 모드 - 상황판 + 공지/전달사항 한꺼번에 ON/OFF 💡
     function toggleStatusEditMode() {
         isStatusEditMode = !isStatusEditMode;
         document.getElementById('btnEditStatus').classList.toggle('active', isStatusEditMode);
         renderAllSections(globalStatusData);
-        // 게시판(공지/전달사항)도 함께 다시 그려 삭제 아이콘/드래그 핸들 표시 갱신
-        if(typeof loadBoardMemos === 'function' && myTeamId) loadBoardMemos();
     }
 
     function loadAllStatusData() {
@@ -1721,75 +1640,15 @@
         }
     }
 
-    // 💡 V1.4.0: 공정표 캡처 품질 개선 - 좌측 칼럼 90px + sticky 해제 + input→텍스트 💡
     function captureGantt() {
-        const area = document.getElementById('captureArea');
-        const wrap = document.getElementById('ganttScrollWrapper');
-        let sn = document.getElementById('ganttSiteName').value.trim() || '현장';
-
-        // 캡처 직전 상태 저장
-        const orig = { overflowX: wrap.style.overflowX, areaW: area.style.width };
-        wrap.style.overflowX = 'visible';
-        area.style.width = 'max-content';
-
-        // 1) 공종 칼럼(좌측) 임시로 sticky 해제 + 90px로 확장
-        const taskCols = area.querySelectorAll('.gantt-task-col');
-        const colSnapshots = [];
-        taskCols.forEach(td => {
-            colSnapshots.push({ el: td, position: td.style.position, left: td.style.left, minW: td.style.minWidth, maxW: td.style.maxWidth, w: td.style.width });
-            td.style.position = 'static';
-            td.style.left = 'auto';
-            td.style.minWidth = '90px';
-            td.style.maxWidth = '90px';
-            td.style.width = '90px';
-        });
-
-        // 2) input.task-editable → 일반 텍스트로 잠시 교체 (캡처 시 깔끔하게)
-        const inputs = area.querySelectorAll('input.task-editable');
-        const inputSnapshots = [];
-        inputs.forEach(inp => {
-            const span = document.createElement('span');
-            span.className = 'task-editable-snapshot';
-            span.style.cssText = 'color:#0dcaf0; font-weight:bold; font-size:0.75rem; display:inline-block; padding:2px 4px;';
-            span.textContent = inp.value;
-            inp.parentNode.insertBefore(span, inp);
-            inp.style.display = 'none';
-            inputSnapshots.push({ input: inp, span: span });
-        });
-
+        const area = document.getElementById('captureArea'); const wrap = document.getElementById('ganttScrollWrapper'); let sn = document.getElementById('ganttSiteName').value.trim() || '현장';
+        const orig = wrap.style.overflowX; wrap.style.overflowX = 'visible'; area.style.width = 'max-content';
         setTimeout(() => {
-            html2canvas(area, {
-                backgroundColor: document.body.classList.contains('light-mode') ? '#ffffff' : '#1e222d',
-                scale: 2
-            }).then(canvas => {
-                // 원복
-                wrap.style.overflowX = orig.overflowX;
-                area.style.width = orig.areaW;
-                colSnapshots.forEach(s => {
-                    s.el.style.position = s.position; s.el.style.left = s.left;
-                    s.el.style.minWidth = s.minW; s.el.style.maxWidth = s.maxW; s.el.style.width = s.w;
-                });
-                inputSnapshots.forEach(s => {
-                    s.span.remove();
-                    s.input.style.display = '';
-                });
-                let link = document.createElement('a');
-                link.download = `${sn}_예상_공정표.png`;
-                link.href = canvas.toDataURL();
-                link.click();
-            }).catch(err => {
-                console.error('캡처 실패:', err);
-                alert('캡처 중 오류가 발생했습니다.');
-                // 실패 시에도 원복
-                wrap.style.overflowX = orig.overflowX;
-                area.style.width = orig.areaW;
-                colSnapshots.forEach(s => {
-                    s.el.style.position = s.position; s.el.style.left = s.left;
-                    s.el.style.minWidth = s.minW; s.el.style.maxWidth = s.maxW; s.el.style.width = s.w;
-                });
-                inputSnapshots.forEach(s => { s.span.remove(); s.input.style.display = ''; });
+            html2canvas(area, { backgroundColor: document.body.classList.contains('light-mode') ? '#ffffff' : '#1e222d', scale: 2 }).then(canvas => {
+                wrap.style.overflowX = orig; area.style.width = 'auto';
+                let link = document.createElement('a'); link.download = `${sn}_예상_공정표.png`; link.href = canvas.toDataURL(); link.click();
             });
-        }, 200);
+        }, 200); 
     }
     
     function addExtraCostRow(data = {}) {

@@ -17,13 +17,14 @@
 
     <title>김목수이야기 - 메인 지휘소</title>
     <!-- ============================================
-         📋 김목수이야기 통합 ERP - 버전: V1.3.0
-         📅 마지막 업데이트: 공정표 커스텀 툴팁 & 메모장 고도화 적용
+         📋 김목수이야기 통합 ERP - 버전: V1.4.0 (통합 안정화 및 연차 개편)
+         📅 마지막 업데이트: 통합 안정화 및 연차 개편
          🏗️ 베이스라인 V1.0 = 기존 V30
          📝 변경 이력:
             V1.2 - 공정표 메모 기능 (기능 추가)
             V1.2.1 - 메모 모달 버그 + 모달화
             V1.3.0 - 공정표 커스텀 툴팁 + 메모장 수정/색상 (기능 추가)
+            V1.4.0 - 통합 안정화 및 연차 개편 (사이드바 초기화/작업일보 기본 공종/편집 모드 통합/캡처 안정화)
          ============================================ -->
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -183,13 +184,18 @@
         body.light-mode .drag-handle { color: #adb5bd !important; }
         body.light-mode .gantt-table tbody tr:hover td { background: rgba(0,0,0,0.05); }
         
-        .gantt-task-col { position: sticky; left: 0; background: var(--card-bg) !important; z-index: 10; min-width: 65px; max-width: 65px; width: 65px; text-align: left !important; border-right: 2px solid var(--primary-accent) !important; padding: 0 5px !important; }
+        .gantt-task-col { position: sticky; left: 0; background: var(--card-bg) !important; z-index: 10; min-width: 90px; max-width: 90px; width: 90px; text-align: left !important; border-right: 2px solid var(--primary-accent) !important; padding: 0 8px !important; }
         
         .gantt-month-row th { background: #181b24; color: #ced4da; font-weight: bold; border-bottom: 2px solid rgba(255,255,255,0.1); }
         .day-sat { background-color: rgba(92, 124, 250, 0.08) !important; color: #5c7cfa !important; }
         .day-sun { background-color: rgba(224, 49, 49, 0.08) !important; color: #e03131 !important; }
         .gantt-active { background-color: var(--primary-accent) !important; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2); }
         .task-editable { background: transparent; border: none; color: #0dcaf0; font-weight: bold; width: 100%; outline: none; font-size: 0.75rem; }
+
+        /* 💡 V1.4.0: 공정표 캡처 안정화 - 캡처 중 sticky 해제 + 텍스트 렌더링 💡 */
+        .gantt-capture-mode .gantt-task-col { position: static !important; left: auto !important; min-width: 90px !important; max-width: 90px !important; width: 90px !important; }
+        .capture-task-text { display: block; width: 100%; color: #0dcaf0; font-weight: bold; font-size: 0.75rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        body.light-mode .capture-task-text { color: #0d6efd; }
 
         /* 💡 V35: 공정표 메모 마커 (엑셀 스타일 우측 하단 노란 삼각형) 💡 */
         .gantt-cell.has-memo::before {
@@ -972,13 +978,34 @@
     // 💡 V30: 작업일보 아코디언 상태 보존용 메모리 객체 💡
     let worklogCollapsedStates = {};
 
-    // 💡 V31 FIX: 작업일보 초기 데이터 (teamData 전역 선언) - 목수/도장/필름/전기 4대 공정 기본 세팅 💡
-    let teamData = [
-        { teamName: "목수", workers: [] },
-        { teamName: "도장", workers: [] },
-        { teamName: "필름", workers: [] },
-        { teamName: "전기", workers: [] }
-    ];
+    // 💡 V1.4.0: 작업일보 기본 4대 공정 고정 세팅 (목수/도장/전기/필름) 💡
+    const DEFAULT_WORKLOG_TEAMS = ["목수", "도장", "전기", "필름"];
+
+    function createDefaultTeamData() {
+        return DEFAULT_WORKLOG_TEAMS.map(teamName => ({ teamName, workers: [] }));
+    }
+
+    function normalizeTeamData(source) {
+        const safeSource = Array.isArray(source) ? source : [];
+        const normalized = createDefaultTeamData();
+        const defaultNames = new Set(DEFAULT_WORKLOG_TEAMS);
+
+        safeSource.forEach(team => {
+            if(!team || !team.teamName) return;
+            const safeTeam = {
+                teamName: team.teamName,
+                workers: Array.isArray(team.workers) ? team.workers : []
+            };
+
+            const defaultIndex = normalized.findIndex(t => t.teamName === safeTeam.teamName);
+            if(defaultIndex >= 0) normalized[defaultIndex] = safeTeam;
+            else if(!defaultNames.has(safeTeam.teamName)) normalized.push(safeTeam);
+        });
+
+        return normalized;
+    }
+
+    let teamData = createDefaultTeamData();
 
     document.addEventListener("DOMContentLoaded", function() { 
         siteModal = new bootstrap.Modal(document.getElementById('siteModal')); 
@@ -988,6 +1015,9 @@
         let savedTheme = localStorage.getItem('kimmoksu_theme');
         if(savedTheme === 'light') { document.body.classList.add('light-mode'); updateThemeUI(true); } 
         else { updateThemeUI(false); }
+
+        // 💡 V1.4.0: 작업일보 첫 진입 전에도 기본 4대 공종이 비어 있지 않도록 선렌더링
+        resetWorklogForm();
     });
     
     function toggleTheme() {
@@ -1002,19 +1032,127 @@
         else { btn.innerHTML = '<i class="bi bi-brightness-high-fill"></i> <span>화이트 모드로 전환</span>'; btn.classList.replace('btn-outline-dark', 'btn-outline-secondary'); }
     }
 
-    function showPage(pageId, el, pushState = true) {
+    function showPage(pageId, el, pushState = true, options = {}) {
+        const preserveState = !!(options && options.preserveState);
+
+        if(!preserveState) resetVolatilePageState(pageId);
+
         document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
-        document.getElementById('page-' + pageId).classList.add('active');
-        if(el) { document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active')); el.classList.add('active'); }
+        const targetPage = document.getElementById('page-' + pageId);
+        if(targetPage) targetPage.classList.add('active');
+
+        if(el) {
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            el.classList.add('active');
+        }
+
         document.getElementById('sidebar').classList.remove('active');
         document.getElementById('sidebarOverlay').classList.remove('active');
         
         if(pushState) history.pushState({page: pageId}, "", "#" + pageId);
 
         if(pageId === 'team') checkTeamUI();
-        if(pageId === 'profile') { document.getElementById('editNickname').value = userNickname; document.getElementById('editEmail').value = myEmail; }
+        if(pageId === 'profile') {
+            document.getElementById('editNickname').value = userNickname;
+            document.getElementById('editEmail').value = myEmail;
+        }
+        if(pageId === 'worklog') {
+            if(!preserveState) resetWorklogForm();
+            renderAllTeams();
+        }
+        if(pageId === 'gantt' && !preserveState) resetGanttForm();
+        if(pageId === 't5' && !preserveState) resetT5Form();
         // 💡 V31 FIX: 존재하지 않는 'checklist' 페이지 참조 제거 (실제 ID는 'punch') 💡
         if(pageId === 'punch') { loadPunchSummaryCards(); }
+    }
+
+    function resetVolatilePageState(nextPageId) {
+        // 사이드바 이동/일반 페이지 전환 시 이전 편집 상태가 다음 화면에 묻어가지 않도록 전역 편집 키 초기화
+        try { if(typeof siteEditingId !== 'undefined') siteEditingId = null; } catch(e) {}
+        try { if(typeof editingId !== 'undefined') editingId = null; } catch(e) {}
+        try { if(typeof currentGanttId !== 'undefined') currentGanttId = null; } catch(e) {}
+        try { if(typeof t5EditingId !== 'undefined') t5EditingId = null; } catch(e) {}
+        try { if(typeof editingMemoId !== 'undefined') editingMemoId = null; } catch(e) {}
+        try { if(typeof currentGanttMemoKey !== 'undefined') currentGanttMemoKey = null; } catch(e) {}
+        try { if(typeof calculatedData !== 'undefined') calculatedData = null; } catch(e) {}
+
+        resetSiteForm();
+        resetGanttForm();
+        resetT5Form();
+
+        if(nextPageId !== 'punch') {
+            try {
+                if(typeof punchDetailListener !== 'undefined' && punchDetailListener) punchDetailListener();
+                if(typeof currentSite !== 'undefined') currentSite = "";
+                const viewList = document.getElementById('view-list');
+                const viewDetail = document.getElementById('view-detail');
+                if(viewList && viewDetail) {
+                    viewList.style.display = 'block';
+                    viewDetail.style.display = 'none';
+                }
+            } catch(e) {}
+        }
+    }
+
+    function resetSiteForm() {
+        const form = document.getElementById('siteForm');
+        if(form) form.querySelectorAll('input, textarea').forEach(i => i.value = '');
+        const status = document.getElementById('f_status');
+        if(status) status.value = 'ongoing';
+        try { if(typeof toggleSiteFormFields === 'function') toggleSiteFormFields('ongoing'); } catch(e) {}
+    }
+
+    function setWorklogDefaultMonth() {
+        const logMonth = document.getElementById('logMonth');
+        if(!logMonth) return;
+        const today = new Date();
+        logMonth.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function resetWorklogForm() {
+        if(typeof editingId !== 'undefined') editingId = null;
+        const siteInput = document.getElementById('siteName');
+        if(siteInput) siteInput.value = '';
+        setWorklogDefaultMonth();
+        teamData = createDefaultTeamData();
+        worklogCollapsedStates = {};
+        if(document.getElementById('team-container') && typeof renderAllTeams === 'function') renderAllTeams();
+    }
+
+    function resetGanttForm() {
+        if(typeof currentGanttId !== 'undefined') currentGanttId = null;
+        if(typeof currentGanttMemoKey !== 'undefined') currentGanttMemoKey = null;
+        const nameInput = document.getElementById('ganttSiteName');
+        if(nameInput) nameInput.value = '';
+        const dashboard = document.getElementById('ganttDashboard');
+        if(dashboard) dashboard.style.display = 'none';
+        const extraBody = document.getElementById('extraCostBody');
+        if(extraBody) extraBody.innerHTML = '';
+        try { if(typeof ganttState !== 'undefined') ganttState = {}; } catch(e) {}
+        try { if(typeof ganttMemos !== 'undefined') ganttMemos = {}; } catch(e) {}
+        try { if(typeof ganttDates !== 'undefined') ganttDates = []; } catch(e) {}
+    }
+
+    function resetT5Form() {
+        if(typeof t5EditingId !== 'undefined') t5EditingId = null;
+        if(typeof calculatedData !== 'undefined') calculatedData = null;
+        const title = document.getElementById('t5-site-title');
+        if(title) title.value = '';
+        const container = document.getElementById('t5-input-container');
+        if(container) {
+            container.innerHTML = `<div class="row g-2 mb-2 t5-row-item">
+                        <div class="col-6"><input type="text" class="form-control input-dark t5-section-name" placeholder="구간 (예: 거실)"></div>
+                        <div class="col-6"><input type="number" class="form-control input-dark t5-length-val" placeholder="길이 (mm)"></div>
+                    </div>`;
+        }
+        const result = document.getElementById('t5-temp-result');
+        if(result) result.style.display = 'none';
+        const saveBtn = document.getElementById('t5-save-btn');
+        if(saveBtn) saveBtn.style.display = 'none';
+        const resultList = document.getElementById('res-list-container');
+        if(resultList) resultList.innerHTML = '';
+        const total = document.getElementById('res-total-summary');
+        if(total) total.innerText = '';
     }
     
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('sidebarOverlay').classList.toggle('active'); }
@@ -1037,16 +1175,16 @@
 
     function applyRoleRestrictions() {
         let isSuper = (myRole === 'owner' || myRole === 'admin');
+        let canUseEditMode = canUseIntegratedEditMode();
         
         document.getElementById('btnNoticePerm').style.display = isSuper ? 'inline-block' : 'none';
         document.getElementById('btnStatusPerm').style.display = isSuper ? 'inline-block' : 'none';
-        
-        let canEditStatus = isSuper || globalStatusAdmins.includes(myEmail);
-        document.getElementById('btnEditStatus').style.display = canEditStatus ? 'inline-block' : 'none';
-        
+        document.getElementById('btnEditStatus').style.display = canUseEditMode ? 'inline-block' : 'none';
         document.getElementById('btnDeleteGantt').style.display = isSuper ? 'inline-block' : 'none';
         
+        if(!canUseEditMode && isStatusEditMode) isStatusEditMode = false;
         if(globalStatusData.length > 0) renderAllSections(globalStatusData);
+        renderBoardMemos();
         loadBoardMemos(); 
     }
 
@@ -1132,87 +1270,116 @@
         location.reload(); 
     }
 
-    // 💡 V32: 게시판 (공지/전달내용 드래그앤드롭 순서 편집 추가) 💡
+    // 💡 V1.4.0: 게시판 (공지/전달내용) - 상황판 편집 모드와 관리 UI 완전 동기화 💡
     let noticeSortable = null;
     let memoSortable = null;
+    let noticeUnsubscribe = null;
+    let boardMemoUnsubscribe = null;
+    let cachedNotices = [];
+    let cachedBoardMemos = [];
+
+    function canUseIntegratedEditMode() {
+        return myRole === 'owner' || myRole === 'admin' || globalStatusAdmins.includes(myEmail) || globalNoticeAdmins.includes(myEmail);
+    }
+
+    function canEditBoardItems() {
+        return myRole === 'owner' || myRole === 'admin' || globalNoticeAdmins.includes(myEmail) || globalStatusAdmins.includes(myEmail);
+    }
 
     function loadBoardMemos() {
-        let isSuper = (myRole === 'owner' || myRole === 'admin');
-        let canDeleteNotice = isSuper || globalNoticeAdmins.includes(myEmail);
-        let canEditBoard = isSuper || globalNoticeAdmins.includes(myEmail);
+        if(!myTeamId) return;
 
-        db.collection("notices").where("teamId", "==", myTeamId).orderBy("createdAt", "desc").onSnapshot(ss => {
-            // 💡 V32 FIX: createdAt 기준 로드 후 order 필드 있으면 재정렬 (기존 데이터 보호) 💡
-            let notices = ss.docs.map(doc => ({ id: doc.id, ...doc.data(), dateStr: new Date(doc.data().createdAt).toLocaleDateString().slice(5) }))
-                .sort((a,b) => (a.order !== undefined && b.order !== undefined) ? a.order - b.order : b.createdAt - a.createdAt);
-            document.getElementById('home-notice-list').innerHTML = notices.slice(0,5).map(n => `<div class="mb-1 text-truncate">• ${n.text}</div>`).join('') || '내용 없음';
-            
-            let dragHandle = canEditBoard ? `<i class="bi bi-grip-vertical drag-handle me-2"></i>` : '';
-            document.getElementById('manage-notice-list').innerHTML = notices.map(n =>
-                `<div class="board-item d-flex justify-content-between align-items-center" data-id="${n.id}">
-                    <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
-                        ${dragHandle}
-                        <span class="text-truncate">${n.text} <span class="small text-secondary ms-2">${n.dateStr}</span></span>
-                    </div>
-                    ${canDeleteNotice ? `<button class="btn btn-sm text-danger p-0 ms-2 flex-shrink-0" onclick="delOldNotice('${n.id}')"><i class="bi bi-trash"></i></button>` : ''}
-                </div>`
-            ).join('');
+        if(noticeUnsubscribe) noticeUnsubscribe();
+        if(boardMemoUnsubscribe) boardMemoUnsubscribe();
 
-            // Sortable 초기화 (편집 권한 있을 때만)
-            if(canEditBoard) {
-                if(noticeSortable) noticeSortable.destroy();
-                noticeSortable = Sortable.create(document.getElementById('manage-notice-list'), {
-                    handle: '.drag-handle',
-                    animation: 150,
-                    ghostClass: 'sortable-ghost',
-                    dragClass: 'sortable-drag',
-                    onEnd: async function(evt) {
-                        const items = document.querySelectorAll('#manage-notice-list .board-item');
-                        const batch = db.batch();
-                        items.forEach((el, idx) => {
-                            batch.update(db.collection("notices").doc(el.getAttribute('data-id')), { order: idx });
-                        });
-                        await batch.commit();
-                    }
-                });
-            }
+        noticeUnsubscribe = db.collection("notices").where("teamId", "==", myTeamId).orderBy("createdAt", "desc").onSnapshot(ss => {
+            cachedNotices = ss.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                dateStr: new Date(doc.data().createdAt || Date.now()).toLocaleDateString().slice(5)
+            })).sort((a,b) => (a.order !== undefined && b.order !== undefined) ? a.order - b.order : (b.createdAt || 0) - (a.createdAt || 0));
+            renderBoardMemos();
         });
 
-        db.collection("board_memos").where("teamId", "==", myTeamId).where("type", "==", "memo").orderBy("createdAt", "desc").onSnapshot(ss => {
-            // 💡 V32 FIX: createdAt 기준 로드 후 order 있으면 재정렬 💡
-            let memos = ss.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-                .sort((a,b) => (a.order !== undefined && b.order !== undefined) ? a.order - b.order : b.createdAt - a.createdAt);
-            document.getElementById('home-msg-list').innerHTML = memos.slice(0,5).map(n => `<div class="mb-1 text-truncate">• ${n.text}</div>`).join('') || '내용 없음';
-
-            let dragHandle = canEditBoard ? `<i class="bi bi-grip-vertical drag-handle me-2"></i>` : '';
-            document.getElementById('manage-memo-list').innerHTML = memos.map(n =>
-                `<div class="board-item d-flex justify-content-between align-items-center" style="border-color:var(--success-btn);" data-id="${n.id}">
-                    <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
-                        ${dragHandle}
-                        <span class="text-truncate">${n.text} <span class="small text-secondary ms-2">${n.dateStr}</span></span>
-                    </div>
-                    <button class="btn btn-sm text-danger p-0 ms-2 flex-shrink-0" onclick="delBoardItem('${n.id}')"><i class="bi bi-trash"></i></button>
-                </div>`
-            ).join('');
-
-            if(canEditBoard) {
-                if(memoSortable) memoSortable.destroy();
-                memoSortable = Sortable.create(document.getElementById('manage-memo-list'), {
-                    handle: '.drag-handle',
-                    animation: 150,
-                    ghostClass: 'sortable-ghost',
-                    dragClass: 'sortable-drag',
-                    onEnd: async function(evt) {
-                        const items = document.querySelectorAll('#manage-memo-list .board-item');
-                        const batch = db.batch();
-                        items.forEach((el, idx) => {
-                            batch.update(db.collection("board_memos").doc(el.getAttribute('data-id')), { order: idx });
-                        });
-                        await batch.commit();
-                    }
-                });
-            }
+        boardMemoUnsubscribe = db.collection("board_memos").where("teamId", "==", myTeamId).where("type", "==", "memo").orderBy("createdAt", "desc").onSnapshot(ss => {
+            cachedBoardMemos = ss.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a,b) => (a.order !== undefined && b.order !== undefined) ? a.order - b.order : (b.createdAt || 0) - (a.createdAt || 0));
+            renderBoardMemos();
         });
+    }
+
+    function renderBoardMemos() {
+        const homeNotice = document.getElementById('home-notice-list');
+        const manageNotice = document.getElementById('manage-notice-list');
+        const homeMsg = document.getElementById('home-msg-list');
+        const manageMemo = document.getElementById('manage-memo-list');
+        if(!homeNotice || !manageNotice || !homeMsg || !manageMemo) return;
+
+        const boardEditEnabled = isStatusEditMode && canEditBoardItems();
+        const dragHandle = boardEditEnabled ? `<i class="bi bi-grip-vertical drag-handle me-2"></i>` : '';
+
+        homeNotice.innerHTML = cachedNotices.slice(0,5).map(n => `<div class="mb-1 text-truncate">• ${n.text}</div>`).join('') || '내용 없음';
+        manageNotice.innerHTML = cachedNotices.map(n =>
+            `<div class="board-item d-flex justify-content-between align-items-center" data-id="${n.id}">
+                <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+                    ${dragHandle}
+                    <span class="text-truncate">${n.text} <span class="small text-secondary ms-2">${n.dateStr || ''}</span></span>
+                </div>
+                ${boardEditEnabled ? `<button class="btn btn-sm text-danger p-0 ms-2 flex-shrink-0" onclick="delOldNotice('${n.id}')"><i class="bi bi-trash"></i></button>` : ''}
+            </div>`
+        ).join('');
+
+        homeMsg.innerHTML = cachedBoardMemos.slice(0,5).map(n => `<div class="mb-1 text-truncate">• ${n.text}</div>`).join('') || '내용 없음';
+        manageMemo.innerHTML = cachedBoardMemos.map(n =>
+            `<div class="board-item d-flex justify-content-between align-items-center" style="border-color:var(--success-btn);" data-id="${n.id}">
+                <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+                    ${dragHandle}
+                    <span class="text-truncate">${n.text} <span class="small text-secondary ms-2">${n.dateStr || ''}</span></span>
+                </div>
+                ${boardEditEnabled ? `<button class="btn btn-sm text-danger p-0 ms-2 flex-shrink-0" onclick="delBoardItem('${n.id}')"><i class="bi bi-trash"></i></button>` : ''}
+            </div>`
+        ).join('');
+
+        initBoardSortables(boardEditEnabled);
+    }
+
+    function initBoardSortables(enable) {
+        if(noticeSortable) { try { noticeSortable.destroy(); } catch(e) {} noticeSortable = null; }
+        if(memoSortable) { try { memoSortable.destroy(); } catch(e) {} memoSortable = null; }
+        if(!enable) return;
+
+        const noticeList = document.getElementById('manage-notice-list');
+        const memoList = document.getElementById('manage-memo-list');
+
+        if(noticeList) {
+            noticeSortable = Sortable.create(noticeList, {
+                handle: '.drag-handle',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                onEnd: async function() {
+                    const items = document.querySelectorAll('#manage-notice-list .board-item');
+                    const batch = db.batch();
+                    items.forEach((el, idx) => batch.update(db.collection("notices").doc(el.getAttribute('data-id')), { order: idx }));
+                    await batch.commit();
+                }
+            });
+        }
+
+        if(memoList) {
+            memoSortable = Sortable.create(memoList, {
+                handle: '.drag-handle',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                onEnd: async function() {
+                    const items = document.querySelectorAll('#manage-memo-list .board-item');
+                    const batch = db.batch();
+                    items.forEach((el, idx) => batch.update(db.collection("board_memos").doc(el.getAttribute('data-id')), { order: idx }));
+                    await batch.commit();
+                }
+            });
+        }
     }
 
     async function addBoardItem(type) {
@@ -1230,9 +1397,15 @@
     let isStatusEditMode = false;
 
     function toggleStatusEditMode() {
+        if(!canUseIntegratedEditMode()) {
+            alert("편집 권한이 없습니다.");
+            return;
+        }
         isStatusEditMode = !isStatusEditMode;
-        document.getElementById('btnEditStatus').classList.toggle('active', isStatusEditMode);
+        const btn = document.getElementById('btnEditStatus');
+        if(btn) btn.classList.toggle('active', isStatusEditMode);
         renderAllSections(globalStatusData);
+        renderBoardMemos();
     }
 
     function loadAllStatusData() {
@@ -1641,14 +1814,72 @@
     }
 
     function captureGantt() {
-        const area = document.getElementById('captureArea'); const wrap = document.getElementById('ganttScrollWrapper'); let sn = document.getElementById('ganttSiteName').value.trim() || '현장';
-        const orig = wrap.style.overflowX; wrap.style.overflowX = 'visible'; area.style.width = 'max-content';
-        setTimeout(() => {
-            html2canvas(area, { backgroundColor: document.body.classList.contains('light-mode') ? '#ffffff' : '#1e222d', scale: 2 }).then(canvas => {
-                wrap.style.overflowX = orig; area.style.width = 'auto';
-                let link = document.createElement('a'); link.download = `${sn}_예상_공정표.png`; link.href = canvas.toDataURL(); link.click();
+        const area = document.getElementById('captureArea');
+        const wrap = document.getElementById('ganttScrollWrapper');
+        const siteName = (document.getElementById('ganttSiteName').value.trim() || '현장').replace(/[\\/:*?"<>|]/g, '_');
+        if(!area || !wrap) return;
+
+        const originalOverflowX = wrap.style.overflowX;
+        const originalAreaWidth = area.style.width;
+        const replacedInputs = [];
+
+        // 캡처 전 현재 공종명 input 값을 전역 배열에 반영
+        document.querySelectorAll('#ganttTable .task-editable').forEach((input, idx) => {
+            ganttTasks[idx] = input.value;
+        });
+
+        try {
+            area.classList.add('gantt-capture-mode');
+            wrap.style.overflowX = 'visible';
+            area.style.width = 'max-content';
+
+            // html2canvas가 sticky input을 캡처할 때 잘리는 문제 방지: 캡처 중에만 텍스트 span으로 교체
+            document.querySelectorAll('#ganttTable .task-editable').forEach(input => {
+                const span = document.createElement('span');
+                span.className = 'capture-task-text';
+                span.textContent = input.value || '';
+                input.parentNode.insertBefore(span, input);
+                input.style.display = 'none';
+                replacedInputs.push({ input, span });
             });
-        }, 200); 
+
+            setTimeout(() => {
+                html2canvas(area, {
+                    backgroundColor: document.body.classList.contains('light-mode') ? '#ffffff' : '#1e222d',
+                    scale: 2,
+                    scrollX: 0,
+                    scrollY: 0,
+                    windowWidth: area.scrollWidth,
+                    windowHeight: area.scrollHeight
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `${siteName}_예상_공정표.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                }).catch(err => {
+                    console.error('공정표 캡처 실패:', err);
+                    alert('공정표 캡처 중 오류가 발생했습니다. 다시 시도해주세요.');
+                }).finally(() => {
+                    replacedInputs.forEach(({ input, span }) => {
+                        input.style.display = '';
+                        if(span && span.parentNode) span.parentNode.removeChild(span);
+                    });
+                    area.classList.remove('gantt-capture-mode');
+                    wrap.style.overflowX = originalOverflowX;
+                    area.style.width = originalAreaWidth;
+                });
+            }, 200);
+        } catch(e) {
+            replacedInputs.forEach(({ input, span }) => {
+                input.style.display = '';
+                if(span && span.parentNode) span.parentNode.removeChild(span);
+            });
+            area.classList.remove('gantt-capture-mode');
+            wrap.style.overflowX = originalOverflowX;
+            area.style.width = originalAreaWidth;
+            console.error('공정표 캡처 준비 실패:', e);
+            alert('공정표 캡처 준비 중 오류가 발생했습니다.');
+        }
     }
     
     function addExtraCostRow(data = {}) {
@@ -1800,13 +2031,13 @@
     function addTeam() { const n = prompt("공정명"); if(n){ teamData.push({teamName:n, workers:[]}); renderAllTeams(); } }
     function addWorker(t) { teamData[t].workers.push({name:"", days:{}}); renderAllTeams(); }
     function removeWorker(t, w) { if(confirm("삭제하시겠습니까?")){ teamData[t].workers.splice(w,1); renderAllTeams(); } }
-    async function saveMonthlyLog() { const m = document.getElementById('logMonth').value, s = document.getElementById('siteName').value; if(!s) return; const d = { teamId:myTeamId, month:m, site:s, teamData, updatedAt:Date.now(), lastModifier:userNickname }; if(editingId) await db.collection("monthly_logs").doc(editingId).update(d); else await db.collection("monthly_logs").add({...d, originalWriter:userNickname}); alert("저장 완료"); location.reload(); }
+    async function saveMonthlyLog() { const m = document.getElementById('logMonth').value, s = document.getElementById('siteName').value; if(!s) return; teamData = normalizeTeamData(teamData); const d = { teamId:myTeamId, month:m, site:s, teamData, updatedAt:Date.now(), lastModifier:userNickname }; if(editingId) await db.collection("monthly_logs").doc(editingId).update(d); else await db.collection("monthly_logs").add({...d, originalWriter:userNickname}); alert("저장 완료"); location.reload(); }
     function loadWorklogs() { db.collection("monthly_logs").where("teamId","==",myTeamId).orderBy("updatedAt","desc").limit(10).onSnapshot(ss => { document.getElementById('history-list').innerHTML = ss.docs.map(doc => { const d = doc.data(); 
         let delBtnHtml = (myRole !== 'member') ? `<button class="t5-btn-small bg-danger text-white" onclick="deleteLog('${doc.id}')">삭제</button>` : '';
         let btnHtml = `<button class="t5-btn-small bg-secondary text-white" onclick="editLog('${doc.id}')">수정</button><button class="t5-btn-small bg-primary text-white" onclick="copyLog('${doc.id}')">복사</button><button class="t5-btn-small bg-success text-white" onclick="exportToExcel('${doc.id}')">엑셀</button>${delBtnHtml}`; 
         return `<div class="col-md-6"><div class="t5-card p-3 m-0 d-flex justify-content-between align-items-center"><div><b class="text-primary">${d.month}</b><br>${d.site}<br><span class="small text-secondary">작성: ${d.originalWriter||'관리자'} ${d.lastModifier?`/ 수정: ${d.lastModifier}`:''}</span></div><div class="d-flex gap-1 flex-wrap justify-content-end" style="max-width: 60%;">${btnHtml}</div></div></div>`; }).join(''); }); }
-    async function editLog(id) { const d = (await db.collection("monthly_logs").doc(id).get()).data(); editingId = id; document.getElementById('logMonth').value = d.month; document.getElementById('siteName').value = d.site; teamData = d.teamData; showPage('worklog'); renderAllTeams(); window.scrollTo(0,0); }
-    async function copyLog(id) { const d = (await db.collection("monthly_logs").doc(id).get()).data(); editingId = null; document.getElementById('logMonth').value = d.month; document.getElementById('siteName').value = d.site + " (복사)"; teamData = d.teamData; showPage('worklog'); renderAllTeams(); alert("데이터가 복사되었습니다."); window.scrollTo(0,0); }
+    async function editLog(id) { const d = (await db.collection("monthly_logs").doc(id).get()).data(); editingId = id; document.getElementById('logMonth').value = d.month; document.getElementById('siteName').value = d.site; teamData = normalizeTeamData(d.teamData); showPage('worklog', null, true, { preserveState: true }); renderAllTeams(); window.scrollTo(0,0); }
+    async function copyLog(id) { const d = (await db.collection("monthly_logs").doc(id).get()).data(); editingId = null; document.getElementById('logMonth').value = d.month; document.getElementById('siteName').value = d.site + " (복사)"; teamData = normalizeTeamData(d.teamData); showPage('worklog', null, true, { preserveState: true }); renderAllTeams(); alert("데이터가 복사되었습니다."); window.scrollTo(0,0); }
     async function deleteLog(id) { if(confirm("이 작업일보를 완전히 삭제하시겠습니까?")) { await db.collection("monthly_logs").doc(id).delete(); } }
     async function exportToExcel(id) { 
         const d_raw = (await db.collection("monthly_logs").doc(id).get()).data(); const [year, monthNum] = d_raw.month.split('-'); const lastDayNum = new Date(year, monthNum, 0).getDate(); 
@@ -1881,8 +2112,8 @@
     }
     async function saveT5ToHistory() { if(!calculatedData) return; const data = { teamId: myTeamId, ...calculatedData, writer: userNickname, updatedAt: Date.now() }; if (t5EditingId) await db.collection("t5_logs").doc(t5EditingId).update(data); else await db.collection("t5_logs").add({...data, createdAt: Date.now()}); location.reload(); }
     function loadT5History() { db.collection("t5_logs").where("teamId","==",myTeamId).orderBy("updatedAt","desc").limit(20).onSnapshot(ss => { document.getElementById('t5-history-list').innerHTML = ss.docs.map(d => { const doc = d.data(); let modifyBtns = `<button class="t5-btn-small bg-secondary text-white" style="flex:1;" onclick="editT5Log('${d.id}')">수정</button><button class="t5-btn-small bg-primary text-white" style="flex:1;" onclick="copyAndNewT5Log('${d.id}')">복사</button><button class="t5-btn-small bg-success text-white" style="flex:1;" onclick="copyT5Order('${doc.siteName}', '${doc.resultText}')">발주용</button><button class="t5-btn-small bg-danger text-white" style="flex:1;" onclick="deleteT5Log('${d.id}')">삭제</button>`; return `<div class="history-card"><h6 class="fw-bold">${doc.siteName} <span class="small text-secondary ms-2">${doc.writer}</span></h6><p class="small text-secondary mb-3">${doc.resultText}</p><div class="d-flex gap-2 flex-wrap">${modifyBtns}</div></div>`; }).join(''); }); }
-    async function editT5Log(id) { const d = (await db.collection("t5_logs").doc(id).get()).data(); t5EditingId = id; document.getElementById('t5-site-title').value = d.siteName; const container = document.getElementById('t5-input-container'); container.innerHTML = ''; d.rows.forEach(r => { let div = document.createElement('div'); div.className = "row g-2 mb-2 t5-row-item"; div.innerHTML = `<div class="col-6"><input type="text" class="form-control input-dark t5-section-name" value="${r.section}"></div><div class="col-6"><input type="number" class="form-control input-dark t5-length-val" value="${r.length}"></div>`; container.appendChild(div); }); showPage('t5'); window.scrollTo(0,0); }
-    async function copyAndNewT5Log(id) { const d = (await db.collection("t5_logs").doc(id).get()).data(); t5EditingId = null; document.getElementById('t5-site-title').value = d.siteName + " (복사)"; const container = document.getElementById('t5-input-container'); container.innerHTML = ''; d.rows.forEach(r => { let div = document.createElement('div'); div.className = "row g-2 mb-2 t5-row-item"; div.innerHTML = `<div class="col-6"><input type="text" class="form-control input-dark t5-section-name" value="${r.section}"></div><div class="col-6"><input type="number" class="form-control input-dark t5-length-val" value="${r.length}"></div>`; container.appendChild(div); }); showPage('t5'); alert("복사되었습니다."); window.scrollTo(0,0); }
+    async function editT5Log(id) { const d = (await db.collection("t5_logs").doc(id).get()).data(); t5EditingId = id; document.getElementById('t5-site-title').value = d.siteName; const container = document.getElementById('t5-input-container'); container.innerHTML = ''; d.rows.forEach(r => { let div = document.createElement('div'); div.className = "row g-2 mb-2 t5-row-item"; div.innerHTML = `<div class="col-6"><input type="text" class="form-control input-dark t5-section-name" value="${r.section}"></div><div class="col-6"><input type="number" class="form-control input-dark t5-length-val" value="${r.length}"></div>`; container.appendChild(div); }); showPage('t5', null, true, { preserveState: true }); window.scrollTo(0,0); }
+    async function copyAndNewT5Log(id) { const d = (await db.collection("t5_logs").doc(id).get()).data(); t5EditingId = null; document.getElementById('t5-site-title').value = d.siteName + " (복사)"; const container = document.getElementById('t5-input-container'); container.innerHTML = ''; d.rows.forEach(r => { let div = document.createElement('div'); div.className = "row g-2 mb-2 t5-row-item"; div.innerHTML = `<div class="col-6"><input type="text" class="form-control input-dark t5-section-name" value="${r.section}"></div><div class="col-6"><input type="number" class="form-control input-dark t5-length-val" value="${r.length}"></div>`; container.appendChild(div); }); showPage('t5', null, true, { preserveState: true }); alert("복사되었습니다."); window.scrollTo(0,0); }
     // 💡 V31 FIX: T5 발주용 복사도 최신 Clipboard API 사용 💡
     function copyT5Order(site, text) { 
         const fmt = site + '\n' + text.split(' / ').join('\n'); 

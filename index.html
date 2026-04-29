@@ -1430,11 +1430,11 @@
         let isSuper = (myRole === 'owner' || myRole === 'admin');
         let canEditStatus = isSuper || globalStatusAdmins.includes(myEmail);
 
-        const sections = [
-            { key: 'ongoing', icon: 'bi-tools', title: '공사 진행 중', h: '<tr><th style="width:18%;">현장명</th><th style="width:12%;">착공일</th><th style="width:12%;">예정준공일</th><th style="width:12%;">소장</th><th style="width:12%;">디자이너</th><th style="width:12%;">싸인</th><th>비고</th><th style="width:90px;">관리</th></tr>' }, 
-            { key: 'scheduled', icon: 'bi-calendar-event', title: '공사 착공 예정', h: '<tr><th style="width:20%;">상호명</th><th style="width:15%;">착공예정</th><th style="width:15%;">준공예정</th><th style="width:15%;">예상소장</th><th>비고</th><th style="width:90px;">관리</th></tr>' }, 
-            { key: 'designing', icon: 'bi-palette', title: '디자인 진행 중', h: '<tr><th style="width:20%;">상호명</th><th style="width:15%;">디자인마감</th><th style="width:15%;">착공예정</th><th style="width:15%;">디자이너</th><th>비고</th><th style="width:90px;">관리</th></tr>' }, 
-            { key: 'pre-design', icon: 'bi-pencil-square', title: '디자인 예정', h: '<tr><th style="width:25%;">상호명</th><th style="width:20%;">마감시기</th><th>비고</th><th style="width:90px;">관리</th></tr>' }
+const sections = [
+            { key: 'ongoing', icon: 'bi-tools', title: '공사 진행 중', h: '<tr><th style="width:18%;">현장명</th><th style="width:12%;">착공일</th><th style="width:12%;">예정준공일</th><th style="width:12%;">소장</th><th style="width:12%;">디자이너</th><th style="width:12%;">싸인</th><th style="width:15%;">비고</th><th style="width:90px; min-width:90px; text-align:center;">관리</th></tr>' }, 
+            { key: 'scheduled', icon: 'bi-calendar-event', title: '공사 착공 예정', h: '<tr><th style="width:20%;">상호명</th><th style="width:15%;">착공예정</th><th style="width:15%;">준공예정</th><th style="width:15%;">예상소장</th><th style="width:20%;">비고</th><th style="width:90px; min-width:90px; text-align:center;">관리</th></tr>' }, 
+            { key: 'designing', icon: 'bi-palette', title: '디자인 진행 중', h: '<tr><th style="width:20%;">상호명</th><th style="width:15%;">디자인마감</th><th style="width:15%;">착공예정</th><th style="width:15%;">디자이너</th><th style="width:20%;">비고</th><th style="width:90px; min-width:90px; text-align:center;">관리</th></tr>' }, 
+            { key: 'pre-design', icon: 'bi-pencil-square', title: '디자인 예정', h: '<tr><th style="width:25%;">상호명</th><th style="width:20%;">마감시기</th><th style="width:40%;">비고</th><th style="width:90px; min-width:90px; text-align:center;">관리</th></tr>' }
         ];
         
         document.getElementById('all-status-containers').innerHTML = sections.map(sec => {

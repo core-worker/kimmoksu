@@ -3,6 +3,40 @@
 // 역할: T5 조명 계산기, 저장 이력, 복사/삭제
 // =====================================================
 
+
+let calculatedData = null;
+let t5EditingId = null;
+
+function toggleT5Specs() {
+    const el = document.getElementById('t5-spec-container');
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function addNewSpec() {
+    let n = prompt("규격");
+    let a = prompt("치수");
+
+    if (n && a) {
+        document.getElementById('t5-spec-list').insertAdjacentHTML(
+            'beforeend',
+            `<div class="col-4 col-md-auto spec-item">
+                <label class="small">${n}용</label>
+                <input type="number" class="form-control input-dark spec-actual" data-nominal="${n}" value="${a}">
+            </div>`
+        );
+    }
+}
+
+function addT5Row() {
+    document.getElementById('t5-input-container').insertAdjacentHTML(
+        'beforeend',
+        `<div class="row g-2 mb-2 t5-row-item">
+            <div class="col-6"><input type="text" class="form-control input-dark t5-section-name" placeholder="구간 (예: 거실)"></div>
+            <div class="col-6"><input type="number" class="form-control input-dark t5-length-val" placeholder="길이 (mm)"></div>
+        </div>`
+    );
+}
 function calculateT5Only() {
     const site = document.getElementById('t5-site-title').value.trim() || "현장";
 
@@ -229,3 +263,6 @@ window.editT5Log = editT5Log;
 window.copyAndNewT5Log = copyAndNewT5Log;
 window.deleteT5Log = deleteT5Log;
 window.copyT5Order = copyT5Order;
+window.toggleT5Specs = toggleT5Specs;
+window.addNewSpec = addNewSpec;
+window.addT5Row = addT5Row;

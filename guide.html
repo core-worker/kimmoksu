@@ -1,0 +1,352 @@
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>김목수이야기 ERP V2.0 가이드북</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PDF 생성을 위한 핵심 라이브러리 (html2pdf) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700;800&display=swap');
+        body { 
+            font-family: 'Pretendard', sans-serif; 
+            background-color: #f3f4f6; /* gray-100 */
+            color: #1f2937; /* gray-800 */
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* A4 사이즈 문서 느낌의 컨테이너 */
+        .document-container {
+            background-color: #ffffff;
+            max-width: 210mm; /* A4 width */
+            margin: 0 auto;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* PDF 변환 시 카드가 반으로 잘리는 것을 방지 */
+        .page-break-avoid {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .guide-card {
+            border: 1px solid #e5e7eb; /* gray-200 */
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            background-color: #ffffff;
+        }
+
+        .num-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 9999px;
+            background-color: #2563eb; /* blue-600 */
+            color: white;
+            font-weight: 700;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+
+        /* 하단 고정 다운로드 버튼 바 */
+        .floating-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            border-top: 1px solid #e5e7eb;
+            padding: 1rem;
+            z-index: 50;
+            display: flex;
+            justify-content: center;
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* PDF 인쇄 시 숨길 요소들 */
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: #ffffff; }
+            .document-container { box-shadow: none; max-width: none; width: 100%; }
+        }
+    </style>
+</head>
+<body class="pb-24">
+
+    <!-- 스마트폰 하단 고정 PDF 다운로드 버튼 -->
+    <div class="floating-bar no-print">
+        <button id="pdf-btn" onclick="downloadPDF()" class="w-full max-w-md bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-lg active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            PDF로 다운로드 받기
+        </button>
+    </div>
+
+    <!-- 🚨 이 영역 내부가 통째로 PDF로 구워집니다 🚨 -->
+    <div id="pdf-content" class="document-container p-6 md:p-12 pb-12">
+        
+        <!-- Header Section -->
+        <header class="text-center mb-8 border-b-2 border-gray-800 pb-6 pt-4">
+            <div class="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold tracking-wider mb-4 border border-blue-200">
+                UPDATE V2.0.0
+            </div>
+            <h1 class="text-3xl md:text-4xl font-extrabold mb-3 text-gray-900 tracking-tight">
+                김목수이야기 시스템 사용 가이드
+            </h1>
+            <p class="text-gray-600 font-medium">
+                현장에서 바로 통하는 스마트 ERP 100% 활용법
+            </p>
+        </header>
+
+        <!-- 도입 효과 -->
+        <div class="mb-8 page-break-avoid">
+            <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2 border-l-4 border-blue-600 pl-3">
+                왜 이 시스템을 쓰나요?
+            </h2>
+            <div class="bg-blue-50 border border-blue-100 rounded-xl p-5">
+                <ul class="space-y-3 text-sm md:text-base text-gray-700">
+                    <li class="flex items-start gap-3">
+                        <span class="text-blue-600 font-bold mt-0.5">✔</span>
+                        <span><strong class="text-gray-900">수기 작업 해방:</strong> 데스라, 작업일보를 사진 찍고 엑셀로 옮겨 적는 번거로움이 완전히 사라집니다.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="text-blue-600 font-bold mt-0.5">✔</span>
+                        <span><strong class="text-gray-900">실시간 연동:</strong> 현장과 사무실 간의 상황 공유가 딜레이 없이 100% 실시간으로 이루어집니다.</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="text-blue-600 font-bold mt-0.5">✔</span>
+                        <span><strong class="text-gray-900">모바일 최적화:</strong> 바쁜 현장에서도 스마트폰 하나면 공정표 관리와 일보 작성이 끝납니다.</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="my-8 flex items-center gap-4 page-break-avoid">
+            <div class="h-px bg-gray-300 flex-1"></div>
+            <h2 class="text-lg font-bold text-gray-800 tracking-wider">7대 핵심 기능 알아보기</h2>
+            <div class="h-px bg-gray-300 flex-1"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- 기능 1 -->
+            <div class="guide-card page-break-avoid border-blue-300 bg-blue-50/30 relative">
+                <div class="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg rounded-tr-lg">V2.0 신규</div>
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="num-badge">1</div>
+                    <h3 class="text-lg font-bold text-gray-900">팀·조직 관리</h3>
+                </div>
+                <p class="text-sm text-gray-600 leading-relaxed mb-3">
+                    6자리 <strong>'참가 코드'</strong> 하나로 우리 팀만의 독립된 공간을 만듭니다.
+                </p>
+                <div class="bg-white rounded-lg p-3 text-xs md:text-sm text-gray-700 border border-gray-200">
+                    <strong>사용법:</strong> 관리자가 발급한 참가 코드를 팀원들이 입력하면 즉시 합류! 타 팀과는 데이터가 완벽히 분리되어 보안이 확실합니다.
+                </div>
+            </div>
+
+            <!-- 기능 2 -->
+            <div class="guide-card page-break-avoid">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="num-badge bg-gray-700">2</div>
+                    <h3 class="text-lg font-bold text-gray-900">종합 상황판</h3>
+                </div>
+                <p class="text-sm text-gray-600 leading-relaxed mb-3">
+                    착공 중, 디자인 중 등 전체 현장의 진행 단계를 한눈에 파악합니다.
+                </p>
+                <div class="bg-gray-50 rounded-lg p-3 text-xs md:text-sm text-gray-700 border border-gray-200">
+                    <strong>사용법:</strong> 카드를 눌러 전체 흐름을 확인합니다. 카드를 꾹 눌러 위아래로 드래그하면 순서 변경도 가능합니다.
+                </div>
+            </div>
+
+            <!-- 기능 3 -->
+            <div class="guide-card page-break-avoid">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="num-badge bg-gray-700">3</div>
+                    <h3 class="text-lg font-bold text-gray-900">마스터 스케줄러</h3>
+                </div>
+                <p class="text-sm text-gray-600 leading-relaxed mb-3">
+                    공사, 실측, 미팅, 팀원 휴가까지 회사 전체의 일정을 달력 하나에 통합했습니다.
+                </p>
+                <div class="bg-gray-50 rounded-lg p-3 text-xs md:text-sm text-gray-700 border border-gray-200">
+                    <strong>사용법:</strong> 달력의 색깔 띠를 누르면 상세 내용이 보입니다. 상단 태그(예: 실측)를 눌러 일정 필터링이 가능합니다.
+                </div>
+            </div>
+
+            <!-- 기능 4 -->
+            <div class="guide-card page-break-avoid">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="num-badge bg-gray-700">4</div>
+                    <h3 class="text-lg font-bold text-gray-900">실전 작업일보</h3>
+                </div>
+                <p class="text-sm text-gray-600 leading-relaxed mb-3">
+                    매일의 작업 내용과 공수를 엑셀처럼 흩어짐 없이 기록합니다.
+                </p>
+                <div class="bg-gray-50 rounded-lg p-3 text-xs md:text-sm text-gray-700 border border-gray-200">
+                    <strong>사용법:</strong> 공정별(목수, 도장 등) 내용을 적고 저장하세요. 주말/야간 작업은 색상이 다르게 표시되어 파악이 쉽습니다.
+                </div>
+            </div>
+
+            <!-- 기능 5 -->
+            <div class="guide-card page-break-avoid">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="num-badge bg-gray-700">5</div>
+                    <h3 class="text-lg font-bold text-gray-900">공정표 & 추가공사</h3>
+                </div>
+                <p class="text-sm text-gray-600 leading-relaxed mb-3">
+                    45일 스케줄 관리 및 누락되기 쉬운 추가 공사 대금을 자동 합산합니다.
+                </p>
+                <div class="bg-gray-50 rounded-lg p-3 text-xs md:text-sm text-gray-700 border border-gray-200">
+                    <strong>사용법:</strong> 날짜를 칠해 스케줄을 짜고 📸버튼을 누르면 카톡용으로 캡처됩니다. 추가 내역 입력 시 총금액 자동 합산!
+                </div>
+            </div>
+
+            <!-- 기능 6 -->
+            <div class="guide-card page-break-avoid">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="num-badge bg-gray-700">6</div>
+                    <h3 class="text-lg font-bold text-gray-900">마감 펀치리스트</h3>
+                </div>
+                <p class="text-sm text-gray-600 leading-relaxed mb-3">
+                    현장 마감 시 놓치기 쉬운 잔손 보기 항목들을 꼼꼼하게 리스트화합니다.
+                </p>
+                <div class="bg-gray-50 rounded-lg p-3 text-xs md:text-sm text-gray-700 border border-gray-200">
+                    <strong>사용법:</strong> 현장에서 처리할 때마다 체크(✔)하세요. 상단 진행률(%) 게이지가 차올라 마감 달성도를 보여줍니다.
+                </div>
+            </div>
+
+            <!-- 기능 7 -->
+            <div class="guide-card page-break-avoid md:col-span-2">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="num-badge bg-gray-700">7</div>
+                    <h3 class="text-lg font-bold text-gray-900">연차 관리 시스템</h3>
+                </div>
+                <p class="text-sm text-gray-600 leading-relaxed mb-3">
+                    내 남은 휴가를 실시간으로 확인하고 스마트하게 신청합니다.
+                </p>
+                <div class="bg-gray-50 rounded-lg p-3 text-xs md:text-sm text-gray-700 border border-gray-200">
+                    <strong>사용법:</strong> 달력에서 바로 휴가(종일/반차)를 신청하세요. 관리자 승인 시 스케줄러에 내 일정이 자동으로 전체 공유됩니다.
+                </div>
+            </div>
+        </div>
+
+        <!-- 줄바꿈 유도 (PDF 변환 시 깔끔하게 다음 페이지로) -->
+        <div class="html2pdf__page-break"></div>
+
+        <div class="my-8 flex items-center gap-4 page-break-avoid">
+            <div class="h-px bg-gray-300 flex-1"></div>
+            <h2 class="text-lg font-bold text-gray-800 tracking-wider">필수 세팅 가이드</h2>
+            <div class="h-px bg-gray-300 flex-1"></div>
+        </div>
+
+        <!-- 설치 안내 -->
+        <div class="guide-card bg-gray-50 page-break-avoid mb-6 border-gray-300">
+            <h3 class="text-xl font-bold text-gray-900 mb-2">📱 스마트폰 홈 화면 추가 가이드</h3>
+            <p class="text-sm text-gray-600 mb-5">우리 시스템은 <strong>인터넷 주소를 바탕화면에 어플처럼 꺼내놓고 쓰는 웹앱</strong>입니다. 처음 한 번만 세팅해 두세요!</p>
+            
+            <div class="bg-white p-4 rounded-lg mb-6 border border-gray-200 text-center shadow-sm">
+                <p class="text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">공식 접속 주소</p>
+                <code class="text-blue-700 text-lg md:text-xl font-mono font-bold break-all select-all block w-full text-center">
+                    https://core-worker.github.io/kimmoksu
+                </code>
+            </div>
+
+            <div class="space-y-5">
+                <div class="flex gap-4">
+                    <div class="text-3xl">🍎</div>
+                    <div>
+                        <h4 class="text-base font-bold text-gray-900 mb-1">아이폰 (Safari)</h4>
+                        <p class="text-sm text-gray-600 leading-relaxed">사파리에서 접속 ➔ 하단 중앙 <strong>[공유 📤]</strong> 아이콘 터치 ➔ 메뉴를 올려서 <strong>[홈 화면에 추가 ➕]</strong> ➔ 우측 상단 추가</p>
+                    </div>
+                </div>
+                <div class="h-px bg-gray-200"></div>
+                <div class="flex gap-4">
+                    <div class="text-3xl">🤖</div>
+                    <div>
+                        <h4 class="text-base font-bold text-gray-900 mb-1">갤럭시 (Chrome)</h4>
+                        <p class="text-sm text-gray-600 leading-relaxed">크롬에서 접속 ➔ 우측 상단 <strong>[점 3개 ⋮]</strong> 터치 ➔ <strong>[홈 화면에 추가]</strong> ➔ 팝업창에서 추가</p>
+                    </div>
+                </div>
+                <div class="h-px bg-gray-200"></div>
+                <div class="flex gap-4">
+                    <div class="text-3xl">🌍</div>
+                    <div>
+                        <h4 class="text-base font-bold text-gray-900 mb-1">갤럭시 (삼성 인터넷)</h4>
+                        <p class="text-sm text-gray-600 leading-relaxed">삼성인터넷 접속 ➔ 우측 하단 <strong>[줄 3개 ☰]</strong> 터치 ➔ <strong>[+ 현재 페이지 추가]</strong> ➔ 홈 화면 ➔ 추가</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 유지보수 팁 -->
+        <div class="guide-card page-break-avoid border-amber-300 bg-amber-50">
+            <h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+                <span class="text-2xl">🔄</span> 업데이트가 안 보일 때! (유지보수 꿀팁)
+            </h3>
+            <p class="text-sm text-gray-700 mb-4">새 기능이 추가됐는데 내 폰에만 예전 화면이 보인다면, 폰에 저장된 '임시 데이터(캐시)' 때문입니다.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded-lg border border-amber-200">
+                    <h4 class="text-sm font-bold text-amber-700 mb-2">💡 방법 1. 앱 완전히 끄기 (추천)</h4>
+                    <p class="text-xs md:text-sm text-gray-600 leading-relaxed">실행 중인 앱 목록을 열어서 <strong>'김목수이야기' 화면을 위로 휙 스와이프하여 완전히 끄고</strong> 바탕화면 아이콘을 눌러 다시 접속하세요.</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg border border-amber-200">
+                    <h4 class="text-sm font-bold text-gray-800 mb-2">🧹 방법 2. 인터넷 캐시 삭제</h4>
+                    <p class="text-xs md:text-sm text-gray-600 mb-1"><strong>아이폰:</strong> [설정] ➔ [Safari] ➔ 스크롤 내려서 [방문 기록 및 웹 사이트 데이터 지우기]</p>
+                    <p class="text-xs md:text-sm text-gray-600"><strong>갤럭시:</strong> 크롬 우측 상단 [⋮] ➔ [설정] ➔ [개인정보 보호 및 보안] ➔ [인터넷 사용 기록 삭제] ➔ [캐시된 이미지 및 파일] 삭제</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-8 pt-4 border-t border-gray-200 text-xs text-gray-400">
+            &copy; 2026 김목수이야기. Internal ERP System Guide.
+        </div>
+
+    </div>
+
+    <!-- 스크립트: 버튼 누르면 PDF-content 영역을 PDF로 변환 후 다운로드 -->
+    <script>
+        function downloadPDF() {
+            // 다운로드할 요소 선택
+            const element = document.getElementById('pdf-content');
+            
+            // 버튼 상태 변경 (로딩 중)
+            const btn = document.getElementById('pdf-btn');
+            const originalBtnContent = btn.innerHTML;
+            btn.innerHTML = '<span class="animate-spin text-xl">⏳</span> PDF 파일 생성 중...';
+            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-not-allowed');
+
+            // html2pdf 옵션 설정
+            const opt = {
+                margin:       [10, 10, 10, 10], // 여백 (mm)
+                filename:     '김목수이야기_ERP_사용가이드_V2.0.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, letterRendering: true }, // 고화질 렌더링
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // PDF 생성 및 저장 실행
+            html2pdf().set(opt).from(element).save().then(() => {
+                // 완료 후 버튼 원상복구
+                btn.innerHTML = originalBtnContent;
+                btn.disabled = false;
+                btn.classList.remove('opacity-80', 'cursor-not-allowed');
+            }).catch(err => {
+                console.error('PDF 생성 에러:', err);
+                alert('PDF 생성 중 오류가 발생했습니다. 다시 시도해 주세요.');
+                btn.innerHTML = originalBtnContent;
+                btn.disabled = false;
+                btn.classList.remove('opacity-80', 'cursor-not-allowed');
+            });
+        }
+    </script>
+</body>
+</html>
+
+```

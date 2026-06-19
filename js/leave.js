@@ -139,8 +139,8 @@ if (window.LEAVE_STANDALONE) {
     //
     // 규칙:
     //  · 1년차 미만(입사 후 1년 X): 1개월 개근 시 1일씩 (최대 11일)
-    //  · 2년차(입사 후 1년~2년): Math.ceil(15 * 전년근무일수 / 365)
-    //  · 3년차+ (입사 후 2년 이상): 기본 15일 + 3년차 1일 추가, 이후 매 2년마다 1일 추가, 최대 25일
+    //  · 2년차 이상(입사 후 1년 이상): 기본 15일
+    //  · 근속 가산: 기존 방식대로 3년차부터 가산, 최대 25일
     function emptyLeaveCalc(label = '입사일 미입력') {
         return {
             base: 0,
@@ -272,58 +272,52 @@ if (window.LEAVE_STANDALONE) {
     // 규칙:
     //  · 입사일이 없거나 형식이 이상하면 0일 반환하여 관리자 리스트 렌더링 중단 방지
     //  · 1년차 미만(입사 후 1년 X): 1개월 개근 시 1일씩 (최대 11일)
-    //  · 2년차(입사 후 1년~2년): Math.ceil(15 * 전년근무일수 / 365)
-    //  · 3년차+ (입사 후 2년 이상): 기본 15일 + 3년차 1일 추가, 이후 매 2년마다 1일 추가, 최대 25일
+    //  · 2년차 이상(입사 후 1년 이상): 기본 15일
+    //  · 근속 가산: 기존 방식대로 3년차부터 가산, 최대 25일
     function calculateAnnualLeave(hireDate, targetYear = new Date().getFullYear()) {
         try {
             const joinDate = parseHireDateSafely(hireDate);
             if(!joinDate) return emptyLeaveCalc('입사일 미입력');
-
+    
             const today = new Date();
             const safeTargetYear = Number.isFinite(Number(targetYear)) ? Number(targetYear) : today.getFullYear();
             const targetDate = safeTargetYear === today.getFullYear()
                 ? new Date(today.getFullYear(), today.getMonth(), today.getDate())
                 : new Date(safeTargetYear, 11, 31);
-
+    
             if(joinDate > targetDate) return emptyLeaveCalc('입사 예정');
-
+    
             const msPerDay = 1000 * 60 * 60 * 24;
             const daysSinceJoin = Math.max(0, Math.floor((targetDate - joinDate) / msPerDay));
             const yearsOfService = Math.floor(daysSinceJoin / 365);
-
-            const lastFiscalStart = new Date(safeTargetYear - 1, 0, 1);
-            const lastFiscalEnd = new Date(safeTargetYear - 1, 11, 31);
-
+    
             let base = 0;
             let bonus = 0;
             let label = '';
-
+    
             if(yearsOfService < 1) {
                 let monthsCompleted = (targetDate.getFullYear() - joinDate.getFullYear()) * 12 + (targetDate.getMonth() - joinDate.getMonth());
                 if(targetDate.getDate() < joinDate.getDate()) monthsCompleted -= 1;
                 if(monthsCompleted < 0) monthsCompleted = 0;
-
+    
                 base = Math.min(monthsCompleted, 11);
                 bonus = 0;
                 label = `1년차 미만 (${monthsCompleted}개월 개근)`;
-            } else if(yearsOfService < 2) {
-                const lastWorkStart = joinDate > lastFiscalStart ? joinDate : lastFiscalStart;
-                const lastWorkDays = Math.floor((lastFiscalEnd - lastWorkStart) / msPerDay) + 1;
-                const safeDays = Math.max(0, Math.min(lastWorkDays, 365));
-
-                base = Math.ceil(15 * safeDays / 365);
-                bonus = 0;
-                label = `2년차 (전년 근무 ${safeDays}일 비례)`;
             } else {
                 base = 15;
-                bonus = Math.floor((yearsOfService - 2) / 2) + 1;
-
+    
+                if(yearsOfService >= 2) {
+                    bonus = Math.floor((yearsOfService - 2) / 2) + 1;
+                } else {
+                    bonus = 0;
+                }
+    
                 if(base + bonus > 25) bonus = 25 - base;
                 if(bonus < 0) bonus = 0;
-
+    
                 label = `${yearsOfService + 1}년차 (근속 ${yearsOfService}년)`;
             }
-
+    
             return {
                 base: base,
                 bonus: bonus,

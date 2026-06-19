@@ -224,6 +224,45 @@ if (window.LEAVE_STANDALONE) {
         return memberInfo.joinDate || memberInfo.hireDate || memberInfo.hire_date || memberInfo.startDate || memberInfo.start_date || '';
     }
 
+    function normalizeAnnualLeaveNumber(value) {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed < 0) return 0;
+        return parsed;
+    }
+    
+    function formatAnnualLeaveNumber(value) {
+        const num = normalizeAnnualLeaveNumber(value);
+        return Number.isInteger(num) ? String(num) : String(num).replace(/\.0+$/, '');
+    }
+    
+    function getMemberBonusAnnualLeave(memberInfo) {
+        if (!memberInfo || typeof memberInfo !== 'object') return 0;
+    
+        return normalizeAnnualLeaveNumber(
+            memberInfo.bonusAnnualLeave ??
+            memberInfo.bonusLeave ??
+            memberInfo.manualBonusLeave ??
+            0
+        );
+    }
+    
+    function mergeAnnualLeaveCalcWithBonus(calc, bonusAnnualLeave) {
+        const safeCalc = calc && typeof calc === 'object'
+            ? calc
+            : { base: 0, bonus: 0, total: 0 };
+    
+        const base = normalizeAnnualLeaveNumber(safeCalc.base);
+        const autoBonus = normalizeAnnualLeaveNumber(safeCalc.bonus);
+        const manualBonus = normalizeAnnualLeaveNumber(bonusAnnualLeave);
+    
+        return {
+            base: base,
+            autoBonus: autoBonus,
+            manualBonus: manualBonus,
+            total: base + autoBonus + manualBonus
+        };
+    }
+
     // ============================================================
     // 💡 V1.4.1: 연차 자동 계산 핵심 함수 (회계연도 = 매년 1월 1일 기준) 💡
     // ============================================================
@@ -309,37 +348,39 @@ if (window.LEAVE_STANDALONE) {
         
         const targetYearEl = document.getElementById('calYear');
         const targetYear = targetYearEl && targetYearEl.value ? Number(targetYearEl.value) : new Date().getFullYear();
-
+    
         teamMembersInfo = safeTeamData.membersInfo && typeof safeTeamData.membersInfo === 'object'
             ? safeTeamData.membersInfo
             : {};
-
+    
         const adminPanel = document.getElementById('leaveAdminPanel');
         const adminBody = document.getElementById('leaveAdminBody');
         const statusBody = document.getElementById('leaveStatusBody');
-
+    
         if(!statusBody) {
             console.error('leaveStatusBody 컨테이너를 찾을 수 없습니다.');
             return;
         }
-
+    
         if(canManageLeave()) {
             if(adminPanel) adminPanel.style.display = 'block';
-
+    
             if(adminBody) {
                 const adminRows = [];
-
+    
                 members.forEach(mEmail => {
                     try {
                         const email = String(mEmail || '').trim();
                         if(!email) return;
-
+    
                         const nick = globalEmailToNick[email] || email.split('@')[0] || '이름 없음';
                         const info = teamMembersInfo[email] && typeof teamMembersInfo[email] === 'object' ? teamMembersInfo[email] : {};
                         const joinDateRaw = getMemberJoinDate(info);
                         const joinDateValue = formatDateForInput(joinDateRaw);
                         const calc = calculateAnnualLeave(joinDateRaw, targetYear);
-
+                        const bonusAnnualLeave = getMemberBonusAnnualLeave(info);
+                        const leaveTotal = mergeAnnualLeaveCalcWithBonus(calc, bonusAnnualLeave);
+    
                         const department = info.department || '';
                         const position = info.position || '';
                         const duty = info.duty || info.task || info.job || info.work || '';
@@ -365,68 +406,79 @@ if (window.LEAVE_STANDALONE) {
                                        value="${escapeLeaveHtml(joinDateValue)}"
                                        onchange="recalcLeavePreview('${escapeLeaveJs(email)}')">
                             </td>
-                            <td class="text-info fw-bold leave-calc-base">${calc.base}</td>
-                            <td class="text-warning fw-bold leave-calc-bonus">${calc.bonus}</td>
-                            <td class="text-success fw-bold leave-calc-total">${calc.total} 일</td>
+                            <td class="text-info fw-bold leave-calc-base">${formatAnnualLeaveNumber(leaveTotal.base)}</td>
+                            <td class="text-warning fw-bold leave-calc-bonus">${formatAnnualLeaveNumber(leaveTotal.autoBonus)}</td>
+                            <td>
+                                <input type="number"
+                                       min="0"
+                                       step="0.5"
+                                       class="form-control input-dark text-center fw-bold leave-bonus-manual"
+                                       data-email="${escapeLeaveHtml(email)}"
+                                       value="${escapeLeaveHtml(formatAnnualLeaveNumber(leaveTotal.manualBonus))}"
+                                       onchange="recalcLeavePreview('${escapeLeaveJs(email)}')">
+                            </td>
+                            <td class="text-success fw-bold leave-calc-total">${formatAnnualLeaveNumber(leaveTotal.total)} 일</td>
                         </tr>`);
                     } catch(error) {
                         console.error('관리자 연차 행 렌더링 오류:', error, mEmail);
                         const email = String(mEmail || '').trim();
                         const nick = globalEmailToNick[email] || email.split('@')[0] || '알 수 없음';
-
+    
                         adminRows.push(`<tr class="table-danger">
                             <td class="fw-bold">${escapeLeaveHtml(nick)}</td>
-                            <td colspan="4" class="text-danger small text-start">
+                            <td colspan="5" class="text-danger small text-start">
                                 이 직원의 입사일 데이터에 오류가 있어 기본값 0일로 표시했습니다.
                             </td>
                         </tr>`);
                     }
                 });
-
+    
                 adminBody.innerHTML = adminRows.join('') || `<tr>
-                    <td colspan="5" class="text-secondary py-4">등록된 팀원이 없습니다.</td>
+                    <td colspan="6" class="text-secondary py-4">등록된 팀원이 없습니다.</td>
                 </tr>`;
                 bindLeaveAdminEvents();
             } else {
                 console.error('leaveAdminBody 컨테이너를 찾을 수 없습니다.');
             }
         }
-
+    
         db.collection("leave_records").where("teamId", "==", myTeamId).onSnapshot(ss => {
             const used = {};
             globalLeaveRecords = [];
-
+    
             ss.docs.forEach(doc => {
                 try {
                     const d = doc.data() || {};
                     d.id = doc.id;
-
+    
                     const email = String(d.userEmail || '').trim();
                     const amount = Number(d.amount || 0);
-
+    
                     if(d.approved && email) used[email] = (used[email] || 0) + amount;
                     globalLeaveRecords.push(d);
                 } catch(error) {
                     console.error('연차 사용 기록 파싱 오류:', error, doc.id);
                 }
             });
-
+    
             const statusRows = [];
-
+    
             members.forEach(mEmail => {
                 try {
                     const email = String(mEmail || '').trim();
                     if(!email) return;
-
+    
                     const nick = globalEmailToNick[email] || email.split('@')[0] || '이름 없음';
                     const info = teamMembersInfo[email] && typeof teamMembersInfo[email] === 'object' ? teamMembersInfo[email] : {};
                     const joinDateRaw = getMemberJoinDate(info);
                     const displayDate = formatDateForInput(joinDateRaw) || '-';
                     const calc = calculateAnnualLeave(joinDateRaw, targetYear);
-
+                    const bonusAnnualLeave = getMemberBonusAnnualLeave(info);
+                    const leaveTotal = mergeAnnualLeaveCalcWithBonus(calc, bonusAnnualLeave);
+    
                     const usedAmt = Number(used[email] || 0);
-                    const remainAmt = calc.total - usedAmt;
-
+                    const remainAmt = leaveTotal.total - usedAmt;
+    
                     if(!formatDateForInput(joinDateRaw)) {
                         statusRows.push(`<tr>
                             <td class="fw-bold fs-6">${escapeLeaveHtml(nick)}</td>
@@ -435,19 +487,19 @@ if (window.LEAVE_STANDALONE) {
                         </tr>`);
                         return;
                     }
-
+    
                     statusRows.push(`<tr>
                         <td class="fw-bold fs-6">${escapeLeaveHtml(nick)}</td>
                         <td class="text-secondary">${escapeLeaveHtml(displayDate)}<br><span class="small">${escapeLeaveHtml(calc.label)}</span></td>
-                        <td class="text-info">${calc.total} <span class="small text-secondary">(기본 ${calc.base} + 가산 ${calc.bonus})</span></td>
+                        <td class="text-info">${formatAnnualLeaveNumber(leaveTotal.total)} <span class="small text-secondary">(기본 ${formatAnnualLeaveNumber(leaveTotal.base)} + 가산 ${formatAnnualLeaveNumber(leaveTotal.autoBonus)} + 보너스 ${formatAnnualLeaveNumber(leaveTotal.manualBonus)})</span></td>
                         <td class="text-danger fw-bold">${usedAmt} 일</td>
-                        <td class="${remainAmt < 0 ? 'text-danger' : 'text-success'} fw-bold fs-5">${remainAmt} 일</td>
+                        <td class="${remainAmt < 0 ? 'text-danger' : 'text-success'} fw-bold fs-5">${formatAnnualLeaveNumber(remainAmt)} 일</td>
                     </tr>`);
                 } catch(error) {
                     console.error('잔여 연차 행 렌더링 오류:', error, mEmail);
                     const email = String(mEmail || '').trim();
                     const nick = globalEmailToNick[email] || email.split('@')[0] || '알 수 없음';
-
+    
                     statusRows.push(`<tr class="table-danger">
                         <td class="fw-bold fs-6">${escapeLeaveHtml(nick)}</td>
                         <td colspan="4" class="text-danger small text-start">
@@ -456,11 +508,11 @@ if (window.LEAVE_STANDALONE) {
                     </tr>`);
                 }
             });
-
+    
             statusBody.innerHTML = statusRows.join('') || `<tr>
                 <td colspan="5" class="text-secondary py-4">등록된 팀원이 없습니다.</td>
             </tr>`;
-
+    
             try {
                 renderLeaveCalendar();
             } catch(error) {
@@ -482,18 +534,28 @@ if (window.LEAVE_STANDALONE) {
     function bindLeaveAdminEvents() {
         const adminBody = document.getElementById('leaveAdminBody');
         if(!adminBody || adminBody.dataset.bound === 'true') return;
-
+    
         adminBody.dataset.bound = 'true';
         adminBody.addEventListener('change', (event) => {
             const target = event.target;
-            if(target && target.classList && target.classList.contains('leave-join')) {
+            if(!target || !target.classList) return;
+    
+            if(
+                target.classList.contains('leave-join') ||
+                target.classList.contains('leave-bonus-manual')
+            ) {
                 recalcLeavePreview(target.getAttribute('data-email'));
             }
         });
-
+    
         adminBody.addEventListener('input', (event) => {
             const target = event.target;
-            if(target && target.classList && target.classList.contains('leave-join')) {
+            if(!target || !target.classList) return;
+    
+            if(
+                target.classList.contains('leave-join') ||
+                target.classList.contains('leave-bonus-manual')
+            ) {
                 recalcLeavePreview(target.getAttribute('data-email'));
             }
         });
@@ -506,20 +568,30 @@ if (window.LEAVE_STANDALONE) {
             const safeEmail = window.CSS && CSS.escape ? CSS.escape(email) : email.replace(/"/g, '\\"');
             const row = document.querySelector(`#leaveAdminBody tr[data-email="${safeEmail}"]`);
             if(!row) return;
-
+    
             const dateInput = row.querySelector('.leave-join');
+            const bonusInput = row.querySelector('.leave-bonus-manual');
+    
             const newDate = dateInput ? dateInput.value : '';
+            const bonusAnnualLeave = bonusInput ? normalizeAnnualLeaveNumber(bonusInput.value) : 0;
+    
             const targetYearEl = document.getElementById('calYear');
             const targetYear = targetYearEl && targetYearEl.value ? Number(targetYearEl.value) : new Date().getFullYear();
             const calc = calculateAnnualLeave(newDate, targetYear);
-
+            const leaveTotal = mergeAnnualLeaveCalcWithBonus(calc, bonusAnnualLeave);
+    
             const baseCell = row.querySelector('.leave-calc-base');
             const bonusCell = row.querySelector('.leave-calc-bonus');
             const totalCell = row.querySelector('.leave-calc-total');
-
-            if(baseCell) baseCell.innerText = calc.base;
-            if(bonusCell) bonusCell.innerText = calc.bonus;
-            if(totalCell) totalCell.innerText = calc.total + ' 일';
+    
+            if(baseCell) baseCell.innerText = formatAnnualLeaveNumber(leaveTotal.base);
+            if(bonusCell) bonusCell.innerText = formatAnnualLeaveNumber(leaveTotal.autoBonus);
+    
+            if(bonusInput && Number(bonusInput.value) < 0) {
+                bonusInput.value = 0;
+            }
+    
+            if(totalCell) totalCell.innerText = formatAnnualLeaveNumber(leaveTotal.total) + ' 일';
         } catch(error) {
             console.error('연차 미리보기 갱신 오류:', error, mEmail);
         }
@@ -954,15 +1026,19 @@ if (window.LEAVE_STANDALONE) {
                     ? { ...teamData.membersInfo }
                     : {};
     
-            document.querySelectorAll(".leave-join").forEach(el => {
-                const email = String(el.getAttribute("data-email") || "").trim();
+            document.querySelectorAll("#leaveAdminBody tr[data-email]").forEach(row => {
+                const email = String(row.getAttribute("data-email") || "").trim();
                 if (!email) return;
     
                 if (!existingInfo[email] || typeof existingInfo[email] !== "object") {
                     existingInfo[email] = {};
                 }
     
-                existingInfo[email].joinDate = el.value || "";
+                const joinInput = row.querySelector(".leave-join");
+                const bonusInput = row.querySelector(".leave-bonus-manual");
+    
+                existingInfo[email].joinDate = joinInput ? (joinInput.value || "") : "";
+                existingInfo[email].bonusAnnualLeave = normalizeAnnualLeaveNumber(bonusInput ? bonusInput.value : 0);
             });
     
             await db.collection("teams").doc(myTeamId).update({
@@ -971,7 +1047,7 @@ if (window.LEAVE_STANDALONE) {
     
             teamMembersInfo = existingInfo;
     
-            alert("입사일이 저장되었습니다.\n자동 계산된 연차가 화면에 반영됩니다.");
+            alert("입사일과 보너스 연차가 저장되었습니다.\n자동 계산된 연차가 화면에 반영됩니다.");
     
             const refreshedDoc = await db.collection("teams").doc(myTeamId).get();
             if (refreshedDoc.exists) {
@@ -983,7 +1059,7 @@ if (window.LEAVE_STANDALONE) {
         } finally {
             if (saveBtn) {
                 saveBtn.disabled = false;
-                saveBtn.innerHTML = originalText || "입사일 저장";
+                saveBtn.innerHTML = originalText || "입사일/보너스 저장";
             }
         }
     }

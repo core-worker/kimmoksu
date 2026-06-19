@@ -832,6 +832,7 @@
                                     <th>입사일</th>
                                     <th>기본 (자동)</th>
                                     <th>가산 (자동)</th>
+                                    <th>가산 (보너스)</th>
                                     <th>총 부여</th>
                                 </tr>
                             </thead>
@@ -839,7 +840,7 @@
                         </table>
                     </div>
                     <div class="text-end mt-4">
-                        <button class="btn btn-warning fw-bold px-4" onclick="saveLeaveSettings()">입사일 저장</button>
+                        <button class="btn btn-warning fw-bold px-4" onclick="saveLeaveSettings()">입사일/보너스 저장</button>
                     </div>
                 </div>
             </div>
@@ -853,7 +854,7 @@
                     <div class="table-responsive">
                         <table class="table table-dark align-middle text-center mb-0 fs-6">
                             <thead class="text-secondary">
-                                <tr><th>이름</th><th>입사일</th><th>총 부여 (기본+가산)</th><th>사용 일수</th><th>남은 연차</th></tr>
+                                <tr><th>이름</th><th>입사일</th><th>총 부여 (기본+가산+보너스)</th><th>사용 일수</th><th>남은 연차</th></tr>
                             </thead>
                             <tbody id="leaveStatusBody"></tbody>
                         </table>

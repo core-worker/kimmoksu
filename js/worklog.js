@@ -296,9 +296,10 @@
                             <h6 class="fw-bold m-0">${team.teamName}</h6>
                             <div class="small text-secondary">${dayLabel}</div>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
                             <span class="badge bg-primary px-3 py-2">${teamTotal} 공수</span>
                             <button type="button" class="t5-btn-small fw-bold" onclick="addWorkerFromDailyMode(${tIdx})">+ 작업자</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger fw-bold" onclick="removeTeam(${tIdx})">공정삭제</button>
                         </div>
                     </div>
                     ${workerRows}
@@ -402,6 +403,7 @@
                     </div>
                     <span class="badge bg-primary px-3 py-2 flex-shrink-0" style="font-size:0.85rem;">총 ${teamTotal} 공수</span>
                     <button onclick="event.stopPropagation(); addWorker(${tIdx})" class="t5-btn-small fw-bold px-2 py-1 flex-shrink-0" style="font-size:0.9rem;">[+]</button>
+                    <button onclick="event.stopPropagation(); removeTeam(${tIdx})" class="btn btn-sm btn-outline-danger fw-bold px-2 py-1 flex-shrink-0" style="font-size:0.75rem;">공정삭제</button>
                 </div>
                 <div class="collapse ${showClass} mt-3" id="${colId}">
                     ${tables}
@@ -462,9 +464,63 @@
         });
     }
     function bindLongPress() { document.querySelectorAll('.gongsu-cell').forEach(cell => { let timer; cell.onmousedown=cell.ontouchstart=()=>timer=setTimeout(()=>{ const { t, w, d } = cell.dataset; const input = prompt("공수", teamData[t].workers[w].days[d]); if(input!==null){ teamData[t].workers[w].days[d]=input; renderAllTeams(); } }, 600); cell.onmouseup=cell.ontouchend=()=>clearTimeout(timer); }); }
-    function addTeam() { const n = prompt("공정명"); if(n){ teamData.push({teamName:n, workers:[]}); renderAllTeams(); } }
-    function addWorker(t) { teamData[t].workers.push({name:"", days:{}}); renderAllTeams(); }
-    function removeWorker(t, w) { if(confirm("삭제하시겠습니까?")){ teamData[t].workers.splice(w,1); renderAllTeams(); } }
+    function addTeam() {
+        const n = prompt("공정명");
+    
+        if (n && n.trim()) {
+            teamData.push({
+                teamName: n.trim(),
+                workers: []
+            });
+    
+            renderAllTeams();
+        }
+    }
+    
+    function removeTeam(tIdx) {
+        if (!teamData[tIdx]) return;
+    
+        const teamName = teamData[tIdx].teamName || "이 공정";
+        const workers = Array.isArray(teamData[tIdx].workers) ? teamData[tIdx].workers : [];
+    
+        let totalGongsu = 0;
+        workers.forEach(worker => {
+            const days = worker.days && typeof worker.days === "object" ? worker.days : {};
+            Object.values(days).forEach(v => {
+                totalGongsu += parseFloat(v || 0) || 0;
+            });
+        });
+    
+        const msg = totalGongsu > 0
+            ? `[${teamName}] 공정에 입력된 공수 ${totalGongsu}가 있습니다.\n정말 공정 전체를 삭제하시겠습니까?`
+            : `[${teamName}] 공정을 삭제하시겠습니까?`;
+    
+        if (!confirm(msg)) return;
+    
+        teamData.splice(tIdx, 1);
+    
+        worklogCollapsedStates = {};
+        renderAllTeams();
+    }
+    
+    function addWorker(t) {
+        if (!teamData[t]) return;
+        if (!Array.isArray(teamData[t].workers)) teamData[t].workers = [];
+    
+        teamData[t].workers.push({
+            name: "",
+            days: {}
+        });
+    
+        renderAllTeams();
+    }
+    
+    function removeWorker(t, w) {
+        if (confirm("삭제하시겠습니까?")) {
+            teamData[t].workers.splice(w, 1);
+            renderAllTeams();
+        }
+    }
 
     async function saveMonthlyLog() {
         const m = document.getElementById('logMonth').value;
@@ -657,6 +713,7 @@ window.handleCellClick = handleCellClick;
 window.updateTeamTotals = updateTeamTotals;
 window.bindLongPress = bindLongPress;
 window.addTeam = addTeam;
+window.removeTeam = removeTeam;
 window.addWorker = addWorker;
 window.removeWorker = removeWorker;
 window.saveMonthlyLog = saveMonthlyLog;

@@ -37,10 +37,10 @@ function renderAllSections(data) {
     let canEditStatus = isSuper || globalStatusAdmins.includes(myEmail);
 
     const sections = [
-        { key: 'ongoing', icon: 'bi-tools', title: '공사 진행 중', h: '<tr><th style="width:18%;">현장명</th><th style="width:12%;">착공일</th><th style="width:12%;">예정준공일</th><th style="width:12%;">소장</th><th style="width:12%;">디자이너</th><th style="width:12%;">싸인</th><th style="width:15%;">비고</th><th style="width:90px; min-width:90px; text-align:center;">관리</th></tr>' },
-        { key: 'scheduled', icon: 'bi-calendar-event', title: '공사 착공 예정', h: '<tr><th style="width:20%;">상호명</th><th style="width:15%;">착공예정</th><th style="width:15%;">준공예정</th><th style="width:15%;">예상소장</th><th style="width:20%;">비고</th><th style="width:90px; min-width:90px; text-align:center;">관리</th></tr>' },
-        { key: 'designing', icon: 'bi-palette', title: '디자인 진행 중', h: '<tr><th style="width:20%;">상호명</th><th style="width:15%;">디자인마감</th><th style="width:15%;">착공예정</th><th style="width:15%;">디자이너</th><th style="width:20%;">비고</th><th style="width:90px; min-width:90px; text-align:center;">관리</th></tr>' },
-        { key: 'pre-design', icon: 'bi-pencil-square', title: '디자인 예정', h: '<tr><th style="width:25%;">상호명</th><th style="width:20%;">마감시기</th><th style="width:40%;">비고</th><th style="width:90px; min-width:90px; text-align:center;">관리</th></tr>' }
+        { key: 'ongoing', icon: 'bi-tools', title: '공사 진행 중', h: '<tr><th style="width:18%;">현장명</th><th style="width:12%;">착공일</th><th style="width:12%;">예정준공일</th><th style="width:12%;">소장</th><th style="width:12%;">디자이너</th><th style="width:12%;">싸인</th><th style="width:15%;">비고</th><th class="status-manage-col" style="width:90px; min-width:90px; text-align:center;">관리</th></tr>' },
+        { key: 'scheduled', icon: 'bi-calendar-event', title: '공사 착공 예정', h: '<tr><th style="width:20%;">상호명</th><th style="width:15%;">착공예정</th><th style="width:15%;">준공예정</th><th style="width:15%;">예상소장</th><th style="width:20%;">비고</th><th class="status-manage-col" style="width:90px; min-width:90px; text-align:center;">관리</th></tr>' },
+        { key: 'designing', icon: 'bi-palette', title: '디자인 진행 중', h: '<tr><th style="width:20%;">상호명</th><th style="width:15%;">디자인마감</th><th style="width:15%;">착공예정</th><th style="width:15%;">디자이너</th><th style="width:20%;">비고</th><th class="status-manage-col" style="width:90px; min-width:90px; text-align:center;">관리</th></tr>' },
+        { key: 'pre-design', icon: 'bi-pencil-square', title: '디자인 예정', h: '<tr><th style="width:25%;">상호명</th><th style="width:20%;">마감시기</th><th style="width:40%;">비고</th><th class="status-manage-col" style="width:90px; min-width:90px; text-align:center;">관리</th></tr>' }
     ];
 
     const container = document.getElementById('all-status-containers');
@@ -64,7 +64,7 @@ function renderAllSections(data) {
                     ${sec.key === 'scheduled' ? `<td>${item.site_manager || '-'}</td>` : ''}
                     ${sec.key === 'designing' ? `<td>${item.designer || '-'}</td>` : ''}
                     <td class="text-secondary text-start ps-3">${item.etc || '-'}</td>
-                    <td class="text-nowrap" style="padding:0 5px;">
+                    <td class="text-nowrap status-manage-col" style="padding:0 5px;">
                         ${canEditStatus ? `<button class="btn btn-sm btn-outline-primary py-0 px-2 me-1" onclick="openSiteEditModal('${item.id}')"><i class="bi bi-pencil-square"></i></button>` : ''}
                         ${(canEditStatus && isStatusEditMode) ? `<button class="btn btn-sm btn-danger py-0 px-2" onclick="deleteSite('${item.id}')">삭제</button>` : ''}
                     </td>
@@ -79,7 +79,7 @@ function renderAllSections(data) {
                     : '';
 
                 const btnHTML = `
-                    <div class="d-flex gap-1 align-items-center flex-shrink-0">
+                    <div class="d-flex gap-1 align-items-center flex-shrink-0 status-capture-hide">
                         ${canEditStatus ? `<button class="btn btn-sm btn-outline-primary px-2 py-0" onclick="openSiteEditModal('${item.id}')"><i class="bi bi-pencil-square"></i> 수정</button>` : ''}
                         ${(canEditStatus && isStatusEditMode) ? `<button class="btn btn-sm btn-danger px-2 py-0" onclick="deleteSite('${item.id}')">삭제</button>` : ''}
                     </div>`;
@@ -115,7 +115,7 @@ function renderAllSections(data) {
         return `<div class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="fw-bold m-0"><i class="bi ${sec.icon} me-2 text-primary"></i>${sec.title} <span class="badge rounded-pill bg-dark ms-2" style="font-size:0.7rem;">${items.length}건</span></h5>
-                <button class="btn btn-sm btn-outline-success px-3 fw-bold" onclick="openSiteAddModal('${sec.key}')">+ 추가</button>
+                <button class="btn btn-sm btn-outline-success px-3 fw-bold status-capture-hide" onclick="openSiteAddModal('${sec.key}')">+ 추가</button>
             </div>
             <div class="d-none d-md-block t5-card p-0 overflow-hidden">
                 <table class="status-table" id="status-table-${sec.key}"><thead>${sec.h}</thead><tbody id="status-tbody-${sec.key}">${tableRows}</tbody></table>
@@ -324,6 +324,61 @@ async function deleteSite(id) {
     }
 }
 
+async function captureStatusBoardPng() {
+    const target = document.getElementById('page-status');
+    const mainContainer = document.querySelector('.main-container');
+
+    if (!target) {
+        alert("종합 상황판 영역을 찾을 수 없습니다.");
+        return;
+    }
+
+    if (typeof html2canvas === 'undefined') {
+        alert("캡쳐 라이브러리를 불러오지 못했습니다.");
+        return;
+    }
+
+    const originalWindowScrollY = window.scrollY;
+    const originalMainScrollTop = mainContainer ? mainContainer.scrollTop : 0;
+
+    try {
+        document.body.classList.add('status-capture-mode');
+
+        window.scrollTo(0, 0);
+        if (mainContainer) mainContainer.scrollTop = 0;
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        const canvas = await html2canvas(target, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: document.body.classList.contains('light-mode') ? '#f4f6f8' : '#131722',
+            logging: false,
+            width: target.scrollWidth,
+            height: target.scrollHeight,
+            windowWidth: Math.max(document.documentElement.clientWidth, target.scrollWidth),
+            windowHeight: Math.max(document.documentElement.clientHeight, target.scrollHeight),
+            scrollX: 0,
+            scrollY: 0
+        });
+
+        const today = new Date().toISOString().slice(0, 10);
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = `종합상황판_${today}.png`;
+        link.click();
+
+    } catch (error) {
+        console.error("종합 상황판 PNG 저장 오류:", error);
+        alert("PNG 저장 중 오류가 발생했습니다.");
+    } finally {
+        document.body.classList.remove('status-capture-mode');
+
+        if (mainContainer) mainContainer.scrollTop = originalMainScrollTop;
+        window.scrollTo(0, originalWindowScrollY);
+    }
+}
+
 window.toggleStatusEditMode = toggleStatusEditMode;
 window.loadAllStatusData = loadAllStatusData;
 window.renderAllSections = renderAllSections;
@@ -335,3 +390,4 @@ window.handleStatusChange = handleStatusChange;
 window.toggleSiteFormFields = toggleSiteFormFields;
 window.saveSiteData = saveSiteData;
 window.deleteSite = deleteSite;
+window.captureStatusBoardPng = captureStatusBoardPng;

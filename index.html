@@ -414,6 +414,21 @@
             font-size: 0.75rem;
             color: #94a3b8;
         }
+        
+        .status-capture-mode .status-capture-hide,
+        .status-capture-mode .status-manage-col,
+        .status-capture-mode .drag-handle {
+            display: none !important;
+        }
+        
+        .status-capture-mode #page-status {
+            max-width: none !important;
+            padding-bottom: 30px !important;
+        }
+        
+        .status-capture-mode #page-status .mb-5 {
+            margin-bottom: 28px !important;
+        }
     </style>
 </head>
 <body>
@@ -570,14 +585,17 @@
         <section id="page-status" class="page-section">
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                 <h3 class="fw-bold m-0">종합 상황판 관리</h3>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 status-capture-hide">
+                    <button class="btn btn-info fw-bold px-3 text-white" onclick="captureStatusBoardPng()">
+                        <i class="bi bi-camera"></i> PNG 저장
+                    </button>
                     <button class="btn btn-outline-info fw-bold px-3" id="btnStatusPerm" style="display:none;" onclick="openPermModal('status')">담당자 설정</button>
                     <button class="btn btn-outline-warning fw-bold px-3" id="btnEditStatus" style="display:none;" onclick="toggleStatusEditMode()">편집</button>
                     <button class="btn btn-success fw-bold px-4" onclick="openSiteAddModal()">+ 현장 추가</button>
                 </div>
             </div>
 
-            <div class="t5-card mb-5">
+            <div class="t5-card mb-5 status-capture-hide">
                 <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#boardManagerCollapse">
                     <h6 class="fw-bold m-0"><i class="bi bi-gear-fill me-2 text-secondary"></i>공지 및 전달사항 관리</h6>
                     <i class="bi bi-chevron-down text-secondary"></i>

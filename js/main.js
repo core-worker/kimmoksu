@@ -25,25 +25,18 @@ function createDefaultTeamData() {
 
 function normalizeTeamData(source) {
     const safeSource = Array.isArray(source) ? source : [];
-    const normalized = createDefaultTeamData();
-    const defaultNames = new Set(DEFAULT_WORKLOG_TEAMS);
 
-    safeSource.forEach(team => {
-        if (!team || !team.teamName) return;
+    if (safeSource.length === 0) {
+        return createDefaultTeamData();
+    }
 
-        const safeTeam = {
+    return safeSource
+        .filter(team => team && team.teamName)
+        .map(team => ({
             teamName: team.teamName,
             workers: Array.isArray(team.workers) ? team.workers : []
-        };
-
-        const defaultIndex = normalized.findIndex(t => t.teamName === safeTeam.teamName);
-        if (defaultIndex >= 0) normalized[defaultIndex] = safeTeam;
-        else if (!defaultNames.has(safeTeam.teamName)) normalized.push(safeTeam);
-    });
-
-    return normalized;
+        }));
 }
-
 let teamData = createDefaultTeamData();
 
 document.addEventListener("DOMContentLoaded", function () {

@@ -297,9 +297,9 @@
                             <div class="small text-secondary">${dayLabel}</div>
                         </div>
                         <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-                            <span class="badge bg-primary px-3 py-2">${teamTotal} 공수</span>
-                            <button type="button" class="t5-btn-small fw-bold" onclick="addWorkerFromDailyMode(${tIdx})">+ 작업자</button>
                             <button type="button" class="btn btn-sm btn-outline-danger fw-bold" onclick="removeTeam(${tIdx})">공정삭제</button>
+                            <span class="badge bg-primary px-3 py-2">${teamTotal} 공수</span>
+                            <button type="button" class="t5-btn-small fw-bold" onclick="addWorkerFromDailyMode(${tIdx})">작업자추가</button>
                         </div>
                     </div>
                     ${workerRows}
@@ -401,9 +401,9 @@
                     <div class="flex-grow-1 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#${colId}">
                         <h6 class="m-0 fw-bold">${team.teamName}</h6>
                     </div>
-                    <span class="badge bg-primary px-3 py-2 flex-shrink-0" style="font-size:0.85rem;">총 ${teamTotal} 공수</span>
-                    <button onclick="event.stopPropagation(); addWorker(${tIdx})" class="t5-btn-small fw-bold px-2 py-1 flex-shrink-0" style="font-size:0.9rem;">[+]</button>
                     <button onclick="event.stopPropagation(); removeTeam(${tIdx})" class="btn btn-sm btn-outline-danger fw-bold px-2 py-1 flex-shrink-0" style="font-size:0.75rem;">공정삭제</button>
+                    <span class="badge bg-primary px-3 py-2 flex-shrink-0" style="font-size:0.85rem;">총 ${teamTotal} 공수</span>
+                    <button onclick="event.stopPropagation(); addWorker(${tIdx})" class="t5-btn-small fw-bold px-2 py-1 flex-shrink-0" style="font-size:0.85rem;">작업자추가</button>
                 </div>
                 <div class="collapse ${showClass} mt-3" id="${colId}">
                     ${tables}

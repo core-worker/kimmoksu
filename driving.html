@@ -65,7 +65,7 @@
                 <button class="btn btn-primary" onclick="loadTimelineFile()"><i class="bi bi-file-earmark-arrow-up me-1"></i>운행 분석</button>
             </div>
         </div>
-        <div class="step-note mt-2">선택한 기간과 시간이 겹치는 차량 운행(IN_PASSENGER_VEHICLE)만 추출합니다. 종료일은 해당 날짜 23:59:59까지 포함됩니다.</div>
+        <div class="step-note mt-2">선택한 기간과 시간이 겹치는 차량 운행(IN_PASSENGER_VEHICLE)만 추출합니다. 연속 운행 사이 정차가 20분 이내면 자동으로 같은 운행으로 묶습니다.</div>
     </div>
 
     <div class="row g-2 mb-3">
@@ -97,6 +97,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="js/driving-config.js"></script>
 <script src="js/driving.js"></script>
+<script src="js/driving-automerge.js"></script>
 <script src="js/driving-geocode.js"></script>
 <script src="js/driving-map.js"></script>
 </body>

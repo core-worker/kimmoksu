@@ -248,6 +248,39 @@ function setUsageType(index, value) {
     renderDrivingRows();
 }
 
+function setPlaceName(index, side, value) {
+    const row = drivingRows[index];
+    if (!row || row.isPersonal || row.usageType === 'personal') return;
+
+    const nextValue = String(value || '').trim();
+    const key = side === 'start' ? 'startName' : 'endName';
+    if (row[key] === nextValue) return;
+
+    snapshotRows();
+    row[key] = nextValue;
+}
+
+function renderPlaceCell(row, index, side, personal) {
+    if (personal) {
+        return '<div class="place-main">개인사용</div>';
+    }
+
+    const isStart = side === 'start';
+    const name = isStart ? row.startName : row.endName;
+    const address = isStart ? row.startAddress : row.endAddress;
+    const point = isStart ? row.start : row.end;
+    const fallback = point ? `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}` : '';
+
+    return `
+        <input type="text"
+               class="form-control form-control-sm input-dark mb-1"
+               value="${escapeHtml(name)}"
+               placeholder="현장명 / 장소명 입력"
+               onchange="setPlaceName(${index}, '${side}', this.value)">
+        <div class="place-sub">${escapeHtml(address || fallback)}</div>
+    `;
+}
+
 function renderDrivingRows() {
     const body = document.getElementById('drivingBody');
     const all = document.getElementById('checkAll');
@@ -261,8 +294,6 @@ function renderDrivingRows() {
 
     body.innerHTML = drivingRows.map((r, idx) => {
         const personal = r.isPersonal || r.usageType === 'personal';
-        const startTitle = personal ? '개인사용' : (r.startName || '주소 미변환');
-        const endTitle = personal ? '개인사용' : (r.endName || '주소 미변환');
         const status = r.isMerged ? `<span class="badge badge-soft">${r.originalIds.length}건 묶음</span>` : '<span class="text-secondary">일반</span>';
         return `<tr class="${personal ? 'personal-row' : ''} ${r.isMerged ? 'merged-row' : ''}">
             <td><input class="trip-check" type="checkbox" data-index="${idx}"></td>
@@ -270,8 +301,8 @@ function renderDrivingRows() {
             <td>${escapeHtml(r.date)}</td>
             <td>${escapeHtml(r.startTime)} → ${escapeHtml(r.endTime)}</td>
             <td><select class="form-select form-select-sm input-dark" onchange="setUsageType(${idx}, this.value)" ${personal && r.isMerged ? 'disabled' : ''}>${usageOptions(r.usageType)}</select></td>
-            <td><div class="place-main">${escapeHtml(startTitle)}</div><div class="place-sub">${personal ? '' : escapeHtml(r.startAddress || `${r.start.lat.toFixed(6)}, ${r.start.lng.toFixed(6)}`)}</div></td>
-            <td><div class="place-main">${escapeHtml(endTitle)}</div><div class="place-sub">${personal ? '' : escapeHtml(r.endAddress || `${r.end.lat.toFixed(6)}, ${r.end.lng.toFixed(6)}`)}</div></td>
+            <td>${renderPlaceCell(r, idx, 'start', personal)}</td>
+            <td>${renderPlaceCell(r, idx, 'end', personal)}</td>
             <td class="text-end fw-bold">${r.distanceKm.toFixed(1)} km</td>
             <td>${status}</td>
         </tr>`;
@@ -435,5 +466,6 @@ window.excludeSelected = excludeSelected;
 window.undoLastAction = undoLastAction;
 window.toggleAllRows = toggleAllRows;
 window.setUsageType = setUsageType;
+window.setPlaceName = setPlaceName;
 window.connectKakaoMaps = connectKakaoMaps;
 window.resolveAllAddresses = resolveAllAddresses;

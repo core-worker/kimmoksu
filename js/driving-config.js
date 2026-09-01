@@ -10,7 +10,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const key = String(window.KIMMOKSU_DRIVING_CONFIG?.kakaoJavaScriptKey || '').trim();
     const status = document.getElementById('kakaoStatus');
 
-    if (!key || key === 'YOUR_KAKAO_JAVASCRIPT_KEY') {
+    if (!key || key === '26238d87788a8fa90483fc9f8a73e601') {
         if (status) {
             status.innerHTML = '<i class="bi bi-circle-fill" style="font-size:.5rem"></i> 주소 서비스 설정 필요';
             status.className = 'api-status text-danger';

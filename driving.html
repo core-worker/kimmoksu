@@ -31,35 +31,23 @@
         .merged-row { box-shadow:inset 3px 0 0 var(--accent); }
         .badge-soft { background:rgba(92,124,250,.18); color:#a5b4fc; }
         .step-note { color:var(--muted); font-size:.88rem; line-height:1.6; }
+        .api-status { display:inline-flex; align-items:center; gap:7px; margin-top:8px; font-size:.82rem; font-weight:700; }
         @media(max-width:768px){ .page-wrap{padding:14px}.toolbar .btn{font-size:.78rem;padding:.4rem .55rem}.summary-value{font-size:1.05rem} }
     </style>
 </head>
 <body>
 <div class="page-wrap">
-    <div class="d-flex justify-content-between align-items-center mb-4 gap-3 flex-wrap">
+    <div class="d-flex justify-content-between align-items-start mb-4 gap-3 flex-wrap">
         <div>
             <div class="small text-secondary mb-1">김목수이야기 ERP · 개발 테스트</div>
             <h2 class="fw-bold mb-0"><i class="bi bi-car-front-fill me-2"></i>운행기록부 자동작성</h2>
+            <div id="kakaoStatus" class="api-status text-secondary"><i class="bi bi-circle-fill" style="font-size:.5rem"></i> 주소 서비스 연결 중...</div>
         </div>
         <button class="btn btn-outline-secondary" onclick="location.href='index.html'"><i class="bi bi-arrow-left me-1"></i>메인으로</button>
     </div>
 
     <div class="card-dark p-4 mb-3">
-        <h5 class="fw-bold mb-3">1. 카카오 지도 연결</h5>
-        <div class="row g-2 align-items-end">
-            <div class="col-12 col-lg-8">
-                <label class="form-label small text-secondary">Kakao JavaScript 키</label>
-                <input id="kakaoKeyInput" type="password" class="form-control input-dark" placeholder="JavaScript 키를 입력하세요">
-            </div>
-            <div class="col-12 col-lg-4 d-grid">
-                <button id="btnLoadKakao" class="btn btn-outline-warning" onclick="connectKakaoMaps()"><i class="bi bi-geo-alt me-1"></i>카카오 주소 API 연결</button>
-            </div>
-        </div>
-        <div id="kakaoStatus" class="step-note mt-2">SDK 도메인 설정이 완료되었다면 JavaScript 키를 입력하고 연결하세요.</div>
-    </div>
-
-    <div class="card-dark p-4 mb-3">
-        <h5 class="fw-bold mb-3">2. Google 타임라인 JSON 불러오기</h5>
+        <h5 class="fw-bold mb-3">1. Google 타임라인 JSON 불러오기</h5>
         <div class="row g-2 align-items-end">
             <div class="col-12 col-xl-6">
                 <label class="form-label small text-secondary">타임라인 JSON</label>

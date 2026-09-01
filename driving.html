@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>김목수이야기 - 운행기록부</title>
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <style>
+        :root { --bg:#131722; --card:#1e222d; --card2:#2a2e39; --accent:#5c7cfa; --muted:#94a3b8; }
+        body { margin:0; background:var(--bg); color:#f8fafc; font-family:Pretendard,Arial,sans-serif; }
+        .page-wrap { max-width:1500px; margin:0 auto; padding:24px; }
+        .card-dark { background:var(--card); border:1px solid rgba(255,255,255,.08); border-radius:16px; }
+        .input-dark { background:#11151f!important; color:#fff!important; border-color:rgba(255,255,255,.12)!important; }
+        .input-dark::placeholder { color:#64748b; }
+        .summary-box { background:var(--card2); border-radius:12px; padding:14px 16px; min-height:82px; }
+        .summary-label { color:var(--muted); font-size:.78rem; }
+        .summary-value { font-size:1.35rem; font-weight:800; }
+        .toolbar { position:sticky; top:0; z-index:20; background:rgba(19,23,34,.96); backdrop-filter:blur(8px); padding:10px 0; }
+        .driving-table { min-width:1180px; }
+        .driving-table th { white-space:nowrap; color:#cbd5e1; font-size:.82rem; }
+        .driving-table td { vertical-align:middle; font-size:.85rem; }
+        .place-main { font-weight:700; }
+        .place-sub { color:var(--muted); font-size:.74rem; max-width:260px; }
+        .personal-row { background:rgba(245,158,11,.08)!important; }
+        .merged-row { box-shadow:inset 3px 0 0 var(--accent); }
+        .badge-soft { background:rgba(92,124,250,.18); color:#a5b4fc; }
+        .step-note { color:var(--muted); font-size:.88rem; line-height:1.6; }
+        @media(max-width:768px){ .page-wrap{padding:14px}.toolbar .btn{font-size:.78rem;padding:.4rem .55rem}.summary-value{font-size:1.05rem} }
+    </style>
+</head>
+<body>
+<div class="page-wrap">
+    <div class="d-flex justify-content-between align-items-center mb-4 gap-3 flex-wrap">
+        <div>
+            <div class="small text-secondary mb-1">김목수이야기 ERP · 개발 테스트</div>
+            <h2 class="fw-bold mb-0"><i class="bi bi-car-front-fill me-2"></i>운행기록부 자동작성</h2>
+        </div>
+        <button class="btn btn-outline-secondary" onclick="location.href='index.html'"><i class="bi bi-arrow-left me-1"></i>메인으로</button>
+    </div>
+
+    <div class="card-dark p-4 mb-3">
+        <h5 class="fw-bold mb-3">1. 카카오 지도 연결</h5>
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-lg-8">
+                <label class="form-label small text-secondary">Kakao JavaScript 키</label>
+                <input id="kakaoKeyInput" type="password" class="form-control input-dark" placeholder="JavaScript 키를 입력하세요 (브라우저에만 저장)">
+            </div>
+            <div class="col-12 col-lg-4 d-grid">
+                <button id="btnLoadKakao" class="btn btn-outline-warning" onclick="connectKakaoMaps()"><i class="bi bi-geo-alt me-1"></i>카카오 주소 API 연결</button>
+            </div>
+        </div>
+        <div id="kakaoStatus" class="step-note mt-2">SDK 도메인 설정이 완료되었다면 JavaScript 키를 입력하고 연결하세요.</div>
+    </div>
+
+    <div class="card-dark p-4 mb-3">
+        <h5 class="fw-bold mb-3">2. Google 타임라인 JSON 불러오기</h5>
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-lg-9">
+                <label class="form-label small text-secondary">타임라인 JSON</label>
+                <input id="timelineFile" type="file" accept="application/json,.json" class="form-control input-dark">
+            </div>
+            <div class="col-12 col-lg-3 d-grid">
+                <button class="btn btn-primary" onclick="loadTimelineFile()"><i class="bi bi-file-earmark-arrow-up me-1"></i>운행 분석</button>
+            </div>
+        </div>
+        <div class="step-note mt-2">원본 JSON은 서버에 업로드하지 않고 현재 브라우저에서만 분석합니다. 차량 이동(IN_PASSENGER_VEHICLE)만 추출합니다.</div>
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-6 col-lg-3"><div class="summary-box"><div class="summary-label">분석 운행</div><div id="sumCount" class="summary-value">0건</div></div></div>
+        <div class="col-6 col-lg-3"><div class="summary-box"><div class="summary-label">총 주행거리</div><div id="sumDistance" class="summary-value">0.0 km</div></div></div>
+        <div class="col-6 col-lg-3"><div class="summary-box"><div class="summary-label">업무용 거리</div><div id="sumBusiness" class="summary-value">0.0 km</div></div></div>
+        <div class="col-6 col-lg-3"><div class="summary-box"><div class="summary-label">개인사용 거리</div><div id="sumPersonal" class="summary-value">0.0 km</div></div></div>
+    </div>
+
+    <div class="toolbar">
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-outline-primary btn-sm" onclick="mergeSelected(false)"><i class="bi bi-union me-1"></i>선택 운행 묶기</button>
+            <button class="btn btn-outline-warning btn-sm" onclick="mergeSelected(true)"><i class="bi bi-eye-slash me-1"></i>개인사용으로 묶기</button>
+            <button class="btn btn-outline-danger btn-sm" onclick="excludeSelected()"><i class="bi bi-trash me-1"></i>선택 제외</button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="undoLastAction()"><i class="bi bi-arrow-counterclockwise me-1"></i>실행 취소</button>
+            <button class="btn btn-success btn-sm ms-lg-auto" onclick="resolveAllAddresses()"><i class="bi bi-geo-alt-fill me-1"></i>업무 운행 주소 변환</button>
+        </div>
+    </div>
+
+    <div class="card-dark p-3">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover driving-table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:40px"><input id="checkAll" type="checkbox" onchange="toggleAllRows(this.checked)"></th>
+                        <th>#</th>
+                        <th>일자</th>
+                        <th>시간</th>
+                        <th>구분</th>
+                        <th>출발지</th>
+                        <th>도착지</th>
+                        <th class="text-end">거리</th>
+                        <th>상태</th>
+                    </tr>
+                </thead>
+                <tbody id="drivingBody">
+                    <tr><td colspan="9" class="text-center text-secondary py-5">타임라인 JSON을 불러오면 차량 운행이 표시됩니다.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script src="js/driving.js"></script>
+</body>
+</html>

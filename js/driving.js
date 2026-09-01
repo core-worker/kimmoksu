@@ -1,7 +1,7 @@
 // =====================================================
 // 김목수이야기 ERP - driving.js
-// 역할: Google Timeline JSON 파싱, 운행 묶기/개인사용,
-//       Kakao 좌표->주소 변환, 운행 미리보기
+// Google Timeline JSON 파싱 / 기간 필터 / 운행 묶기 / 개인사용
+// Kakao 좌표 -> 주소 변환 / 운행 미리보기
 // =====================================================
 
 let drivingRows = [];
@@ -20,10 +20,12 @@ function parseLatLng(text) {
 function toLocalParts(iso) {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return { date: '', time: '' };
-    return {
-        date: d.toLocaleDateString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit' }).replace(/\. /g,'-').replace('.',''),
-        time: d.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', hour12:false })
-    };
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${min}` };
 }
 
 function normalizeVehicleSegment(segment, idx) {
@@ -35,6 +37,10 @@ function normalizeVehicleSegment(segment, idx) {
     const start = parseLatLng(act.start && act.start.latLng);
     const end = parseLatLng(act.end && act.end.latLng);
     if (!start || !end) return null;
+
+    const startDate = new Date(segment.startTime);
+    const endDate = new Date(segment.endTime);
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return null;
 
     const startParts = toLocalParts(segment.startTime);
     const endParts = toLocalParts(segment.endTime);
@@ -61,6 +67,33 @@ function normalizeVehicleSegment(segment, idx) {
     };
 }
 
+function getSelectedRange() {
+    const startValue = document.getElementById('rangeStart')?.value || '';
+    const endValue = document.getElementById('rangeEnd')?.value || '';
+
+    if (!startValue || !endValue) {
+        throw new Error('추출 시작일과 종료일을 모두 지정해주세요.');
+    }
+
+    const start = new Date(`${startValue}T00:00:00`);
+    const end = new Date(`${endValue}T23:59:59.999`);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        throw new Error('추출 기간이 올바르지 않습니다.');
+    }
+    if (start > end) {
+        throw new Error('추출 시작일은 종료일보다 늦을 수 없습니다.');
+    }
+
+    return { start, end, startValue, endValue };
+}
+
+function overlapsRange(row, rangeStart, rangeEnd) {
+    const tripStart = new Date(row.startISO);
+    const tripEnd = new Date(row.endISO);
+    return tripStart <= rangeEnd && tripEnd >= rangeStart;
+}
+
 async function loadTimelineFile() {
     const input = document.getElementById('timelineFile');
     const file = input && input.files && input.files[0];
@@ -69,25 +102,42 @@ async function loadTimelineFile() {
         return;
     }
 
+    let range;
+    try {
+        range = getSelectedRange();
+    } catch (err) {
+        alert(err.message);
+        return;
+    }
+
     try {
         const text = await file.text();
         const json = JSON.parse(text);
         const segments = Array.isArray(json.semanticSegments) ? json.semanticSegments : [];
 
-        const rows = segments
+        const allVehicleRows = segments
             .map((segment, idx) => normalizeVehicleSegment(segment, idx))
             .filter(Boolean)
-            .sort((a,b) => new Date(a.startISO) - new Date(b.startISO));
+            .sort((a, b) => new Date(a.startISO) - new Date(b.startISO));
 
+        const rows = allVehicleRows.filter(row => overlapsRange(row, range.start, range.end));
+
+        if (!allVehicleRows.length) {
+            alert('이 JSON에서 IN_PASSENGER_VEHICLE 차량 운행을 찾지 못했습니다.');
+            return;
+        }
         if (!rows.length) {
-            alert('IN_PASSENGER_VEHICLE 차량 운행을 찾지 못했습니다.');
+            drivingRows = [];
+            drivingHistory = [];
+            renderDrivingRows();
+            alert(`${range.startValue} ~ ${range.endValue} 기간에는 차량 운행이 없습니다.`);
             return;
         }
 
         drivingRows = rows;
         drivingHistory = [];
         renderDrivingRows();
-        alert(`차량 운행 ${rows.length}건을 찾았습니다.`);
+        alert(`${range.startValue} ~ ${range.endValue}\n차량 운행 ${rows.length}건을 찾았습니다.\n(JSON 전체 차량 운행 ${allVehicleRows.length}건)`);
     } catch (err) {
         console.error(err);
         alert('JSON 분석 중 오류가 발생했습니다. 올바른 Google Timeline 파일인지 확인해주세요.');
@@ -103,7 +153,7 @@ function selectedIndexes() {
     return [...document.querySelectorAll('.trip-check:checked')]
         .map(el => Number(el.dataset.index))
         .filter(Number.isInteger)
-        .sort((a,b) => a-b);
+        .sort((a, b) => a - b);
 }
 
 function mergeSelected(asPersonal) {
@@ -112,10 +162,8 @@ function mergeSelected(asPersonal) {
         alert('묶을 운행을 2건 이상 선택해주세요.');
         return;
     }
-
-    // 연속된 행만 묶기 허용
-    for (let i=1; i<indexes.length; i++) {
-        if (indexes[i] !== indexes[i-1] + 1) {
+    for (let i = 1; i < indexes.length; i++) {
+        if (indexes[i] !== indexes[i - 1] + 1) {
             alert('연속된 운행만 하나로 묶을 수 있습니다.');
             return;
         }
@@ -125,7 +173,7 @@ function mergeSelected(asPersonal) {
     const parts = indexes.map(i => drivingRows[i]);
     const first = parts[0];
     const last = parts[parts.length - 1];
-    const totalDistance = Number(parts.reduce((sum, r) => sum + (Number(r.distanceKm)||0), 0).toFixed(1));
+    const totalDistance = Number(parts.reduce((sum, r) => sum + (Number(r.distanceKm) || 0), 0).toFixed(1));
 
     const merged = {
         id: `merged_${Date.now()}`,
@@ -174,16 +222,15 @@ function undoLastAction() {
 }
 
 function toggleAllRows(checked) {
-    document.querySelectorAll('.trip-check').forEach(el => el.checked = checked);
+    document.querySelectorAll('.trip-check').forEach(el => { el.checked = checked; });
 }
 
 function usageOptions(selected) {
-    const options = [
-        ['business','업무'],
-        ['commute','출/퇴근'],
-        ['personal','개인사용']
-    ];
-    return options.map(([v,t]) => `<option value="${v}" ${v===selected?'selected':''}>${t}</option>`).join('');
+    return [
+        ['business', '업무'],
+        ['commute', '출/퇴근'],
+        ['personal', '개인사용']
+    ].map(([v, t]) => `<option value="${v}" ${v === selected ? 'selected' : ''}>${t}</option>`).join('');
 }
 
 function setUsageType(index, value) {
@@ -217,35 +264,24 @@ function renderDrivingRows() {
         const startTitle = personal ? '개인사용' : (r.startName || '주소 미변환');
         const endTitle = personal ? '개인사용' : (r.endName || '주소 미변환');
         const status = r.isMerged ? `<span class="badge badge-soft">${r.originalIds.length}건 묶음</span>` : '<span class="text-secondary">일반</span>';
-        return `<tr class="${personal?'personal-row':''} ${r.isMerged?'merged-row':''}">
+        return `<tr class="${personal ? 'personal-row' : ''} ${r.isMerged ? 'merged-row' : ''}">
             <td><input class="trip-check" type="checkbox" data-index="${idx}"></td>
-            <td>${idx+1}</td>
+            <td>${idx + 1}</td>
             <td>${escapeHtml(r.date)}</td>
             <td>${escapeHtml(r.startTime)} → ${escapeHtml(r.endTime)}</td>
-            <td>
-                <select class="form-select form-select-sm input-dark" onchange="setUsageType(${idx}, this.value)" ${personal && r.isMerged ? 'disabled' : ''}>
-                    ${usageOptions(r.usageType)}
-                </select>
-            </td>
-            <td>
-                <div class="place-main">${escapeHtml(startTitle)}</div>
-                <div class="place-sub">${personal?'':escapeHtml(r.startAddress || `${r.start.lat.toFixed(6)}, ${r.start.lng.toFixed(6)}`)}</div>
-            </td>
-            <td>
-                <div class="place-main">${escapeHtml(endTitle)}</div>
-                <div class="place-sub">${personal?'':escapeHtml(r.endAddress || `${r.end.lat.toFixed(6)}, ${r.end.lng.toFixed(6)}`)}</div>
-            </td>
+            <td><select class="form-select form-select-sm input-dark" onchange="setUsageType(${idx}, this.value)" ${personal && r.isMerged ? 'disabled' : ''}>${usageOptions(r.usageType)}</select></td>
+            <td><div class="place-main">${escapeHtml(startTitle)}</div><div class="place-sub">${personal ? '' : escapeHtml(r.startAddress || `${r.start.lat.toFixed(6)}, ${r.start.lng.toFixed(6)}`)}</div></td>
+            <td><div class="place-main">${escapeHtml(endTitle)}</div><div class="place-sub">${personal ? '' : escapeHtml(r.endAddress || `${r.end.lat.toFixed(6)}, ${r.end.lng.toFixed(6)}`)}</div></td>
             <td class="text-end fw-bold">${r.distanceKm.toFixed(1)} km</td>
             <td>${status}</td>
         </tr>`;
     }).join('');
-
     updateSummary();
 }
 
 function updateSummary() {
-    const total = drivingRows.reduce((s,r)=>s+(Number(r.distanceKm)||0),0);
-    const personal = drivingRows.filter(r=>r.usageType==='personal' || r.isPersonal).reduce((s,r)=>s+(Number(r.distanceKm)||0),0);
+    const total = drivingRows.reduce((s, r) => s + (Number(r.distanceKm) || 0), 0);
+    const personal = drivingRows.filter(r => r.usageType === 'personal' || r.isPersonal).reduce((s, r) => s + (Number(r.distanceKm) || 0), 0);
     const business = total - personal;
     document.getElementById('sumCount').textContent = `${drivingRows.length}건`;
     document.getElementById('sumDistance').textContent = `${total.toFixed(1)} km`;
@@ -254,9 +290,7 @@ function updateSummary() {
 }
 
 function escapeHtml(value) {
-    return String(value ?? '')
-        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
 function connectKakaoMaps() {
@@ -273,8 +307,7 @@ function connectKakaoMaps() {
         return;
     }
 
-    const old = document.getElementById('kakaoMapsSdk');
-    if (old) old.remove();
+    document.getElementById('kakaoMapsSdk')?.remove();
     const script = document.createElement('script');
     script.id = 'kakaoMapsSdk';
     script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(key)}&libraries=services&autoload=false`;
@@ -313,7 +346,7 @@ function reverseGeocode(point) {
         if (!kakaoReady || !kakaoGeocoder) return reject(new Error('Kakao API not ready'));
         kakaoGeocoder.coord2Address(point.lng, point.lat, (result, status) => {
             if (status !== kakao.maps.services.Status.OK || !result || !result.length) {
-                resolve({ name:'주소 확인 불가', address:'' });
+                resolve({ name: '주소 확인 불가', address: '' });
                 return;
             }
             const hit = result[0];
@@ -339,21 +372,20 @@ async function resolveAllAddresses() {
     const targets = [];
     drivingRows.forEach((r, idx) => {
         if (r.usageType === 'personal' || r.isPersonal) return;
-        if (!r.startAddress) targets.push({ idx, side:'start', point:r.start });
-        if (!r.endAddress) targets.push({ idx, side:'end', point:r.end });
+        if (!r.startAddress) targets.push({ idx, side: 'start', point: r.start });
+        if (!r.endAddress) targets.push({ idx, side: 'end', point: r.end });
     });
 
     if (!targets.length) {
         alert('변환할 주소가 없습니다.');
         return;
     }
-
     if (!confirm(`업무/출퇴근 운행의 주소 ${targets.length}건을 카카오 API로 변환할까요?`)) return;
 
     const status = document.getElementById('kakaoStatus');
-    for (let i=0; i<targets.length; i++) {
+    for (let i = 0; i < targets.length; i++) {
         const t = targets[i];
-        if (status) status.textContent = `주소 변환 중 ${i+1}/${targets.length}`;
+        if (status) status.textContent = `주소 변환 중 ${i + 1}/${targets.length}`;
         try {
             const found = await reverseGeocode(t.point);
             const row = drivingRows[t.idx];
@@ -374,12 +406,26 @@ async function resolveAllAddresses() {
     renderDrivingRows();
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+function setDefaultRange() {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const first = `${yyyy}-${mm}-01`;
+    const lastDate = new Date(yyyy, now.getMonth() + 1, 0).getDate();
+    const last = `${yyyy}-${mm}-${String(lastDate).padStart(2, '0')}`;
+    const startEl = document.getElementById('rangeStart');
+    const endEl = document.getElementById('rangeEnd');
+    if (startEl && !startEl.value) startEl.value = first;
+    if (endEl && !endEl.value) endEl.value = last;
+}
 
 window.addEventListener('DOMContentLoaded', () => {
     const saved = localStorage.getItem('kimmoksu_kakao_js_key');
-    const input = document.getElementById('kakaoKeyInput');
-    if (saved && input) input.value = saved;
+    const keyInput = document.getElementById('kakaoKeyInput');
+    if (saved && keyInput) keyInput.value = saved;
+    setDefaultRange();
     renderDrivingRows();
 });
 

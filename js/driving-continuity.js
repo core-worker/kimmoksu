@@ -86,22 +86,64 @@ function normalizeRawActivity(segment, rawIndex) {
     };
 }
 
+function getUsedRawSegmentIndexes() {
+    const used = new Set();
+
+    drivingRows.forEach(row => {
+        (row.originalIds || []).forEach(id => {
+            // 정상 추출 차량 운행은 segment_N, 복구 운행은 raw_N 형식이다.
+            // 둘 다 같은 semanticSegments 배열의 N번째 원본을 뜻하므로 모두 제외해야 한다.
+            const match = String(id).match(/^(?:segment|raw)_(\d+)$/);
+            if (match) used.add(Number(match[1]));
+        });
+    });
+
+    return used;
+}
+
+function isActivityInsideContinuityGap(item, gapStart, gapEnd) {
+    // Timeline 구간 경계가 수 초~수십 초 겹치는 경우를 허용하되,
+    // 바로 전/다음 운행 전체가 후보로 들어오는 것은 막는다.
+    const toleranceMs = 60 * 1000;
+
+    if (item.startMs < gapStart - toleranceMs) return false;
+    if (item.endMs > gapEnd + toleranceMs) return false;
+
+    // 실제 의심 시간대와 최소한 일부는 겹쳐야 한다.
+    const overlapStart = Math.max(item.startMs, gapStart);
+    const overlapEnd = Math.min(item.endMs, gapEnd);
+    return overlapEnd > overlapStart;
+}
+
 function findRawActivitiesForGap(gap) {
     const gapStart = new Date(gap.prev.endISO).getTime();
     const gapEnd = new Date(gap.next.startISO).getTime();
-    if (!Number.isFinite(gapStart) || !Number.isFinite(gapEnd)) return [];
+    if (!Number.isFinite(gapStart) || !Number.isFinite(gapEnd) || gapEnd <= gapStart) return [];
 
-    const existingRawIds = new Set(
-        drivingRows.flatMap(row => row.originalIds || [])
-            .filter(id => /^raw_\d+$/.test(id))
-    );
+    const usedRawIndexes = getUsedRawSegmentIndexes();
+    const seenCandidates = new Set();
 
     return drivingRawSemanticSegments
         .map((segment, idx) => normalizeRawActivity(segment, idx))
         .filter(Boolean)
-        .filter(item => !existingRawIds.has(`raw_${item.rawIndex}`))
-        .filter(item => item.endMs >= gapStart - 5 * 60000 && item.startMs <= gapEnd + 5 * 60000)
+
+        // 이미 정상 운행 목록에 포함된 segment_N과 이전에 복구한 raw_N 모두 제외한다.
+        .filter(item => !usedRawIndexes.has(item.rawIndex))
+
+        // 후보는 반드시 '이전 운행 종료 ~ 다음 운행 시작' 사이에 거의 전부 포함돼야 한다.
+        // 기존의 앞뒤 5분 overlap 검색은 바로 전/다음 정상 운행을 다시 끌어오는 원인이었다.
+        .filter(item => isActivityInsideContinuityGap(item, gapStart, gapEnd))
+
         .filter(item => item.distanceKm >= 0.3 || continuityDistanceMeters(item.start, item.end) >= 300)
+
+        // 일부 Timeline export에서 사실상 동일한 활동이 중복될 경우 한 번만 표시한다.
+        .filter(item => {
+            const key = `${item.startISO}|${item.endISO}|${item.type}|${item.start.lat.toFixed(5)},${item.start.lng.toFixed(5)}|${item.end.lat.toFixed(5)},${item.end.lng.toFixed(5)}`;
+            if (seenCandidates.has(key)) return false;
+            seenCandidates.add(key);
+            return true;
+        })
+
         .map(item => ({
             ...item,
             startGapMeters: continuityDistanceMeters(gap.prev.end, item.start),

@@ -5,6 +5,7 @@
 // =====================================================
 
 let drivingLastCheckedIndex = null;
+let drivingUiDecorating = false;
 
 function setPlaceAddress(index, side, value) {
     const row = drivingRows[index];
@@ -118,8 +119,10 @@ function decorateManualCells(tr, row, rowIndex, cells) {
         cells[3].querySelector('.manual-end-time').addEventListener('change', e => updateManualTripDateTime(rowIndex, 'endTime', e.target.value));
     }
 
-    if (cells[8]) {
-        cells[8].innerHTML = '<span class="badge text-bg-success">수동 추가</span>';
+    // 이미 수동 추가 배지가 있으면 innerHTML을 다시 쓰지 않는다.
+    // 반복 DOM 변경 -> MutationObserver 재호출 루프 방지.
+    if (cells[8] && !cells[8].querySelector('.manual-status-badge')) {
+        cells[8].innerHTML = '<span class="badge text-bg-success manual-status-badge">수동 추가</span>';
     }
 }
 
@@ -187,39 +190,61 @@ function decoratePlaceCell(cell, row, rowIndex, side) {
 }
 
 function decorateDrivingRows() {
-    const tbody = document.getElementById('drivingBody');
-    if (!tbody) return;
+    if (drivingUiDecorating) return;
+    drivingUiDecorating = true;
 
-    const normalRows = [...tbody.querySelectorAll('tr')].filter(tr => tr.querySelector('.trip-check'));
+    try {
+        const tbody = document.getElementById('drivingBody');
+        if (!tbody) return;
 
-    normalRows.forEach((tr, rowIndex) => {
-        const cells = tr.querySelectorAll('td');
-        if (cells.length < 9) return;
+        const normalRows = [...tbody.querySelectorAll('tr')].filter(tr => tr.querySelector('.trip-check'));
 
-        const checkbox = tr.querySelector('.trip-check');
-        bindShiftSelection(checkbox);
+        normalRows.forEach((tr, rowIndex) => {
+            const cells = tr.querySelectorAll('td');
+            if (cells.length < 9) return;
 
-        const row = drivingRows[rowIndex];
-        if (!row) return;
+            const checkbox = tr.querySelector('.trip-check');
+            bindShiftSelection(checkbox);
 
-        decorateManualCells(tr, row, rowIndex, cells);
-        decorateDistanceCell(cells[7], row, rowIndex);
+            const row = drivingRows[rowIndex];
+            if (!row) return;
 
-        if (row.isRecovered && cells[8] && !row.isMerged && !row.isManual) {
-            cells[8].innerHTML = '<span class="badge text-bg-warning">복구</span>';
-        }
+            decorateManualCells(tr, row, rowIndex, cells);
+            decorateDistanceCell(cells[7], row, rowIndex);
 
-        if (row.usageType === 'personal' || row.isPersonal) return;
+            // 복구 배지도 한 번만 작성한다.
+            if (row.isRecovered && cells[8] && !row.isMerged && !row.isManual && !cells[8].querySelector('.recovered-status-badge')) {
+                cells[8].innerHTML = '<span class="badge text-bg-warning recovered-status-badge">복구</span>';
+            }
 
-        decoratePlaceCell(cells[5], row, rowIndex, 'start');
-        decoratePlaceCell(cells[6], row, rowIndex, 'end');
-    });
+            if (row.usageType === 'personal' || row.isPersonal) return;
+
+            decoratePlaceCell(cells[5], row, rowIndex, 'start');
+            decoratePlaceCell(cells[6], row, rowIndex, 'end');
+        });
+    } finally {
+        drivingUiDecorating = false;
+    }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    const observer = new MutationObserver(() => decorateDrivingRows());
     const body = document.getElementById('drivingBody');
-    if (body) observer.observe(body, { childList: true, subtree: true });
+    if (body) {
+        const observer = new MutationObserver(mutations => {
+            // renderDrivingRows()는 tbody의 직접 자식(tr)을 교체한다.
+            // 셀 내부에 입력창/배지를 붙이는 우리 자신의 변경은 감시하지 않는다.
+            const hasTripRowChange = mutations.some(mutation =>
+                [...mutation.addedNodes, ...mutation.removedNodes].some(node =>
+                    node.nodeType === 1 &&
+                    (node.querySelector?.('.trip-check') || (node.matches?.('tr') && node.querySelector?.('.trip-check')))
+                )
+            );
+            if (hasTripRowChange) decorateDrivingRows();
+        });
+
+        observer.observe(body, { childList: true, subtree: false });
+    }
+
     decorateDrivingRows();
 });
 

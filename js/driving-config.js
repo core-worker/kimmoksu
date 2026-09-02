@@ -3,7 +3,7 @@
 // Kakao Developers의 JavaScript SDK 도메인 제한과 함께 사용합니다.
 
 window.KIMMOKSU_DRIVING_CONFIG = {
-    kakaoJavaScriptKey: "YOUR_KAKAO_JAVASCRIPT_KEY"
+    kakaoJavaScriptKey: "26238d87788a8fa90483fc9f8a73e601"
 };
 
 function offsetDrivingPoint(point, distanceMeters, bearingDeg) {

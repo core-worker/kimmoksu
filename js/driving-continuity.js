@@ -8,6 +8,7 @@ const DRIVING_CONTINUITY_WARN_METERS = 1000;
 let drivingRawSemanticSegments = [];
 let drivingIgnoredGapKeys = new Set();
 let continuityModalGap = null;
+let continuityObserver = null;
 
 function continuityDistanceMeters(a, b) {
     if (!a || !b) return Infinity;
@@ -152,6 +153,7 @@ function ensureContinuitySummary() {
 function renderContinuityWarnings() {
     const gaps = getDrivingContinuityGaps();
     const summary = ensureContinuitySummary();
+
     if (summary) {
         if (!gaps.length) {
             summary.innerHTML = '<div class="small text-success"><i class="bi bi-check-circle me-1"></i>운행 위치 연속성 이상 없음</div>';
@@ -162,15 +164,18 @@ function renderContinuityWarnings() {
 
     const tbody = document.getElementById('drivingBody');
     if (!tbody) return;
+
     tbody.querySelectorAll('.continuity-warning-row').forEach(el => el.remove());
 
     const normalRows = [...tbody.querySelectorAll('tr')].filter(tr => tr.querySelector('.trip-check'));
+
     gaps.slice().reverse().forEach(gap => {
         const targetRow = normalRows[gap.afterIndex];
         if (!targetRow) return;
 
         const tr = document.createElement('tr');
         tr.className = 'continuity-warning-row';
+
         const gapKm = (gap.distanceMeters / 1000).toFixed(1);
         const minutes = gap.gapMinutes == null ? '-' : Math.round(gap.gapMinutes);
         const candidates = findRawActivitiesForGap(gap);
@@ -183,16 +188,30 @@ function renderContinuityWarnings() {
                     <span>이전 도착지 → 다음 출발지 직선거리 약 <b>${gapKm}km</b></span>
                     <span class="text-secondary">· 시간 공백 ${minutes}분</span>
                     <span class="badge text-bg-secondary">원본 후보 ${candidates.length}건</span>
-                    <button class="btn btn-sm btn-warning ms-lg-auto" onclick="openContinuityGap('${gap.key.replace(/'/g, "\\'")}')"><i class="bi bi-search me-1"></i>누락 이동 확인</button>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="ignoreContinuityGap('${gap.key.replace(/'/g, "\\'")}')">이상 없음</button>
+                    <button type="button" class="btn btn-sm btn-warning ms-lg-auto js-continuity-open"><i class="bi bi-search me-1"></i>누락 이동 확인</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary js-continuity-ignore">이상 없음</button>
                 </div>
             </td>`;
+
+        tr.querySelector('.js-continuity-open').addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            openContinuityGap(gap.key);
+        });
+
+        tr.querySelector('.js-continuity-ignore').addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            ignoreContinuityGap(gap.key);
+        });
+
         targetRow.parentNode.insertBefore(tr, targetRow);
     });
 }
 
 function ensureContinuityModal() {
     if (document.getElementById('continuityModal')) return;
+
     const wrap = document.createElement('div');
     wrap.innerHTML = `
         <div class="modal fade" id="continuityModal" tabindex="-1" aria-hidden="true">
@@ -213,41 +232,62 @@ function ensureContinuityModal() {
                 </div>
             </div>
         </div>`;
+
     document.body.appendChild(wrap.firstElementChild);
 }
 
 function openContinuityGap(key) {
-    const gap = getDrivingContinuityGaps().find(item => item.key === key);
-    if (!gap) return;
-    continuityModalGap = gap;
-    ensureContinuityModal();
+    try {
+        const gap = getDrivingContinuityGaps().find(item => item.key === key);
+        if (!gap) {
+            alert('해당 누락 구간을 찾지 못했습니다. 운행 목록이 변경되었다면 다시 분석해주세요.');
+            return;
+        }
 
-    const candidates = findRawActivitiesForGap(gap);
-    const subtitle = document.getElementById('continuityModalSubtitle');
-    subtitle.textContent = `${continuityLocalTime(gap.prev.endISO)} 이후 ~ ${continuityLocalTime(gap.next.startISO)} 이전 · 위치 단절 ${(gap.distanceMeters / 1000).toFixed(1)}km`;
+        continuityModalGap = gap;
+        ensureContinuityModal();
 
-    const list = document.getElementById('continuityCandidateList');
-    if (!candidates.length) {
-        list.innerHTML = '<div class="alert alert-secondary mb-0">이 시간대의 원본 JSON에서 이동 활동을 찾지 못했습니다. Google Timeline 자체에 데이터가 빠졌을 가능성이 있습니다.</div>';
-    } else {
-        list.innerHTML = candidates.map((item, idx) => {
-            const likely = item.startGapMeters <= 3000 && item.endGapMeters <= 3000;
-            return `
-                <div class="border border-secondary rounded p-3 mb-2 ${likely ? 'border-warning' : ''}">
-                    <div class="d-flex flex-wrap gap-2 align-items-center">
-                        <b>${continuityTypeLabel(item.type)}</b>
-                        <span>${continuityLocalTime(item.startISO)} → ${continuityLocalTime(item.endISO)}</span>
-                        <span class="badge text-bg-secondary">${item.distanceKm.toFixed(1)} km</span>
-                        ${likely ? '<span class="badge text-bg-warning">연결 가능성 높음</span>' : ''}
-                        <button class="btn btn-sm btn-outline-warning ms-lg-auto" onclick="recoverContinuityCandidate(${idx})">차량운행으로 복구</button>
-                    </div>
-                    <div class="small text-secondary mt-2">이전 도착지와 시작점 차이 ${(item.startGapMeters/1000).toFixed(1)}km · 종료점과 다음 출발지 차이 ${(item.endGapMeters/1000).toFixed(1)}km</div>
-                </div>`;
-        }).join('');
+        const candidates = findRawActivitiesForGap(gap);
+        const subtitle = document.getElementById('continuityModalSubtitle');
+        subtitle.textContent = `${continuityLocalTime(gap.prev.endISO)} 이후 ~ ${continuityLocalTime(gap.next.startISO)} 이전 · 위치 단절 ${(gap.distanceMeters / 1000).toFixed(1)}km`;
+
+        const list = document.getElementById('continuityCandidateList');
+
+        if (!candidates.length) {
+            list.innerHTML = '<div class="alert alert-secondary mb-0"><b>원본 이동 후보가 없습니다.</b><br><span class="small">이 시간대의 Google Timeline JSON 자체에 이동 세그먼트가 빠졌거나 좌표 정보가 없는 활동만 존재할 수 있습니다.</span></div>';
+        } else {
+            list.innerHTML = candidates.map((item, idx) => {
+                const likely = item.startGapMeters <= 3000 && item.endGapMeters <= 3000;
+                return `
+                    <div class="border border-secondary rounded p-3 mb-2 ${likely ? 'border-warning' : ''}">
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <b>${continuityTypeLabel(item.type)}</b>
+                            <span>${continuityLocalTime(item.startISO)} → ${continuityLocalTime(item.endISO)}</span>
+                            <span class="badge text-bg-secondary">${item.distanceKm.toFixed(1)} km</span>
+                            ${likely ? '<span class="badge text-bg-warning">연결 가능성 높음</span>' : ''}
+                            <button type="button" class="btn btn-sm btn-outline-warning ms-lg-auto js-continuity-recover" data-candidate-index="${idx}">차량운행으로 복구</button>
+                        </div>
+                        <div class="small text-secondary mt-2">이전 도착지와 시작점 차이 ${(item.startGapMeters / 1000).toFixed(1)}km · 종료점과 다음 출발지 차이 ${(item.endGapMeters / 1000).toFixed(1)}km</div>
+                    </div>`;
+            }).join('');
+
+            list.querySelectorAll('.js-continuity-recover').forEach(button => {
+                button.addEventListener('click', () => recoverContinuityCandidate(Number(button.dataset.candidateIndex)));
+            });
+        }
+
+        continuityModalGap.candidates = candidates;
+
+        if (!window.bootstrap?.Modal) {
+            alert('누락 이동 팝업을 열 수 없습니다. Bootstrap 스크립트 로드를 확인해주세요.');
+            return;
+        }
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('continuityModal')).show();
+    } catch (err) {
+        console.error('누락 이동 확인 팝업 오류:', err);
+        alert('누락 이동 확인 창을 여는 중 오류가 발생했습니다. F12 콘솔의 오류를 확인해주세요.');
     }
-
-    continuityModalGap.candidates = candidates;
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('continuityModal')).show();
 }
 
 function recoverContinuityCandidate(candidateIndex) {
@@ -259,8 +299,14 @@ function recoverContinuityCandidate(candidateIndex) {
     if (!confirm(`${label}로 분류된 ${item.distanceKm.toFixed(1)}km 이동을 회사 차량 운행으로 복구할까요?`)) return;
 
     snapshotRows();
-    const parts = typeof toLocalParts === 'function' ? toLocalParts(item.startISO) : { date: '', time: continuityLocalTime(item.startISO) };
-    const endParts = typeof toLocalParts === 'function' ? toLocalParts(item.endISO) : { time: continuityLocalTime(item.endISO) };
+
+    const parts = typeof toLocalParts === 'function'
+        ? toLocalParts(item.startISO)
+        : { date: '', time: continuityLocalTime(item.startISO) };
+
+    const endParts = typeof toLocalParts === 'function'
+        ? toLocalParts(item.endISO)
+        : { time: continuityLocalTime(item.endISO) };
 
     const recovered = {
         id: `recovered_${item.rawIndex}_${Date.now()}`,
@@ -288,7 +334,10 @@ function recoverContinuityCandidate(candidateIndex) {
     drivingRows.splice(gap.afterIndex, 0, recovered);
     drivingRows.sort((a, b) => new Date(a.startISO) - new Date(b.startISO));
 
-    if (typeof applyDrivingPlaceCacheToRows === 'function') applyDrivingPlaceCacheToRows();
+    if (typeof applyDrivingPlaceCacheToRows === 'function') {
+        applyDrivingPlaceCacheToRows();
+    }
+
     renderDrivingRows();
     bootstrap.Modal.getInstance(document.getElementById('continuityModal'))?.hide();
     setTimeout(renderContinuityWarnings, 0);
@@ -302,10 +351,12 @@ function ignoreContinuityGap(key) {
 async function readRawTimelineForContinuity() {
     const input = document.getElementById('timelineFile');
     const file = input?.files?.[0];
+
     if (!file) {
         drivingRawSemanticSegments = [];
         return;
     }
+
     try {
         const json = JSON.parse(await file.text());
         drivingRawSemanticSegments = Array.isArray(json.semanticSegments) ? json.semanticSegments : [];
@@ -315,24 +366,42 @@ async function readRawTimelineForContinuity() {
     }
 }
 
+function mutationContainsNormalTripRows(mutations) {
+    return mutations.some(mutation => {
+        const nodes = [...mutation.addedNodes, ...mutation.removedNodes];
+        return nodes.some(node => {
+            if (node.nodeType !== 1) return false;
+            if (node.classList?.contains('continuity-warning-row')) return false;
+            if (node.matches?.('tr') && node.querySelector?.('.trip-check')) return true;
+            return !!node.querySelector?.('.trip-check');
+        });
+    });
+}
+
 (function installContinuityValidation() {
     const originalLoadTimelineFile = window.loadTimelineFile;
+
     if (typeof originalLoadTimelineFile === 'function') {
         window.loadTimelineFile = async function(...args) {
             drivingIgnoredGapKeys = new Set();
             await readRawTimelineForContinuity();
             await originalLoadTimelineFile.apply(this, args);
-            setTimeout(renderContinuityWarnings, 0);
+            setTimeout(renderContinuityWarnings, 30);
         };
     }
 
     const body = document.getElementById('drivingBody');
     if (body) {
-        const observer = new MutationObserver(() => {
+        continuityObserver = new MutationObserver(mutations => {
+            // 경고 행 자체를 추가/삭제한 변화는 무시한다.
+            // 실제 운행 행이 다시 렌더링된 경우에만 경고를 갱신한다.
+            if (!mutationContainsNormalTripRows(mutations)) return;
+
             clearTimeout(window.__drivingContinuityTimer);
-            window.__drivingContinuityTimer = setTimeout(renderContinuityWarnings, 20);
+            window.__drivingContinuityTimer = setTimeout(renderContinuityWarnings, 30);
         });
-        observer.observe(body, { childList: true, subtree: false });
+
+        continuityObserver.observe(body, { childList: true, subtree: false });
     }
 })();
 

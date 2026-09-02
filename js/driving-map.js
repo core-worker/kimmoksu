@@ -1,6 +1,6 @@
 // =====================================================
 // 김목수이야기 ERP - driving-map.js
-// 도로명 주소가 없는 운행 좌표를 지도에서 확인/보정
+// 모든 업무/출퇴근 주소를 지도에서 확인하고 수동 보정
 // =====================================================
 
 let drivingMapInstance = null;
@@ -18,25 +18,37 @@ function ensureDrivingMapModal() {
                 <div class="modal-content bg-dark text-light border-secondary">
                     <div class="modal-header border-secondary">
                         <div>
-                            <h5 class="modal-title fw-bold"><i class="bi bi-map me-2"></i>지도에서 위치 확인</h5>
-                            <div class="small text-secondary mt-1">원래 GPS 위치를 확인하고, 필요하면 지도를 클릭해 보정 위치를 선택하세요.</div>
+                            <h5 class="modal-title fw-bold"><i class="bi bi-map me-2"></i>지도에서 위치/주소 수정</h5>
+                            <div class="small text-secondary mt-1">GPS 마커를 확인하고 필요하면 지도를 클릭해 위치를 옮긴 뒤 현장명과 주소를 직접 수정할 수 있습니다.</div>
                         </div>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div id="drivingMapCanvas" style="width:100%;height:520px;border-radius:12px;overflow:hidden;background:#111827;"></div>
-                        <div class="row g-2 mt-3">
-                            <div class="col-12 col-lg-7">
-                                <div class="p-3 rounded bg-black bg-opacity-25 h-100">
-                                    <div class="small text-secondary">선택 좌표</div>
-                                    <div id="drivingMapCoords" class="fw-bold mt-1">-</div>
-                                    <div id="drivingMapResult" class="small text-secondary mt-2">지도를 클릭하면 해당 위치의 도로명 주소를 확인할 수 있습니다.</div>
-                                </div>
+                        <div id="drivingMapCanvas" style="width:100%;height:500px;border-radius:12px;overflow:hidden;background:#111827;"></div>
+
+                        <div class="row g-3 mt-2">
+                            <div class="col-12 col-lg-4">
+                                <label class="form-label small text-secondary">선택 좌표</label>
+                                <div id="drivingMapCoords" class="fw-bold">-</div>
+                                <div id="drivingMapResult" class="small text-secondary mt-2">지도를 클릭하면 해당 위치의 도로명 주소를 다시 확인합니다.</div>
                             </div>
-                            <div class="col-12 col-lg-5 d-flex gap-2 align-items-stretch">
-                                <button id="btnDrivingMapReset" class="btn btn-outline-secondary flex-fill"><i class="bi bi-crosshair me-1"></i>원위치</button>
-                                <button id="btnDrivingMapApply" class="btn btn-success flex-fill" disabled><i class="bi bi-check2-circle me-1"></i>이 위치 적용</button>
+                            <div class="col-12 col-lg-4">
+                                <label class="form-label small text-secondary">현장명 / 장소명</label>
+                                <input id="drivingMapName" class="form-control input-dark" placeholder="예: 센텀 A현장">
                             </div>
+                            <div class="col-12 col-lg-4">
+                                <label class="form-label small text-secondary">도로명 주소</label>
+                                <input id="drivingMapAddress" class="form-control input-dark" placeholder="주소를 직접 수정할 수 있습니다">
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+                            <div class="form-check me-auto">
+                                <input class="form-check-input" type="checkbox" id="drivingMapRemember">
+                                <label class="form-check-label" for="drivingMapRemember">이 장소 기억 (반경 40m)</label>
+                            </div>
+                            <button id="btnDrivingMapReset" class="btn btn-outline-secondary"><i class="bi bi-crosshair me-1"></i>원위치</button>
+                            <button id="btnDrivingMapApply" class="btn btn-success"><i class="bi bi-check2-circle me-1"></i>이 위치 적용</button>
                         </div>
                     </div>
                 </div>
@@ -48,54 +60,39 @@ function ensureDrivingMapModal() {
     document.getElementById('btnDrivingMapApply').addEventListener('click', applyDrivingMapPoint);
 }
 
-function injectMapReviewButtons() {
-    const tbody = document.getElementById('drivingBody');
-    if (!tbody) return;
-
-    [...tbody.querySelectorAll('tr')].forEach((tr, rowIndex) => {
-        const cells = tr.querySelectorAll('td');
-        if (cells.length < 7) return;
-
-        [
-            { cell: cells[5], side: 'start' },
-            { cell: cells[6], side: 'end' }
-        ].forEach(({ cell, side }) => {
-            if (!cell || cell.querySelector('.btn-map-review')) return;
-            const sub = cell.querySelector('.place-sub');
-            if (!sub) return;
-
-            const text = (sub.textContent || '').trim();
-            if (text !== '도로명 주소 없음') return;
-
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'btn btn-sm btn-outline-info mt-1 btn-map-review';
-            btn.innerHTML = '<i class="bi bi-map me-1"></i>지도 확인';
-            btn.addEventListener('click', () => openDrivingMapReview(rowIndex, side));
-            cell.appendChild(btn);
-        });
-    });
-}
-
 async function openDrivingMapReview(rowIndex, side) {
     if (!window.kakao || !kakao.maps) {
         alert('주소 서비스가 아직 연결되지 않았습니다.');
         return;
     }
+
     const row = drivingRows[rowIndex];
-    if (!row) return;
+    if (!row || row.usageType === 'personal' || row.isPersonal) return;
 
     const point = side === 'start' ? row.start : row.end;
     if (!point) return;
 
+    const name = side === 'start' ? row.startName : row.endName;
+    const address = side === 'start' ? row.startAddress : row.endAddress;
+
     ensureDrivingMapModal();
-    drivingMapTarget = { rowIndex, side, originalPoint: { ...point } };
+    drivingMapTarget = {
+        rowIndex,
+        side,
+        originalPoint: { ...point },
+        originalName: name || '',
+        originalAddress: address && address !== '도로명 주소 없음' ? address : ''
+    };
     drivingMapSelectedPoint = { ...point };
+
+    document.getElementById('drivingMapName').value = name && name !== '도로명 주소 없음' ? name : '';
+    document.getElementById('drivingMapAddress').value = address && address !== '도로명 주소 없음' ? address : '';
+    document.getElementById('drivingMapRemember').checked = false;
+    document.getElementById('drivingMapResult').textContent = '현재 GPS 위치를 표시했습니다. 위치가 다르면 지도를 클릭해 마커를 옮겨주세요.';
 
     const modalEl = document.getElementById('drivingMapModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     modal.show();
-
     modalEl.addEventListener('shown.bs.modal', initDrivingMapCanvas, { once: true });
 }
 
@@ -104,26 +101,19 @@ function initDrivingMapCanvas() {
     if (!canvas || !drivingMapSelectedPoint) return;
 
     const center = new kakao.maps.LatLng(drivingMapSelectedPoint.lat, drivingMapSelectedPoint.lng);
-    drivingMapInstance = new kakao.maps.Map(canvas, {
-        center,
-        level: 3
-    });
-
-    drivingMapMarker = new kakao.maps.Marker({
-        position: center,
-        map: drivingMapInstance
-    });
+    drivingMapInstance = new kakao.maps.Map(canvas, { center, level: 3 });
+    drivingMapMarker = new kakao.maps.Marker({ position: center, map: drivingMapInstance });
 
     kakao.maps.event.addListener(drivingMapInstance, 'click', function(mouseEvent) {
         const latLng = mouseEvent.latLng;
-        setDrivingMapPoint({ lat: latLng.getLat(), lng: latLng.getLng() }, true);
+        setDrivingMapPoint({ lat: latLng.getLat(), lng: latLng.getLng() }, true, true);
     });
 
-    setDrivingMapPoint(drivingMapSelectedPoint, false);
+    setDrivingMapPoint(drivingMapSelectedPoint, false, false);
     setTimeout(() => drivingMapInstance.relayout(), 50);
 }
 
-async function setDrivingMapPoint(point, moveCenter) {
+async function setDrivingMapPoint(point, moveCenter, lookupAddress) {
     drivingMapSelectedPoint = { ...point };
     const pos = new kakao.maps.LatLng(point.lat, point.lng);
 
@@ -132,29 +122,24 @@ async function setDrivingMapPoint(point, moveCenter) {
 
     const coordsEl = document.getElementById('drivingMapCoords');
     const resultEl = document.getElementById('drivingMapResult');
-    const applyBtn = document.getElementById('btnDrivingMapApply');
     if (coordsEl) coordsEl.textContent = `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`;
-    if (resultEl) resultEl.textContent = '도로명 주소 확인 중...';
-    if (applyBtn) applyBtn.disabled = true;
+
+    if (!lookupAddress) return;
+
+    if (resultEl) resultEl.textContent = '선택한 위치의 도로명 주소 확인 중...';
 
     try {
-        const found = typeof window.findNearestRoadAddress === 'function'
-            ? await window.findNearestRoadAddress(point)
-            : await mapCoord2RoadAddress(point);
-
-        drivingMapSelectedPoint.found = found;
-        if (found && found.address && found.address !== '도로명 주소 없음') {
-            const distanceText = found.nearbyDistanceMeters
-                ? ` · 약 ${found.nearbyDistanceMeters}m 주변 도로명 주소`
-                : '';
-            if (resultEl) resultEl.innerHTML = `<span class="text-success fw-bold">${escapeMapHtml(found.name || found.address)}</span><br>${escapeMapHtml(found.address)}${distanceText}`;
-            if (applyBtn) applyBtn.disabled = false;
-        } else {
-            if (resultEl) resultEl.innerHTML = '<span class="text-warning">이 위치에서도 도로명 주소를 찾지 못했습니다. 지도를 클릭해 위치를 조금 조정해보세요.</span>';
+        const found = await mapCoord2RoadAddress(point);
+        if (found?.address) {
+            document.getElementById('drivingMapAddress').value = found.address;
+            if (found.name) document.getElementById('drivingMapName').value = found.name;
+            if (resultEl) resultEl.innerHTML = `<span class="text-success fw-bold">주소 확인됨</span> · ${escapeMapHtml(found.address)}`;
+        } else if (resultEl) {
+            resultEl.innerHTML = '<span class="text-warning">도로명 주소를 찾지 못했습니다. 주소를 직접 입력해도 됩니다.</span>';
         }
     } catch (err) {
         console.error(err);
-        if (resultEl) resultEl.textContent = '주소 확인 중 오류가 발생했습니다.';
+        if (resultEl) resultEl.textContent = '주소 확인 중 오류가 발생했습니다. 주소를 직접 입력해도 됩니다.';
     }
 }
 
@@ -163,53 +148,62 @@ function mapCoord2RoadAddress(point) {
         if (!kakaoGeocoder) return reject(new Error('Kakao Geocoder not ready'));
         kakaoGeocoder.coord2Address(point.lng, point.lat, (result, status) => {
             if (status !== kakao.maps.services.Status.OK || !result?.length) {
-                resolve({ name: '도로명 주소 없음', address: '도로명 주소 없음', nearbyDistanceMeters: null });
+                resolve(null);
                 return;
             }
             const road = result[0].road_address;
             if (!road?.address_name) {
-                resolve({ name: '도로명 주소 없음', address: '도로명 주소 없음', nearbyDistanceMeters: null });
+                resolve(null);
                 return;
             }
-            resolve({
-                name: road.building_name || road.address_name,
-                address: road.address_name,
-                nearbyDistanceMeters: 0
-            });
+            resolve({ name: road.building_name || road.address_name, address: road.address_name });
         });
     });
 }
 
 function resetDrivingMapPoint() {
     if (!drivingMapTarget) return;
-    setDrivingMapPoint(drivingMapTarget.originalPoint, true);
+    document.getElementById('drivingMapName').value = drivingMapTarget.originalName || '';
+    document.getElementById('drivingMapAddress').value = drivingMapTarget.originalAddress || '';
+    document.getElementById('drivingMapRemember').checked = false;
+    document.getElementById('drivingMapResult').textContent = '원래 GPS 위치로 되돌렸습니다.';
+    setDrivingMapPoint(drivingMapTarget.originalPoint, true, false);
 }
 
-function applyDrivingMapPoint() {
-    if (!drivingMapTarget || !drivingMapSelectedPoint?.found) return;
-    const found = drivingMapSelectedPoint.found;
-    if (!found.address || found.address === '도로명 주소 없음') return;
+async function applyDrivingMapPoint() {
+    if (!drivingMapTarget || !drivingMapSelectedPoint) return;
 
     const row = drivingRows[drivingMapTarget.rowIndex];
     if (!row) return;
 
+    const name = document.getElementById('drivingMapName').value.trim();
+    const address = document.getElementById('drivingMapAddress').value.trim();
+    if (!name && !address) {
+        alert('현장명 또는 주소 중 하나는 입력해주세요.');
+        return;
+    }
+
     snapshotRows();
-    const point = {
-        lat: drivingMapSelectedPoint.lat,
-        lng: drivingMapSelectedPoint.lng
-    };
+    const point = { lat: drivingMapSelectedPoint.lat, lng: drivingMapSelectedPoint.lng };
 
     if (drivingMapTarget.side === 'start') {
         row.start = point;
-        row.startName = found.name || found.address;
-        row.startAddress = found.address;
+        row.startName = name || address;
+        row.startAddress = address;
+        row.startCacheHit = false;
     } else {
         row.end = point;
-        row.endName = found.name || found.address;
-        row.endAddress = found.address;
+        row.endName = name || address;
+        row.endAddress = address;
+        row.endCacheHit = false;
     }
 
     renderDrivingRows();
+
+    if (document.getElementById('drivingMapRemember').checked && typeof window.rememberDrivingPlace === 'function') {
+        await window.rememberDrivingPlace(drivingMapTarget.rowIndex, drivingMapTarget.side, true);
+    }
+
     bootstrap.Modal.getInstance(document.getElementById('drivingMapModal'))?.hide();
 }
 
@@ -222,23 +216,5 @@ function escapeMapHtml(value) {
         .replace(/'/g, '&#039;');
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-    ensureDrivingMapModal();
-
-    // 기존 렌더 함수 뒤에 지도 확인 버튼 주입
-    const originalRender = window.renderDrivingRows;
-    if (typeof originalRender === 'function') {
-        window.renderDrivingRows = function(...args) {
-            const result = originalRender.apply(this, args);
-            setTimeout(injectMapReviewButtons, 0);
-            return result;
-        };
-    }
-
-    const observer = new MutationObserver(() => injectMapReviewButtons());
-    const body = document.getElementById('drivingBody');
-    if (body) observer.observe(body, { childList: true, subtree: true });
-    injectMapReviewButtons();
-});
-
+window.addEventListener('DOMContentLoaded', ensureDrivingMapModal);
 window.openDrivingMapReview = openDrivingMapReview;

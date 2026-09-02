@@ -32,6 +32,7 @@
         .badge-soft { background:rgba(92,124,250,.18); color:#a5b4fc; }
         .step-note { color:var(--muted); font-size:.88rem; line-height:1.6; }
         .api-status { display:inline-flex; align-items:center; gap:7px; margin-top:8px; font-size:.82rem; font-weight:700; }
+        .odometer-mini { color:#94a3b8; font-size:.68rem; margin-top:4px; white-space:nowrap; }
         @media(max-width:768px){ .page-wrap{padding:14px}.toolbar .btn{font-size:.78rem;padding:.4rem .55rem}.summary-value{font-size:1.05rem} }
     </style>
 </head>
@@ -82,6 +83,41 @@
         <div class="col-6 col-lg-3"><div class="summary-box"><div class="summary-label">개인사용 거리</div><div id="sumPersonal" class="summary-value">0.0 km</div></div></div>
     </div>
 
+    <div class="card-dark p-4 mb-3">
+        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-3">
+            <div>
+                <h5 class="fw-bold mb-1">2. 운행기록부 기본 정보 / 엑셀 출력</h5>
+                <div class="small text-secondary">기초 누적거리를 기준으로 각 운행의 주행 전·후 누적거리를 자동 계산합니다.</div>
+            </div>
+            <button class="btn btn-success" onclick="exportDrivingExcel()"><i class="bi bi-file-earmark-excel me-1"></i>엑셀 다운로드</button>
+        </div>
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-3">
+                <label class="form-label small text-secondary">업체명</label>
+                <input id="drivingCompanyName" type="text" class="form-control input-dark" value="김목수이야기" placeholder="업체명">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small text-secondary">차량번호</label>
+                <input id="drivingVehicleNumber" type="text" class="form-control input-dark" placeholder="예: 301두9600">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small text-secondary">사용자</label>
+                <input id="drivingDriverName" type="text" class="form-control input-dark" placeholder="운전자 이름">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small text-secondary">기초 누적거리(km)</label>
+                <input id="drivingBaseOdometer" type="number" min="0" step="0.1" class="form-control input-dark" placeholder="예: 99850">
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="summary-box py-2">
+                    <div class="summary-label">예상 최종 누적거리</div>
+                    <div id="drivingEndingOdometer" class="summary-value">-</div>
+                </div>
+            </div>
+        </div>
+        <div class="step-note mt-2">업무·출/퇴근은 업무용 주행거리로 집계하고, 개인사용은 총 누적거리에는 포함하되 업무용 거리에는 포함하지 않습니다. 엑셀 생성은 브라우저에서 처리됩니다.</div>
+    </div>
+
     <div class="toolbar">
         <div class="d-flex gap-2 flex-wrap">
             <button class="btn btn-outline-primary btn-sm" onclick="mergeSelected(false)"><i class="bi bi-union me-1"></i>선택 운행 묶기</button>
@@ -103,6 +139,7 @@
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="js/driving-config.js"></script>
 <script src="js/driving.js"></script>
 <script src="js/driving-automerge.js"></script>
@@ -112,5 +149,6 @@
 <script src="js/driving-ui.js"></script>
 <script src="js/driving-continuity.js"></script>
 <script src="js/driving-consent.js"></script>
+<script src="js/driving-export.js"></script>
 </body>
 </html>

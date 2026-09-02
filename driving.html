@@ -22,7 +22,7 @@
         .summary-label { color:var(--muted); font-size:.78rem; }
         .summary-value { font-size:1.35rem; font-weight:800; }
         .toolbar { position:sticky; top:0; z-index:20; background:rgba(19,23,34,.96); backdrop-filter:blur(8px); padding:10px 0; }
-        .driving-table { min-width:1180px; }
+        .driving-table { min-width:1280px; }
         .driving-table th { white-space:nowrap; color:#cbd5e1; font-size:.82rem; }
         .driving-table td { vertical-align:middle; font-size:.85rem; }
         .place-main { font-weight:700; }
@@ -65,7 +65,7 @@
                 <button class="btn btn-primary" onclick="loadTimelineFile()"><i class="bi bi-file-earmark-arrow-up me-1"></i>운행 분석</button>
             </div>
         </div>
-        <div class="step-note mt-2">선택한 기간과 시간이 겹치는 차량 운행(IN_PASSENGER_VEHICLE)만 추출합니다. 연속 운행 사이 정차가 20분 이내면 자동으로 같은 운행으로 묶습니다.</div>
+        <div class="step-note mt-2">선택한 기간의 차량 운행만 추출합니다. 연속 운행 사이 정차가 20분 이내면 자동으로 같은 운행으로 묶습니다. 목록 선택은 첫 항목 체크 후 Shift+클릭으로 범위 선택할 수 있습니다.</div>
     </div>
 
     <div class="row g-2 mb-3">
@@ -98,7 +98,9 @@
 <script src="js/driving-config.js"></script>
 <script src="js/driving.js"></script>
 <script src="js/driving-automerge.js"></script>
+<script src="js/driving-cache.js"></script>
 <script src="js/driving-geocode.js"></script>
 <script src="js/driving-map.js"></script>
+<script src="js/driving-ui.js"></script>
 </body>
 </html>

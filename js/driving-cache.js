@@ -25,10 +25,10 @@ function saveDrivingPlaceCache(items) {
 function drivingDistanceMeters(a, b) {
     if (!a || !b) return Infinity;
     const R = 6371000;
-    const lat1 = a.lat * Math.PI / 180;
-    const lat2 = b.lat * Math.PI / 180;
-    const dLat = (b.lat - a.lat) * Math.PI / 180;
-    const dLng = (b.lng - a.lng) * Math.PI / 180;
+    const lat1 = Number(a.lat) * Math.PI / 180;
+    const lat2 = Number(b.lat) * Math.PI / 180;
+    const dLat = (Number(b.lat) - Number(a.lat)) * Math.PI / 180;
+    const dLng = (Number(b.lng) - Number(a.lng)) * Math.PI / 180;
     const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
     return 2 * R * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
@@ -48,15 +48,15 @@ async function rememberDrivingPlace(rowIndex, side, silent = false) {
     if (!row || row.usageType === 'personal' || row.isPersonal) return false;
 
     const point = side === 'start' ? row.start : row.end;
-    const name = (side === 'start' ? row.startName : row.endName || '').trim();
-    const address = (side === 'start' ? row.startAddress : row.endAddress || '').trim();
+    const name = String(side === 'start' ? (row.startName || '') : (row.endName || '')).trim();
+    const address = String(side === 'start' ? (row.startAddress || '') : (row.endAddress || '')).trim();
     if (!point || (!name && !address)) return false;
 
     let items = loadDrivingPlaceCache();
     const existingIndex = items.findIndex(item => drivingDistanceMeters(point, item) <= DRIVING_PLACE_CACHE_RADIUS_METERS);
     const saved = {
-        lat: point.lat,
-        lng: point.lng,
+        lat: Number(point.lat),
+        lng: Number(point.lng),
         name: name || address,
         address,
         radiusMeters: DRIVING_PLACE_CACHE_RADIUS_METERS,
@@ -66,7 +66,6 @@ async function rememberDrivingPlace(rowIndex, side, silent = false) {
     if (existingIndex >= 0) items[existingIndex] = saved;
     else items.push(saved);
 
-    // 브라우저 캐시는 지나치게 커지지 않도록 최신 500개까지만 유지
     items = items.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 500);
     saveDrivingPlaceCache(items);
 

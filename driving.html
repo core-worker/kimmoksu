@@ -33,6 +33,7 @@
         .step-note { color:var(--muted); font-size:.88rem; line-height:1.6; }
         .api-status { display:inline-flex; align-items:center; gap:7px; margin-top:8px; font-size:.82rem; font-weight:700; }
         .odometer-mini { color:#94a3b8; font-size:.68rem; margin-top:4px; white-space:nowrap; }
+        .commute-base-box { background:#171b26; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:14px; min-height:126px; }
         @media(max-width:768px){ .page-wrap{padding:14px}.toolbar .btn{font-size:.78rem;padding:.4rem .55rem}.summary-value{font-size:1.05rem} }
     </style>
 </head>
@@ -118,6 +119,42 @@
         <div class="step-note mt-2">업무·출/퇴근은 업무용 주행거리로 집계하고, 개인사용은 총 누적거리에는 포함하되 업무용 거리에는 포함하지 않습니다. 엑셀 생성은 브라우저에서 처리됩니다.</div>
     </div>
 
+    <div class="card-dark p-4 mb-3">
+        <div class="mb-3">
+            <h5 class="fw-bold mb-1">3. 출퇴근 기준 장소</h5>
+            <div class="small text-secondary">자택 또는 숙소를 한 번 등록하면 GPS 반경 100m 이내를 자동 인식합니다. 출발지가 기준 장소면 출근, 목적지가 기준 장소면 퇴근으로 분류합니다.</div>
+        </div>
+        <div class="row g-3">
+            <div class="col-12 col-lg-6">
+                <div class="commute-base-box">
+                    <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                        <div id="drivingHomeBaseSummary">자택 미설정</div>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearDrivingCommuteBase('home')">해제</button>
+                    </div>
+                    <div class="small text-secondary mb-2">운행 1건을 체크하고 해당 행의 위치를 자택으로 등록하세요.</div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-outline-info" onclick="registerDrivingCommuteBase('home','start')">선택 출발지 → 자택</button>
+                        <button type="button" class="btn btn-sm btn-outline-info" onclick="registerDrivingCommuteBase('home','end')">선택 목적지 → 자택</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="commute-base-box">
+                    <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                        <div id="drivingLodgingBaseSummary">숙소 미설정</div>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearDrivingCommuteBase('lodging')">해제</button>
+                    </div>
+                    <div class="small text-secondary mb-2">출장지 숙소처럼 반복 출퇴근하는 위치를 등록할 수 있습니다.</div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="registerDrivingCommuteBase('lodging','start')">선택 출발지 → 숙소</button>
+                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="registerDrivingCommuteBase('lodging','end')">선택 목적지 → 숙소</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="step-note mt-3">두 번째 운행부터 화면과 엑셀의 출발지는 직전 운행의 목적지로 자동 연결합니다. Google Timeline의 실제 출발 좌표는 삭제하지 않고 이동 누락 검사용으로만 유지합니다. 자동 분류 후 구분을 직접 바꾸면 해당 행은 수동 설정을 우선합니다.</div>
+    </div>
+
     <div class="toolbar">
         <div class="d-flex gap-2 flex-wrap">
             <button class="btn btn-outline-primary btn-sm" onclick="mergeSelected(false)"><i class="bi bi-union me-1"></i>선택 운행 묶기</button>
@@ -140,15 +177,16 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-<script src="js/driving-config.js?v=20260910-1"></script>
-<script src="js/driving.js?v=20260910-1"></script>
-<script src="js/driving-automerge.js?v=20260910-1"></script>
-<script src="js/driving-cache.js?v=20260910-1"></script>
-<script src="js/driving-geocode.js?v=20260910-1"></script>
-<script src="js/driving-map.js?v=20260910-1"></script>
-<script src="js/driving-ui.js?v=20260910-1"></script>
-<script src="js/driving-continuity.js?v=20260910-1"></script>
-<script src="js/driving-consent.js?v=20260910-1"></script>
-<script src="js/driving-export.js?v=20260910-1"></script>
+<script src="js/driving-config.js?v=20260910-2"></script>
+<script src="js/driving.js?v=20260910-2"></script>
+<script src="js/driving-automerge.js?v=20260910-2"></script>
+<script src="js/driving-cache.js?v=20260910-2"></script>
+<script src="js/driving-geocode.js?v=20260910-2"></script>
+<script src="js/driving-map.js?v=20260910-2"></script>
+<script src="js/driving-ui.js?v=20260910-2"></script>
+<script src="js/driving-continuity.js?v=20260910-2"></script>
+<script src="js/driving-consent.js?v=20260910-2"></script>
+<script src="js/driving-export.js?v=20260910-2"></script>
+<script src="js/driving-commute.js?v=20260910-2"></script>
 </body>
 </html>

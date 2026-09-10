@@ -58,13 +58,10 @@ function roadAddressFromHit(hit, nearbyDistanceMeters = 0) {
 }
 
 async function findNearestRoadAddress(point) {
-    // 1) 원 좌표에서 도로명 주소가 바로 나오면 그대로 사용
     const exactHit = await coord2AddressOnce(point);
     const exactRoad = roadAddressFromHit(exactHit, 0);
     if (exactRoad) return exactRoad;
 
-    // 2) 도로명 주소가 없으면 주변을 가까운 순서로 탐색
-    // GPS가 주차장/단지 내부/건물 뒤편을 찍는 경우를 보정하기 위한 로직
     const radii = [15, 30, 60, 100];
     const bearings = [0, 45, 90, 135, 180, 225, 270, 315];
 
@@ -77,7 +74,6 @@ async function findNearestRoadAddress(point) {
             .filter(Boolean);
 
         if (candidates.length) {
-            // 같은 반경 안에서는 건물명이 있는 도로명 주소를 우선 사용
             candidates.sort((a, b) => {
                 const aHasBuilding = a.name !== a.address ? 1 : 0;
                 const bHasBuilding = b.name !== b.address ? 1 : 0;
@@ -87,7 +83,6 @@ async function findNearestRoadAddress(point) {
         }
     }
 
-    // 지번 주소로 대체하지 않음
     return {
         name: '도로명 주소 없음',
         address: '도로명 주소 없음',
@@ -99,7 +94,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const key = String(window.KIMMOKSU_DRIVING_CONFIG?.kakaoJavaScriptKey || '').trim();
     const status = document.getElementById('kakaoStatus');
 
-    if (!key || key === '26238d87788a8fa90483fc9f8a73e601') {
+    // 실제 키가 비어 있거나 명시적인 placeholder일 때만 설정 필요로 판단한다.
+    if (!key || key === 'YOUR_KAKAO_JAVASCRIPT_KEY') {
         if (status) {
             status.innerHTML = '<i class="bi bi-circle-fill" style="font-size:.5rem"></i> 주소 서비스 설정 필요';
             status.className = 'api-status text-danger';
@@ -107,7 +103,6 @@ window.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 기존 driving.js 호환용 숨김 입력값 생성
     let hiddenInput = document.getElementById('kakaoKeyInput');
     if (!hiddenInput) {
         hiddenInput = document.createElement('input');
@@ -117,7 +112,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     hiddenInput.value = key;
 
-    // driving.js 로드 완료 후 도로명 주소 우선 로직을 덮어쓰고 자동 연결
     setTimeout(() => {
         if (typeof window.reverseGeocode === 'function') {
             window.reverseGeocode = findNearestRoadAddress;

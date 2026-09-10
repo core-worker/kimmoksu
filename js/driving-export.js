@@ -39,6 +39,34 @@ function calculateDrivingOdometerRows() {
     });
 }
 
+// 엑셀 출력 전용 정수 계산.
+// 화면 원본은 소수 km를 유지하고, 엑셀에서는 각 운행거리를 반올림한 뒤
+// 그 정수 거리 기준으로 주행 전/후 누적거리도 다시 계산한다.
+function calculateDrivingExcelIntegerRows() {
+    const meta = getDrivingExportMeta();
+    let current = Math.round(Number.isFinite(meta.baseOdometer) ? meta.baseOdometer : 0);
+
+    return drivingRows.map((row, index) => {
+        const distanceKm = Math.round(Math.max(0, Number(row.distanceKm) || 0));
+        const beforeKm = current;
+        const afterKm = beforeKm + distanceKm;
+        current = afterKm;
+
+        const personal = row.usageType === 'personal' || row.isPersonal;
+        const businessKm = personal ? 0 : distanceKm;
+
+        return {
+            index: index + 1,
+            row,
+            beforeKm,
+            afterKm,
+            distanceKm,
+            businessKm,
+            personal
+        };
+    });
+}
+
 function updateDrivingEndingOdometer() {
     const el = document.getElementById('drivingEndingOdometer');
     if (!el) return;
@@ -115,11 +143,12 @@ async function exportDrivingExcel() {
         if (!proceed) return;
     }
 
-    const calculatedRows = calculateDrivingOdometerRows();
+    const calculatedRows = calculateDrivingExcelIntegerRows();
+    const excelBaseOdometer = Math.round(meta.baseOdometer);
     const totalDistance = calculatedRows.reduce((s, item) => s + item.distanceKm, 0);
     const businessDistance = calculatedRows.reduce((s, item) => s + item.businessKm, 0);
     const personalDistance = totalDistance - businessDistance;
-    const endingOdometer = calculatedRows.length ? calculatedRows[calculatedRows.length - 1].afterKm : meta.baseOdometer;
+    const endingOdometer = calculatedRows.length ? calculatedRows[calculatedRows.length - 1].afterKm : excelBaseOdometer;
     const businessRate = totalDistance > 0 ? businessDistance / totalDistance : 0;
 
     const workbook = new ExcelJS.Workbook();
@@ -159,7 +188,7 @@ async function exportDrivingExcel() {
     sheet.mergeCells('H3:I3');
     sheet.getCell('H3').value = meta.driverName;
     sheet.getCell('J3').value = '기초거리';
-    sheet.getCell('K3').value = meta.baseOdometer;
+    sheet.getCell('K3').value = excelBaseOdometer;
 
     sheet.getCell('A4').value = '작성기간';
     sheet.mergeCells('B4:F4');
@@ -201,11 +230,11 @@ async function exportDrivingExcel() {
     const totalRow = headerRow + 1 + calculatedRows.length + 1;
     sheet.mergeCells(`A${totalRow}:F${totalRow}`);
     sheet.getCell(`A${totalRow}`).value = '합계';
-    sheet.getCell(`G${totalRow}`).value = meta.baseOdometer;
+    sheet.getCell(`G${totalRow}`).value = excelBaseOdometer;
     sheet.getCell(`H${totalRow}`).value = endingOdometer;
     sheet.getCell(`I${totalRow}`).value = totalDistance;
     sheet.getCell(`J${totalRow}`).value = businessDistance;
-    sheet.getCell(`K${totalRow}`).value = `개인사용 ${personalDistance.toFixed(1)} km`;
+    sheet.getCell(`K${totalRow}`).value = `개인사용 ${personalDistance} km`;
 
     const rateRow = totalRow + 1;
     sheet.mergeCells(`A${rateRow}:H${rateRow}`);
@@ -271,14 +300,15 @@ async function exportDrivingExcel() {
     sheet.getCell(`A${rateRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
     sheet.getCell(`I${rateRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
 
-    sheet.getColumn(7).numFmt = '#,##0.0';
-    sheet.getColumn(8).numFmt = '#,##0.0';
-    sheet.getColumn(9).numFmt = '#,##0.0';
-    sheet.getColumn(10).numFmt = '#,##0.0';
-    sheet.getCell('K3').numFmt = '#,##0.0';
-    sheet.getCell('H4').numFmt = '#,##0.0';
-    sheet.getCell('K4').numFmt = '0.0%';
-    sheet.getCell(`I${rateRow}`).numFmt = '0.0%';
+    // 엑셀의 km 및 비율 표시는 소수점 없이 출력한다.
+    sheet.getColumn(7).numFmt = '#,##0';
+    sheet.getColumn(8).numFmt = '#,##0';
+    sheet.getColumn(9).numFmt = '#,##0';
+    sheet.getColumn(10).numFmt = '#,##0';
+    sheet.getCell('K3').numFmt = '#,##0';
+    sheet.getCell('H4').numFmt = '#,##0';
+    sheet.getCell('K4').numFmt = '0%';
+    sheet.getCell(`I${rateRow}`).numFmt = '0%';
 
     sheet.autoFilter = {
         from: { row: headerRow, column: 1 },
@@ -353,5 +383,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
 window.exportDrivingExcel = exportDrivingExcel;
 window.calculateDrivingOdometerRows = calculateDrivingOdometerRows;
+window.calculateDrivingExcelIntegerRows = calculateDrivingExcelIntegerRows;
 window.updateDrivingEndingOdometer = updateDrivingEndingOdometer;
 window.decorateOdometerPreview = decorateOdometerPreview;

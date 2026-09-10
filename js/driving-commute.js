@@ -6,14 +6,12 @@
 
 const DRIVING_COMMUTE_BASE_KEY = 'kimmoksu_driving_commute_bases_v1';
 const DRIVING_COMMUTE_RADIUS_METERS = 100;
+let drivingCommuteApplying = false;
 
 function loadDrivingCommuteBases() {
     try {
         const parsed = JSON.parse(localStorage.getItem(DRIVING_COMMUTE_BASE_KEY) || '{}');
-        return {
-            home: parsed?.home || null,
-            lodging: parsed?.lodging || null
-        };
+        return { home: parsed?.home || null, lodging: parsed?.lodging || null };
     } catch (_) {
         return { home: null, lodging: null };
     }
@@ -42,8 +40,8 @@ function getDrivingLogicalPlace(rowIndex, side) {
     const row = drivingRows?.[rowIndex];
     if (!row) return null;
 
-    // 2번째 운행부터 출발지는 직전 운행의 목적지를 그대로 사용한다.
-    // 현재 행의 원본 start 좌표는 건드리지 않아 연속성/누락 검증에 계속 사용한다.
+    // 두 번째 운행부터 표시용 출발지는 직전 운행 목적지를 그대로 이어 쓴다.
+    // 현재 행의 원본 start 좌표는 절대 변경하지 않아 누락/연속성 검증에는 원본 GPS를 사용한다.
     if (side === 'start' && rowIndex > 0) {
         const prev = drivingRows[rowIndex - 1];
         if (!prev) return null;
@@ -91,15 +89,9 @@ function findDrivingCommuteBase(point) {
         ['lodging', '숙소', bases.lodging]
     ]
         .filter(([, , base]) => base?.point)
-        .map(([key, label, base]) => ({
-            key,
-            label,
-            base,
-            distanceMeters: drivingCommuteDistanceMeters(point, base.point)
-        }))
+        .map(([key, label, base]) => ({ key, label, base, distanceMeters: drivingCommuteDistanceMeters(point, base.point) }))
         .filter(item => item.distanceMeters <= DRIVING_COMMUTE_RADIUS_METERS)
         .sort((a, b) => a.distanceMeters - b.distanceMeters);
-
     return candidates[0] || null;
 }
 
@@ -113,48 +105,48 @@ function drivingUsageDisplayLabel(row) {
 }
 
 function applyCommuteAutoClassification() {
-    if (!Array.isArray(drivingRows) || !drivingRows.length) return false;
+    if (drivingCommuteApplying || !Array.isArray(drivingRows) || !drivingRows.length) return false;
+    drivingCommuteApplying = true;
     let changed = false;
 
-    drivingRows.forEach((row, index) => {
-        if (!row || isDrivingPersonalRow(row) || row.usageManual === true) return;
+    try {
+        drivingRows.forEach((row, index) => {
+            if (!row || isDrivingPersonalRow(row) || row.usageManual === true) return;
 
-        const startPlace = getDrivingLogicalPlace(index, 'start');
-        const endPlace = getDrivingLogicalPlace(index, 'end');
-        const startBase = findDrivingCommuteBase(startPlace?.point);
-        const endBase = findDrivingCommuteBase(endPlace?.point);
+            const startBase = findDrivingCommuteBase(getDrivingLogicalPlace(index, 'start')?.point);
+            const endBase = findDrivingCommuteBase(getDrivingLogicalPlace(index, 'end')?.point);
 
-        let direction = '';
-        let matchedBaseLabel = '';
+            let direction = '';
+            let matchedBaseLabel = '';
+            if (startBase && !endBase) {
+                direction = 'to_work';
+                matchedBaseLabel = startBase.label;
+            } else if (endBase && !startBase) {
+                direction = 'from_work';
+                matchedBaseLabel = endBase.label;
+            } else if (startBase && endBase) {
+                direction = 'commute';
+                matchedBaseLabel = `${startBase.label}↔${endBase.label}`;
+            }
 
-        if (startBase && !endBase) {
-            direction = 'to_work';
-            matchedBaseLabel = startBase.label;
-        } else if (endBase && !startBase) {
-            direction = 'from_work';
-            matchedBaseLabel = endBase.label;
-        } else if (startBase && endBase) {
-            // 자택↔숙소처럼 양쪽 모두 기준 장소인 경우는 방향을 단정하지 않는다.
-            direction = 'commute';
-            matchedBaseLabel = `${startBase.label}↔${endBase.label}`;
-        }
-
-        if (direction) {
-            if (row.usageType !== 'commute' || row.commuteDirection !== direction || !row.autoCommute) changed = true;
-            row.usageType = 'commute';
-            row.isPersonal = false;
-            row.commuteDirection = direction;
-            row.autoCommute = true;
-            row.commuteBaseLabel = matchedBaseLabel;
-        } else if (row.autoCommute) {
-            row.usageType = 'business';
-            row.commuteDirection = '';
-            row.autoCommute = false;
-            row.commuteBaseLabel = '';
-            changed = true;
-        }
-    });
-
+            if (direction) {
+                if (row.usageType !== 'commute' || row.commuteDirection !== direction || !row.autoCommute) changed = true;
+                row.usageType = 'commute';
+                row.isPersonal = false;
+                row.commuteDirection = direction;
+                row.autoCommute = true;
+                row.commuteBaseLabel = matchedBaseLabel;
+            } else if (row.autoCommute) {
+                row.usageType = 'business';
+                row.commuteDirection = '';
+                row.autoCommute = false;
+                row.commuteBaseLabel = '';
+                changed = true;
+            }
+        });
+    } finally {
+        drivingCommuteApplying = false;
+    }
     return changed;
 }
 
@@ -221,7 +213,133 @@ function renderDrivingCommuteBaseSettings() {
     if (lodging) lodging.innerHTML = commuteBaseSummary(bases.lodging, '숙소');
 }
 
-window.addEventListener('DOMContentLoaded', renderDrivingCommuteBaseSettings);
+function decorateCommuteBadges() {
+    const rows = [...document.querySelectorAll('#drivingBody tr')].filter(tr => tr.querySelector('.trip-check'));
+    rows.forEach((tr, index) => {
+        const row = drivingRows[index];
+        if (!row?.autoCommute) return;
+        const statusCell = tr.querySelectorAll('td')[8];
+        if (!statusCell || statusCell.querySelector('.auto-commute-badge')) return;
+        const badge = document.createElement('span');
+        badge.className = 'badge text-bg-info auto-commute-badge ms-1';
+        badge.textContent = `자동 ${drivingUsageDisplayLabel(row)}`;
+        statusCell.appendChild(badge);
+    });
+}
+
+(function installDrivingCommuteIntegration() {
+    // 사용자가 직접 구분을 고친 행은 자동 분류가 다시 덮어쓰지 않는다.
+    const originalSetUsageType = window.setUsageType;
+    if (typeof originalSetUsageType === 'function') {
+        window.setUsageType = function(index, value) {
+            const row = drivingRows?.[index];
+            if (row) {
+                row.usageManual = true;
+                row.autoCommute = false;
+                row.commuteDirection = value === 'commute' ? 'commute' : '';
+            }
+            return originalSetUsageType(index, value);
+        };
+    }
+
+    // 2번째 행 이후의 출발지 수정은 실제로 '직전 행 목적지'를 수정한다.
+    const originalSetPlaceName = window.setPlaceName;
+    if (typeof originalSetPlaceName === 'function') {
+        window.setPlaceName = function(index, side, value) {
+            const target = getDrivingPlaceEditTarget(index, side);
+            if (!target) return;
+            return originalSetPlaceName(target.rowIndex, target.side, value);
+        };
+    }
+
+    const originalSetPlaceAddress = window.setPlaceAddress;
+    if (typeof originalSetPlaceAddress === 'function') {
+        window.setPlaceAddress = function(index, side, value) {
+            const target = getDrivingPlaceEditTarget(index, side);
+            if (!target) return;
+            return originalSetPlaceAddress(target.rowIndex, target.side, value);
+        };
+    }
+
+    const originalOpenDrivingMapReview = window.openDrivingMapReview;
+    if (typeof originalOpenDrivingMapReview === 'function') {
+        window.openDrivingMapReview = function(index, side) {
+            const target = getDrivingPlaceEditTarget(index, side);
+            if (!target) return;
+            return originalOpenDrivingMapReview(target.rowIndex, target.side);
+        };
+    }
+
+    const originalRememberDrivingPlace = window.rememberDrivingPlace;
+    if (typeof originalRememberDrivingPlace === 'function') {
+        window.rememberDrivingPlace = function(index, side, silent) {
+            const target = getDrivingPlaceEditTarget(index, side);
+            if (!target) return;
+            return originalRememberDrivingPlace(target.rowIndex, target.side, silent);
+        };
+    }
+
+    // 화면의 출발지 표시 자체를 논리 출발지(직전 목적지)로 교체한다.
+    window.renderPlaceCell = function(row, index, side, personal) {
+        const logical = getDrivingLogicalPlace(index, side);
+        if (!logical) return '';
+        if (logical.personal || (personal && side === 'end')) return '<div class="place-main">개인사용</div>';
+
+        const fallback = logical.point ? `${logical.point.lat.toFixed(6)}, ${logical.point.lng.toFixed(6)}` : '';
+        const linkedNote = logical.linked ? '<div class="small text-info mt-1">직전 목적지 연동</div>' : '';
+        return `
+            <input type="text"
+                   class="form-control form-control-sm input-dark mb-1"
+                   value="${escapeHtml(logical.name)}"
+                   placeholder="현장명 / 장소명 입력"
+                   onchange="setPlaceName(${index}, '${side}', this.value)">
+            <div class="place-sub">${escapeHtml(logical.address || fallback)}</div>
+            ${linkedNote}
+        `;
+    };
+
+    // 엑셀도 동일한 논리 출발지를 사용하고 출근/퇴근을 구분해 출력한다.
+    window.drivingUsageLabel = function(row) {
+        return drivingUsageDisplayLabel(row);
+    };
+    window.drivingPlaceForExport = function(row, side) {
+        const index = drivingRows.indexOf(row);
+        const logical = getDrivingLogicalPlace(index, side);
+        if (!logical) return '';
+        if (logical.personal) return '개인사용';
+        return String(logical.name || logical.address || '').trim();
+    };
+
+    // 모든 목록 재렌더 시 연결 관계가 바뀌었는지 다시 분류한다.
+    const originalRenderDrivingRows = window.renderDrivingRows;
+    if (typeof originalRenderDrivingRows === 'function') {
+        window.renderDrivingRows = function(...args) {
+            applyCommuteAutoClassification();
+            const result = originalRenderDrivingRows.apply(this, args);
+            setTimeout(decorateCommuteBadges, 0);
+            return result;
+        };
+    }
+
+    // 모든 기존 wrapper가 설치된 뒤 최종 분석 결과에 자동분류를 한 번 더 적용한다.
+    const originalLoadTimelineFile = window.loadTimelineFile;
+    if (typeof originalLoadTimelineFile === 'function') {
+        window.loadTimelineFile = async function(...args) {
+            const result = await originalLoadTimelineFile.apply(this, args);
+            applyCommuteAutoClassification();
+            renderDrivingRows();
+            return result;
+        };
+    }
+})();
+
+window.addEventListener('DOMContentLoaded', () => {
+    renderDrivingCommuteBaseSettings();
+    setTimeout(() => {
+        applyCommuteAutoClassification();
+        decorateCommuteBadges();
+    }, 0);
+});
 
 window.getDrivingLogicalPlace = getDrivingLogicalPlace;
 window.getDrivingPlaceEditTarget = getDrivingPlaceEditTarget;

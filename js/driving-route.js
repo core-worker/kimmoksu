@@ -154,14 +154,18 @@ function drawDrivingRoute(rowIndex, routePoints) {
     const first = routePoints[0] || endpoints.start || endpoints.end;
     if (!first) return;
 
+    clearDrivingRouteOverlays();
+    canvas.innerHTML = '';
+
     const center = new kakao.maps.LatLng(first.lat, first.lng);
     drivingRouteMap = new kakao.maps.Map(canvas, { center, level: 5 });
-    clearDrivingRouteOverlays();
 
     const bounds = new kakao.maps.LatLngBounds();
+    let hasBoundsPoint = false;
     const path = routePoints.map(point => {
         const latLng = new kakao.maps.LatLng(point.lat, point.lng);
         bounds.extend(latLng);
+        hasBoundsPoint = true;
         return latLng;
     });
 
@@ -180,15 +184,17 @@ function drawDrivingRoute(rowIndex, routePoints) {
         const startPos = new kakao.maps.LatLng(endpoints.start.lat, endpoints.start.lng);
         drivingRouteStartMarker = new kakao.maps.Marker({ position: startPos, map: drivingRouteMap });
         bounds.extend(startPos);
+        hasBoundsPoint = true;
     }
 
     if (endpoints.end) {
         const endPos = new kakao.maps.LatLng(endpoints.end.lat, endpoints.end.lng);
         drivingRouteEndMarker = new kakao.maps.Marker({ position: endPos, map: drivingRouteMap });
         bounds.extend(endPos);
+        hasBoundsPoint = true;
     }
 
-    if (!bounds.isEmpty()) drivingRouteMap.setBounds(bounds, 40, 40, 40, 40);
+    if (hasBoundsPoint) drivingRouteMap.setBounds(bounds, 40, 40, 40, 40);
     setTimeout(() => drivingRouteMap?.relayout(), 50);
 }
 
@@ -222,8 +228,6 @@ async function openDrivingRoute(rowIndex) {
         const selected = dedupeDrivingRoutePoints(allPoints.filter(point => pointInsideRouteIntervals(point, intervals)));
         const endpoints = getDrivingRouteEndpoints(rowIndex);
 
-        // timelinePath가 운행 시작/종료 지점을 정확히 포함하지 않는 경우에도
-        // 지도에서 전체 이동 범위를 파악할 수 있도록 출발/도착 마커는 별도로 표시한다.
         const countText = selected.length >= 2
             ? `Timeline 위치 ${selected.length}개 · ${row.startTime || ''} → ${row.endTime || ''}`
             : `세부 경로점 부족 · ${row.startTime || ''} → ${row.endTime || ''}`;

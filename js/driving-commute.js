@@ -1,351 +1,474 @@
 // =====================================================
-// 김목수이야기 ERP - driving-commute.js
-// 운행기록부 출발지=직전 목적지 연동
-// 자택/숙소 기준 출근·퇴근 자동 인식
+// 김목수이야기 ERP - 운행기록 수동 분류 / 연속 출발지 연동
+// 기존 자택·숙소 자동 출퇴근 기능은 제거함.
 // =====================================================
 
-const DRIVING_COMMUTE_BASE_KEY = 'kimmoksu_driving_commute_bases_v1';
-const DRIVING_COMMUTE_RADIUS_METERS = 100;
-let drivingCommuteApplying = false;
+(function installDrivingManualWorkflow() {
+    const LEGACY_COMMUTE_BASE_KEY = 'kimmoksu_driving_commute_bases_v1';
 
-function loadDrivingCommuteBases() {
-    try {
-        const parsed = JSON.parse(localStorage.getItem(DRIVING_COMMUTE_BASE_KEY) || '{}');
-        return { home: parsed?.home || null, lodging: parsed?.lodging || null };
-    } catch (_) {
-        return { home: null, lodging: null };
-    }
-}
+    function removeLegacyCommuteSettings() {
+        localStorage.removeItem(LEGACY_COMMUTE_BASE_KEY);
 
-function saveDrivingCommuteBases(bases) {
-    localStorage.setItem(DRIVING_COMMUTE_BASE_KEY, JSON.stringify(bases || {}));
-}
-
-function drivingCommuteDistanceMeters(a, b) {
-    if (!a || !b || !Number.isFinite(a.lat) || !Number.isFinite(a.lng) || !Number.isFinite(b.lat) || !Number.isFinite(b.lng)) return Infinity;
-    const R = 6371000;
-    const lat1 = a.lat * Math.PI / 180;
-    const lat2 = b.lat * Math.PI / 180;
-    const dLat = (b.lat - a.lat) * Math.PI / 180;
-    const dLng = (b.lng - a.lng) * Math.PI / 180;
-    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-    return 2 * R * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-}
-
-function isDrivingPersonalRow(row) {
-    return !!row && (row.isPersonal || row.usageType === 'personal');
-}
-
-function getDrivingLogicalPlace(rowIndex, side) {
-    const row = drivingRows?.[rowIndex];
-    if (!row) return null;
-
-    // 두 번째 운행부터 표시용 출발지는 직전 운행 목적지를 그대로 이어 쓴다.
-    // 현재 행의 원본 start 좌표는 절대 변경하지 않아 누락/연속성 검증에는 원본 GPS를 사용한다.
-    if (side === 'start' && rowIndex > 0) {
-        const prev = drivingRows[rowIndex - 1];
-        if (!prev) return null;
-        const personal = isDrivingPersonalRow(prev);
-        return {
-            sourceIndex: rowIndex - 1,
-            sourceSide: 'end',
-            linked: true,
-            personal,
-            point: prev.end || null,
-            name: personal ? '개인사용' : (prev.endName || ''),
-            address: personal ? '' : (prev.endAddress || '')
-        };
-    }
-
-    const personal = isDrivingPersonalRow(row);
-    const isStart = side === 'start';
-    return {
-        sourceIndex: rowIndex,
-        sourceSide: side,
-        linked: false,
-        personal,
-        point: isStart ? (row.start || null) : (row.end || null),
-        name: personal ? '개인사용' : (isStart ? (row.startName || '') : (row.endName || '')),
-        address: personal ? '' : (isStart ? (row.startAddress || '') : (row.endAddress || ''))
-    };
-}
-
-function getDrivingPlaceEditTarget(rowIndex, side) {
-    const logical = getDrivingLogicalPlace(rowIndex, side);
-    if (!logical) return null;
-    return {
-        rowIndex: logical.sourceIndex,
-        side: logical.sourceSide,
-        row: drivingRows[logical.sourceIndex],
-        logical
-    };
-}
-
-function findDrivingCommuteBase(point) {
-    if (!point) return null;
-    const bases = loadDrivingCommuteBases();
-    const candidates = [
-        ['home', '자택', bases.home],
-        ['lodging', '숙소', bases.lodging]
-    ]
-        .filter(([, , base]) => base?.point)
-        .map(([key, label, base]) => ({ key, label, base, distanceMeters: drivingCommuteDistanceMeters(point, base.point) }))
-        .filter(item => item.distanceMeters <= DRIVING_COMMUTE_RADIUS_METERS)
-        .sort((a, b) => a.distanceMeters - b.distanceMeters);
-    return candidates[0] || null;
-}
-
-function drivingUsageDisplayLabel(row) {
-    if (!row) return '업무';
-    if (row.usageType === 'personal' || row.isPersonal) return '개인사용';
-    if (row.usageType !== 'commute') return '업무';
-    if (row.commuteDirection === 'to_work') return '출근';
-    if (row.commuteDirection === 'from_work') return '퇴근';
-    return '출/퇴근';
-}
-
-function applyCommuteAutoClassification() {
-    if (drivingCommuteApplying || !Array.isArray(drivingRows) || !drivingRows.length) return false;
-    drivingCommuteApplying = true;
-    let changed = false;
-
-    try {
-        drivingRows.forEach((row, index) => {
-            if (!row || isDrivingPersonalRow(row) || row.usageManual === true) return;
-
-            const startBase = findDrivingCommuteBase(getDrivingLogicalPlace(index, 'start')?.point);
-            const endBase = findDrivingCommuteBase(getDrivingLogicalPlace(index, 'end')?.point);
-
-            let direction = '';
-            let matchedBaseLabel = '';
-            if (startBase && !endBase) {
-                direction = 'to_work';
-                matchedBaseLabel = startBase.label;
-            } else if (endBase && !startBase) {
-                direction = 'from_work';
-                matchedBaseLabel = endBase.label;
-            } else if (startBase && endBase) {
-                direction = 'commute';
-                matchedBaseLabel = `${startBase.label}↔${endBase.label}`;
-            }
-
-            if (direction) {
-                if (row.usageType !== 'commute' || row.commuteDirection !== direction || !row.autoCommute) changed = true;
-                row.usageType = 'commute';
-                row.isPersonal = false;
-                row.commuteDirection = direction;
-                row.autoCommute = true;
-                row.commuteBaseLabel = matchedBaseLabel;
-            } else if (row.autoCommute) {
-                row.usageType = 'business';
-                row.commuteDirection = '';
-                row.autoCommute = false;
-                row.commuteBaseLabel = '';
-                changed = true;
-            }
+        document.querySelectorAll('.card-dark').forEach(card => {
+            const title = card.querySelector('h5')?.textContent?.trim() || '';
+            if (title.includes('출퇴근 기준 장소')) card.remove();
         });
-    } finally {
-        drivingCommuteApplying = false;
-    }
-    return changed;
-}
-
-function drivingCommuteBaseLabel(type) {
-    return type === 'home' ? '자택' : '숙소';
-}
-
-function registerDrivingCommuteBase(type, side) {
-    const indexes = typeof selectedIndexes === 'function' ? selectedIndexes() : [];
-    if (indexes.length !== 1) {
-        alert(`${drivingCommuteBaseLabel(type)}으로 등록할 기준 운행 1건만 선택해주세요.`);
-        return;
     }
 
-    const logical = getDrivingLogicalPlace(indexes[0], side);
-    if (!logical?.point) {
-        alert('선택한 위치에 GPS 좌표가 없어 등록할 수 없습니다.');
-        return;
-    }
-
-    const label = drivingCommuteBaseLabel(type);
-    const referenceName = logical.personal ? '' : (logical.name || logical.address || '');
-    if (!confirm(`${side === 'start' ? '출발지' : '목적지'}를 ${label} 기준 장소로 등록할까요?\n앞으로 이 위치 반경 ${DRIVING_COMMUTE_RADIUS_METERS}m를 ${label}으로 인식합니다.`)) return;
-
-    const bases = loadDrivingCommuteBases();
-    bases[type] = {
-        type,
-        label,
-        point: { lat: logical.point.lat, lng: logical.point.lng },
-        name: referenceName || label,
-        address: logical.personal ? '' : (logical.address || ''),
-        updatedAt: new Date().toISOString()
-    };
-    saveDrivingCommuteBases(bases);
-    renderDrivingCommuteBaseSettings();
-    applyCommuteAutoClassification();
-    renderDrivingRows();
-}
-
-function clearDrivingCommuteBase(type) {
-    const label = drivingCommuteBaseLabel(type);
-    const bases = loadDrivingCommuteBases();
-    if (!bases[type]) return;
-    if (!confirm(`${label} 기준 장소 설정을 해제할까요?`)) return;
-    bases[type] = null;
-    saveDrivingCommuteBases(bases);
-    renderDrivingCommuteBaseSettings();
-    applyCommuteAutoClassification();
-    renderDrivingRows();
-}
-
-function commuteBaseSummary(base, label) {
-    if (!base?.point) return `<span class="text-secondary">${label} 미설정</span>`;
-    const title = base.name && base.name !== label ? `${label} · ${base.name}` : label;
-    const address = base.address ? `<div class="small text-secondary mt-1">${escapeHtml(base.address)}</div>` : '';
-    return `<b>${escapeHtml(title)}</b>${address}<div class="small text-secondary">GPS 기준 반경 ${DRIVING_COMMUTE_RADIUS_METERS}m</div>`;
-}
-
-function renderDrivingCommuteBaseSettings() {
-    const bases = loadDrivingCommuteBases();
-    const home = document.getElementById('drivingHomeBaseSummary');
-    const lodging = document.getElementById('drivingLodgingBaseSummary');
-    if (home) home.innerHTML = commuteBaseSummary(bases.home, '자택');
-    if (lodging) lodging.innerHTML = commuteBaseSummary(bases.lodging, '숙소');
-}
-
-function decorateCommuteBadges() {
-    const rows = [...document.querySelectorAll('#drivingBody tr')].filter(tr => tr.querySelector('.trip-check'));
-    rows.forEach((tr, index) => {
-        const row = drivingRows[index];
-        if (!row?.autoCommute) return;
-        const statusCell = tr.querySelectorAll('td')[8];
-        if (!statusCell || statusCell.querySelector('.auto-commute-badge')) return;
-        const badge = document.createElement('span');
-        badge.className = 'badge text-bg-info auto-commute-badge ms-1';
-        badge.textContent = `자동 ${drivingUsageDisplayLabel(row)}`;
-        statusCell.appendChild(badge);
-    });
-}
-
-(function installDrivingCommuteIntegration() {
-    // 사용자가 직접 구분을 고친 행은 자동 분류가 다시 덮어쓰지 않는다.
-    const originalSetUsageType = window.setUsageType;
-    if (typeof originalSetUsageType === 'function') {
-        window.setUsageType = function(index, value) {
-            const row = drivingRows?.[index];
-            if (row) {
-                row.usageManual = true;
-                row.autoCommute = false;
-                row.commuteDirection = value === 'commute' ? 'commute' : '';
+    function installWorkflowStyles() {
+        if (document.getElementById('drivingWorkflowStyles')) return;
+        const style = document.createElement('style');
+        style.id = 'drivingWorkflowStyles';
+        style.textContent = `
+            .driving-table tr.driving-date-break > td {
+                border-top: 4px solid #64748b !important;
             }
-            return originalSetUsageType(index, value);
+            .driving-usage-cycle {
+                min-width: 88px;
+                font-weight: 800;
+                cursor: pointer;
+                user-select: none;
+            }
+            .driving-usage-business { border-color:#3b82f6!important; color:#93c5fd!important; }
+            .driving-usage-commute { border-color:#f59e0b!important; color:#fcd34d!important; }
+            .driving-usage-personal { border-color:#ef4444!important; color:#fca5a5!important; }
+            .driving-linked-note {
+                display:inline-block;
+                margin-top:4px;
+                color:#94a3b8;
+                font-size:.68rem;
+            }
+            .driving-merged-detail-btn { cursor:pointer; border:0; }
+            .driving-merged-detail-table td,
+            .driving-merged-detail-table th { vertical-align:middle; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function isPersonalRow(row) {
+        return !!row && (row.isPersonal || row.usageType === 'personal');
+    }
+
+    function getDrivingPlaceTarget(rowIndex, side) {
+        const current = drivingRows?.[rowIndex];
+        if (!current) return null;
+
+        if (side === 'start' && rowIndex > 0) {
+            const previous = drivingRows[rowIndex - 1];
+            if (!previous) return null;
+            return {
+                displayRowIndex: rowIndex,
+                displaySide: side,
+                rowIndex: rowIndex - 1,
+                side: 'end',
+                row: previous,
+                linked: true
+            };
+        }
+
+        return {
+            displayRowIndex: rowIndex,
+            displaySide: side,
+            rowIndex,
+            side,
+            row: current,
+            linked: false
         };
     }
 
-    // 2번째 행 이후의 출발지 수정은 실제로 '직전 행 목적지'를 수정한다.
-    const originalSetPlaceName = window.setPlaceName;
-    if (typeof originalSetPlaceName === 'function') {
-        window.setPlaceName = function(index, side, value) {
-            const target = getDrivingPlaceEditTarget(index, side);
-            if (!target) return;
-            return originalSetPlaceName(target.rowIndex, target.side, value);
+    function getDrivingDisplayPlace(rowIndex, side) {
+        const current = drivingRows?.[rowIndex];
+        if (!current) return null;
+        if (isPersonalRow(current)) {
+            return { personal: true, name: '개인사용', address: '', point: null, linked: side === 'start' && rowIndex > 0 };
+        }
+
+        const target = getDrivingPlaceTarget(rowIndex, side);
+        if (!target?.row) return null;
+        if (isPersonalRow(target.row)) {
+            return { personal: true, name: '개인사용', address: '', point: null, linked: target.linked, target };
+        }
+
+        const isStart = target.side === 'start';
+        return {
+            personal: false,
+            name: isStart ? (target.row.startName || '') : (target.row.endName || ''),
+            address: isStart ? (target.row.startAddress || '') : (target.row.endAddress || ''),
+            point: isStart ? (target.row.start || null) : (target.row.end || null),
+            cacheHit: isStart ? !!target.row.startCacheHit : !!target.row.endCacheHit,
+            cacheDistanceMeters: isStart ? target.row.startCacheDistanceMeters : target.row.endCacheDistanceMeters,
+            linked: target.linked,
+            target
         };
     }
 
-    const originalSetPlaceAddress = window.setPlaceAddress;
-    if (typeof originalSetPlaceAddress === 'function') {
-        window.setPlaceAddress = function(index, side, value) {
-            const target = getDrivingPlaceEditTarget(index, side);
-            if (!target) return;
-            return originalSetPlaceAddress(target.rowIndex, target.side, value);
+    function usageLabel(value) {
+        if (value === 'commute') return '출/퇴근';
+        if (value === 'personal') return '개인사용';
+        return '업무';
+    }
+
+    function usageClass(value) {
+        if (value === 'commute') return 'driving-usage-commute';
+        if (value === 'personal') return 'driving-usage-personal';
+        return 'driving-usage-business';
+    }
+
+    function backupNonPersonalPlaces(row) {
+        if (!row || row._nonPersonalPlaceBackup) return;
+        row._nonPersonalPlaceBackup = {
+            startName: row.startName || '',
+            endName: row.endName || '',
+            startAddress: row.startAddress || '',
+            endAddress: row.endAddress || ''
         };
     }
 
-    const originalOpenDrivingMapReview = window.openDrivingMapReview;
-    if (typeof originalOpenDrivingMapReview === 'function') {
-        window.openDrivingMapReview = function(index, side) {
-            const target = getDrivingPlaceEditTarget(index, side);
-            if (!target) return;
-            return originalOpenDrivingMapReview(target.rowIndex, target.side);
-        };
+    function restoreNonPersonalPlaces(row) {
+        if (!row) return;
+        const backup = row._nonPersonalPlaceBackup;
+        if (backup) {
+            row.startName = backup.startName || '';
+            row.endName = backup.endName || '';
+            row.startAddress = backup.startAddress || '';
+            row.endAddress = backup.endAddress || '';
+            return;
+        }
+
+        if (Array.isArray(row.hiddenParts) && row.hiddenParts.length) {
+            const first = row.hiddenParts[0];
+            const last = row.hiddenParts[row.hiddenParts.length - 1];
+            if (row.startName === '개인사용') row.startName = first?.startName || '';
+            if (row.endName === '개인사용') row.endName = last?.endName || '';
+            if (!row.startAddress) row.startAddress = first?.startAddress || '';
+            if (!row.endAddress) row.endAddress = last?.endAddress || '';
+        } else {
+            if (row.startName === '개인사용') row.startName = '';
+            if (row.endName === '개인사용') row.endName = '';
+        }
     }
 
-    const originalRememberDrivingPlace = window.rememberDrivingPlace;
-    if (typeof originalRememberDrivingPlace === 'function') {
-        window.rememberDrivingPlace = function(index, side, silent) {
-            const target = getDrivingPlaceEditTarget(index, side);
-            if (!target) return;
-            return originalRememberDrivingPlace(target.rowIndex, target.side, silent);
-        };
+    function setManualUsageType(index, value) {
+        const row = drivingRows?.[index];
+        if (!row) return;
+        const next = ['business', 'commute', 'personal'].includes(value) ? value : 'business';
+        if (row.usageType === next && row.isPersonal === (next === 'personal')) return;
+
+        snapshotRows();
+
+        if (next === 'personal') {
+            backupNonPersonalPlaces(row);
+            row.usageType = 'personal';
+            row.isPersonal = true;
+        } else {
+            const wasPersonal = isPersonalRow(row);
+            row.usageType = next;
+            row.isPersonal = false;
+            if (wasPersonal) restoreNonPersonalPlaces(row);
+        }
+
+        delete row.autoCommute;
+        delete row.commuteDirection;
+        delete row.commuteBaseLabel;
+        delete row.usageManual;
+
+        renderDrivingRows();
     }
 
-    // 화면의 출발지 표시 자체를 논리 출발지(직전 목적지)로 교체한다.
-    window.renderPlaceCell = function(row, index, side, personal) {
-        const logical = getDrivingLogicalPlace(index, side);
-        if (!logical) return '';
-        if (logical.personal || (personal && side === 'end')) return '<div class="place-main">개인사용</div>';
+    function cycleDrivingUsage(index) {
+        const row = drivingRows?.[index];
+        if (!row) return;
+        const current = isPersonalRow(row) ? 'personal' : (row.usageType === 'commute' ? 'commute' : 'business');
+        const next = current === 'business' ? 'commute' : current === 'commute' ? 'personal' : 'business';
+        setManualUsageType(index, next);
+    }
 
-        const fallback = logical.point ? `${logical.point.lat.toFixed(6)}, ${logical.point.lng.toFixed(6)}` : '';
-        const linkedNote = logical.linked ? '<div class="small text-info mt-1">직전 목적지 연동</div>' : '';
+    function setLinkedPlaceName(index, side, value) {
+        const target = getDrivingPlaceTarget(index, side);
+        if (!target?.row || isPersonalRow(drivingRows[index]) || isPersonalRow(target.row)) return;
+        const key = target.side === 'start' ? 'startName' : 'endName';
+        const next = String(value || '').trim();
+        if (target.row[key] === next) return;
+        snapshotRows();
+        target.row[key] = next;
+        renderDrivingRows();
+    }
+
+    function setLinkedPlaceAddress(index, side, value) {
+        const target = getDrivingPlaceTarget(index, side);
+        if (!target?.row || isPersonalRow(drivingRows[index]) || isPersonalRow(target.row)) return;
+        const key = target.side === 'start' ? 'startAddress' : 'endAddress';
+        const next = String(value || '').trim();
+        if (target.row[key] === next) return;
+        snapshotRows();
+        target.row[key] = next;
+        renderDrivingRows();
+    }
+
+    function renderLinkedPlaceCell(row, index, side, personal) {
+        if (personal) return '<div class="place-main">개인사용</div>';
+
+        const place = getDrivingDisplayPlace(index, side);
+        if (!place || place.personal) {
+            return `<div class="place-main">개인사용</div>${place?.linked ? '<span class="driving-linked-note">이전 목적지 연동</span>' : ''}`;
+        }
+
+        const fallback = place.point ? `${place.point.lat.toFixed(6)}, ${place.point.lng.toFixed(6)}` : '';
         return `
             <input type="text"
                    class="form-control form-control-sm input-dark mb-1"
-                   value="${escapeHtml(logical.name)}"
+                   value="${escapeHtml(place.name)}"
                    placeholder="현장명 / 장소명 입력"
                    onchange="setPlaceName(${index}, '${side}', this.value)">
-            <div class="place-sub">${escapeHtml(logical.address || fallback)}</div>
-            ${linkedNote}
+            <div class="place-sub">${escapeHtml(place.address || fallback)}</div>
+            ${place.linked ? '<span class="driving-linked-note"><i class="bi bi-link-45deg"></i> 이전 목적지 연동</span>' : ''}
         `;
-    };
+    }
 
-    // 엑셀도 동일한 논리 출발지를 사용하고 출근/퇴근을 구분해 출력한다.
+    function mergedStatusHtml(row, index, personal) {
+        const count = Math.max(1, Array.isArray(row.originalIds) ? row.originalIds.length : 1);
+        if (!row.isMerged) return '<span class="text-secondary">일반</span>';
+        if (personal) return `<span class="badge badge-soft">${count}건 묶음</span>`;
+        return `<button type="button" class="badge badge-soft driving-merged-detail-btn" onclick="openMergedTripDetails(${index})" title="묶인 운행 상세보기">${count}건 묶음 · 보기</button>`;
+    }
+
+    function renderWorkflowRows() {
+        const body = document.getElementById('drivingBody');
+        const all = document.getElementById('checkAll');
+        if (!body) return;
+        if (all) all.checked = false;
+
+        if (!Array.isArray(drivingRows) || !drivingRows.length) {
+            body.innerHTML = '<tr><td colspan="9" class="text-center text-secondary py-5">표시할 운행이 없습니다.</td></tr>';
+            updateSummary();
+            return;
+        }
+
+        body.innerHTML = drivingRows.map((r, idx) => {
+            const personal = isPersonalRow(r);
+            const dateBreak = idx > 0 && String(drivingRows[idx - 1]?.date || '') !== String(r.date || '');
+            const status = mergedStatusHtml(r, idx, personal);
+            const currentUsage = personal ? 'personal' : (r.usageType === 'commute' ? 'commute' : 'business');
+
+            return `<tr class="${personal ? 'personal-row' : ''} ${r.isMerged ? 'merged-row' : ''} ${dateBreak ? 'driving-date-break' : ''}">
+                <td><input class="trip-check" type="checkbox" data-index="${idx}"></td>
+                <td>${idx + 1}</td>
+                <td>${escapeHtml(r.date)}</td>
+                <td>${escapeHtml(r.startTime)} → ${escapeHtml(r.endTime)}</td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-secondary driving-usage-cycle ${usageClass(currentUsage)}" onclick="cycleDrivingUsage(${idx})" title="클릭: 업무 → 출/퇴근 → 개인사용">
+                        ${usageLabel(currentUsage)}
+                    </button>
+                </td>
+                <td>${renderLinkedPlaceCell(r, idx, 'start', personal)}</td>
+                <td>${renderLinkedPlaceCell(r, idx, 'end', personal)}</td>
+                <td class="text-end fw-bold">${Number(r.distanceKm || 0).toFixed(1)} km</td>
+                <td>${status}</td>
+            </tr>`;
+        }).join('');
+
+        updateSummary();
+    }
+
+    function decorateLinkedPlaceCell(cell, row, rowIndex, side) {
+        if (!cell) return;
+        const current = drivingRows[rowIndex];
+        const target = getDrivingPlaceTarget(rowIndex, side);
+        const place = getDrivingDisplayPlace(rowIndex, side);
+        if (!current || !target?.row || !place || place.personal || isPersonalRow(current)) return;
+
+        const sub = cell.querySelector('.place-sub');
+        if (sub && !cell.querySelector('.driving-address-edit')) {
+            sub.style.display = 'none';
+            const addressInput = document.createElement('input');
+            addressInput.type = 'text';
+            addressInput.className = 'form-control form-control-sm input-dark mt-1 driving-address-edit';
+            addressInput.value = place.address === '도로명 주소 없음' ? '' : (place.address || '');
+            addressInput.placeholder = '도로명 주소 직접 입력/수정';
+            addressInput.addEventListener('change', () => setLinkedPlaceAddress(rowIndex, side, addressInput.value));
+            cell.appendChild(addressInput);
+        }
+
+        if (cell.querySelector('.driving-place-actions')) return;
+        const actions = document.createElement('div');
+        actions.className = 'driving-place-actions d-flex flex-wrap gap-1 mt-1';
+
+        if (place.point) {
+            const mapBtn = document.createElement('button');
+            mapBtn.type = 'button';
+            mapBtn.className = 'btn btn-sm btn-outline-info';
+            mapBtn.innerHTML = '<i class="bi bi-map me-1"></i>지도 수정';
+            mapBtn.addEventListener('click', () => openDrivingMapReview(rowIndex, side));
+            actions.appendChild(mapBtn);
+
+            const rememberBtn = document.createElement('button');
+            rememberBtn.type = 'button';
+            rememberBtn.className = 'btn btn-sm btn-outline-secondary';
+            rememberBtn.innerHTML = '<i class="bi bi-bookmark-plus me-1"></i>장소 기억';
+            rememberBtn.addEventListener('click', () => rememberDrivingPlace(target.rowIndex, target.side));
+            actions.appendChild(rememberBtn);
+        }
+
+        if (place.cacheHit) {
+            const badge = document.createElement('span');
+            badge.className = 'badge text-bg-secondary align-self-center';
+            badge.textContent = `저장 장소 · ${place.cacheDistanceMeters ?? 0}m`;
+            actions.appendChild(badge);
+        }
+
+        if (actions.childNodes.length) cell.appendChild(actions);
+    }
+
+    function flattenMergedParts(row, output = []) {
+        if (!row) return output;
+        if (Array.isArray(row.hiddenParts) && row.hiddenParts.length) {
+            row.hiddenParts.forEach(part => flattenMergedParts(part, output));
+        } else {
+            output.push(row);
+        }
+        return output;
+    }
+
+    function mergedPartPlace(part, side) {
+        if (!part || isPersonalRow(part)) return '개인사용';
+        const isStart = side === 'start';
+        const name = isStart ? part.startName : part.endName;
+        const address = isStart ? part.startAddress : part.endAddress;
+        const point = isStart ? part.start : part.end;
+        if (name && name !== '개인사용') return name;
+        if (address) return address;
+        if (point && Number.isFinite(point.lat) && Number.isFinite(point.lng)) return `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`;
+        return '-';
+    }
+
+    function ensureMergedTripModal() {
+        if (document.getElementById('drivingMergedDetailModal')) return;
+        const wrap = document.createElement('div');
+        wrap.innerHTML = `
+            <div class="modal fade" id="drivingMergedDetailModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content bg-dark text-light border-secondary">
+                        <div class="modal-header border-secondary">
+                            <div>
+                                <h5 class="modal-title fw-bold"><i class="bi bi-layers me-2"></i>묶인 운행 상세보기</h5>
+                                <div id="drivingMergedDetailSummary" class="small text-secondary mt-1"></div>
+                            </div>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="table-responsive">
+                                <table class="table table-dark table-bordered driving-merged-detail-table mb-0">
+                                    <thead><tr><th>#</th><th>일자</th><th>시간</th><th>출발</th><th>도착</th><th class="text-end">거리</th></tr></thead>
+                                    <tbody id="drivingMergedDetailBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        document.body.appendChild(wrap.firstElementChild);
+    }
+
+    function openMergedTripDetails(index) {
+        const row = drivingRows?.[index];
+        if (!row || !row.isMerged || isPersonalRow(row)) return;
+        const parts = flattenMergedParts(row, []);
+        if (!parts.length) return;
+
+        ensureMergedTripModal();
+        const body = document.getElementById('drivingMergedDetailBody');
+        const summary = document.getElementById('drivingMergedDetailSummary');
+        const total = parts.reduce((sum, part) => sum + (Number(part.distanceKm) || 0), 0);
+
+        if (summary) summary.textContent = `${parts.length}개 원본 운행 · 합계 ${total.toFixed(1)} km`;
+        if (body) {
+            body.innerHTML = parts.map((part, idx) => `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>${escapeHtml(part.date || '')}</td>
+                    <td>${escapeHtml(part.startTime || '')} → ${escapeHtml(part.endTime || '')}</td>
+                    <td>${escapeHtml(mergedPartPlace(part, 'start'))}</td>
+                    <td>${escapeHtml(mergedPartPlace(part, 'end'))}</td>
+                    <td class="text-end fw-bold">${Number(part.distanceKm || 0).toFixed(1)} km</td>
+                </tr>`).join('');
+        }
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('drivingMergedDetailModal')).show();
+    }
+
+    async function openLinkedDrivingMapReview(rowIndex, side) {
+        if (!window.kakao || !kakao.maps) {
+            alert('주소 서비스가 아직 연결되지 않았습니다.');
+            return;
+        }
+
+        const current = drivingRows?.[rowIndex];
+        const target = getDrivingPlaceTarget(rowIndex, side);
+        if (!current || !target?.row || isPersonalRow(current) || isPersonalRow(target.row)) return;
+
+        const sourceRow = target.row;
+        const point = target.side === 'start' ? sourceRow.start : sourceRow.end;
+        if (!point) return;
+
+        const name = target.side === 'start' ? sourceRow.startName : sourceRow.endName;
+        const address = target.side === 'start' ? sourceRow.startAddress : sourceRow.endAddress;
+
+        ensureDrivingMapModal();
+        drivingMapTarget = {
+            rowIndex: target.rowIndex,
+            side: target.side,
+            originalPoint: { ...point },
+            originalName: name || '',
+            originalAddress: address && address !== '도로명 주소 없음' ? address : ''
+        };
+        drivingMapSelectedPoint = { ...point };
+
+        document.getElementById('drivingMapName').value = name && name !== '도로명 주소 없음' ? name : '';
+        document.getElementById('drivingMapAddress').value = address && address !== '도로명 주소 없음' ? address : '';
+        document.getElementById('drivingMapRemember').checked = false;
+        document.getElementById('drivingMapResult').textContent = target.linked
+            ? '이 출발지는 직전 운행의 목적지와 연결되어 있습니다. 수정하면 두 곳에 함께 반영됩니다.'
+            : '현재 GPS 위치를 표시했습니다. 위치가 다르면 지도를 클릭해 마커를 옮겨주세요.';
+
+        const modalEl = document.getElementById('drivingMapModal');
+        modalEl.addEventListener('shown.bs.modal', initDrivingMapCanvas, { once: true });
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+
+    window.decoratePlaceCell = decorateLinkedPlaceCell;
+    window.setPlaceAddress = setLinkedPlaceAddress;
+    window.setPlaceName = setLinkedPlaceName;
+    window.setUsageType = setManualUsageType;
+    window.cycleDrivingUsage = cycleDrivingUsage;
+    window.renderPlaceCell = renderLinkedPlaceCell;
+    window.renderDrivingRows = renderWorkflowRows;
+    window.openDrivingMapReview = openLinkedDrivingMapReview;
+    window.openMergedTripDetails = openMergedTripDetails;
+    window.getDrivingPlaceTarget = getDrivingPlaceTarget;
+    window.getDrivingDisplayPlace = getDrivingDisplayPlace;
+
     window.drivingUsageLabel = function(row) {
-        return drivingUsageDisplayLabel(row);
+        return usageLabel(isPersonalRow(row) ? 'personal' : row?.usageType);
     };
+
     window.drivingPlaceForExport = function(row, side) {
-        const index = drivingRows.indexOf(row);
-        const logical = getDrivingLogicalPlace(index, side);
-        if (!logical) return '';
-        if (logical.personal) return '개인사용';
-        return String(logical.name || logical.address || '').trim();
+        const index = Array.isArray(drivingRows) ? drivingRows.indexOf(row) : -1;
+        if (index < 0 || isPersonalRow(row)) return isPersonalRow(row) ? '개인사용' : '';
+        const place = getDrivingDisplayPlace(index, side);
+        if (!place || place.personal) return '개인사용';
+        return String(place.name || place.address || '').trim();
     };
 
-    // 모든 목록 재렌더 시 연결 관계가 바뀌었는지 다시 분류한다.
-    const originalRenderDrivingRows = window.renderDrivingRows;
-    if (typeof originalRenderDrivingRows === 'function') {
-        window.renderDrivingRows = function(...args) {
-            applyCommuteAutoClassification();
-            const result = originalRenderDrivingRows.apply(this, args);
-            setTimeout(decorateCommuteBadges, 0);
-            return result;
-        };
-    }
+    window.applyCommuteAutoClassification = () => false;
+    window.registerDrivingCommuteBase = () => {};
+    window.clearDrivingCommuteBase = () => {};
 
-    // 모든 기존 wrapper가 설치된 뒤 최종 분석 결과에 자동분류를 한 번 더 적용한다.
-    const originalLoadTimelineFile = window.loadTimelineFile;
-    if (typeof originalLoadTimelineFile === 'function') {
-        window.loadTimelineFile = async function(...args) {
-            const result = await originalLoadTimelineFile.apply(this, args);
-            applyCommuteAutoClassification();
-            renderDrivingRows();
-            return result;
-        };
-    }
+    installWorkflowStyles();
+    removeLegacyCommuteSettings();
+
+    window.addEventListener('DOMContentLoaded', () => {
+        installWorkflowStyles();
+        removeLegacyCommuteSettings();
+        ensureMergedTripModal();
+    });
 })();
-
-window.addEventListener('DOMContentLoaded', () => {
-    renderDrivingCommuteBaseSettings();
-    setTimeout(() => {
-        applyCommuteAutoClassification();
-        decorateCommuteBadges();
-    }, 0);
-});
-
-window.getDrivingLogicalPlace = getDrivingLogicalPlace;
-window.getDrivingPlaceEditTarget = getDrivingPlaceEditTarget;
-window.findDrivingCommuteBase = findDrivingCommuteBase;
-window.applyCommuteAutoClassification = applyCommuteAutoClassification;
-window.drivingUsageDisplayLabel = drivingUsageDisplayLabel;
-window.registerDrivingCommuteBase = registerDrivingCommuteBase;
-window.clearDrivingCommuteBase = clearDrivingCommuteBase;
-window.renderDrivingCommuteBaseSettings = renderDrivingCommuteBaseSettings;

@@ -46,23 +46,25 @@
     }
 
     // 화면/엑셀에서 사용하는 논리 위치.
-    // 2번째 운행부터 출발지는 직전 운행의 목적지를 참조한다.
-    // 현재 행의 원본 start 좌표는 바꾸지 않아 누락 이동 검증에는 원본 GPS가 유지된다.
+    // 2번째 운행부터 직전 운행이 업무/출퇴근일 때만 그 목적지를 출발지로 참조한다.
+    // 직전 운행이 개인사용이면 연동을 끊고 현재 운행의 원본 start를 독립 출발지로 사용한다.
+    // 현재 행의 원본 start 좌표는 항상 보존되어 누락 이동 검증에는 원본 GPS가 유지된다.
     function getDrivingPlaceTarget(rowIndex, side) {
         const current = drivingRows?.[rowIndex];
         if (!current) return null;
 
         if (side === 'start' && rowIndex > 0) {
             const previous = drivingRows[rowIndex - 1];
-            if (!previous) return null;
-            return {
-                displayRowIndex: rowIndex,
-                displaySide: side,
-                rowIndex: rowIndex - 1,
-                side: 'end',
-                row: previous,
-                linked: true
-            };
+            if (previous && !isPersonalRow(previous)) {
+                return {
+                    displayRowIndex: rowIndex,
+                    displaySide: side,
+                    rowIndex: rowIndex - 1,
+                    side: 'end',
+                    row: previous,
+                    linked: true
+                };
+            }
         }
 
         return {

@@ -1,6 +1,6 @@
 // =====================================================
 // 김목수이야기 ERP - 운행기록 수동 분류 / 연속 출발지 연동
-// 기존 자택·숙소 자동 출퇴근 기능은 제거함.
+// 구분 클릭 순환, 직전 목적지 연동, 묶음 운행 상세보기
 // =====================================================
 
 (function installDrivingManualWorkflow() {
@@ -32,15 +32,11 @@
             .driving-usage-business { border-color:#3b82f6!important; color:#93c5fd!important; }
             .driving-usage-commute { border-color:#f59e0b!important; color:#fcd34d!important; }
             .driving-usage-personal { border-color:#ef4444!important; color:#fca5a5!important; }
-            .driving-linked-note {
-                display:inline-block;
-                margin-top:4px;
-                color:#94a3b8;
-                font-size:.68rem;
-            }
             .driving-merged-detail-btn { cursor:pointer; border:0; }
             .driving-merged-detail-table td,
             .driving-merged-detail-table th { vertical-align:middle; }
+            .driving-merged-place-name { font-weight:700; }
+            .driving-merged-place-address { color:#94a3b8; font-size:.74rem; margin-top:2px; }
         `;
         document.head.appendChild(style);
     }
@@ -49,6 +45,9 @@
         return !!row && (row.isPersonal || row.usageType === 'personal');
     }
 
+    // 화면/엑셀에서 사용하는 논리 위치.
+    // 2번째 운행부터 출발지는 직전 운행의 목적지를 참조한다.
+    // 현재 행의 원본 start 좌표는 바꾸지 않아 누락 이동 검증에는 원본 GPS가 유지된다.
     function getDrivingPlaceTarget(rowIndex, side) {
         const current = drivingRows?.[rowIndex];
         if (!current) return null;
@@ -80,13 +79,13 @@
         const current = drivingRows?.[rowIndex];
         if (!current) return null;
         if (isPersonalRow(current)) {
-            return { personal: true, name: '개인사용', address: '', point: null, linked: side === 'start' && rowIndex > 0 };
+            return { personal: true, name: '개인사용', address: '', point: null };
         }
 
         const target = getDrivingPlaceTarget(rowIndex, side);
         if (!target?.row) return null;
         if (isPersonalRow(target.row)) {
-            return { personal: true, name: '개인사용', address: '', point: null, linked: target.linked, target };
+            return { personal: true, name: '개인사용', address: '', point: null, target };
         }
 
         const isStart = target.side === 'start';
@@ -97,7 +96,6 @@
             point: isStart ? (target.row.start || null) : (target.row.end || null),
             cacheHit: isStart ? !!target.row.startCacheHit : !!target.row.endCacheHit,
             cacheDistanceMeters: isStart ? target.row.startCacheDistanceMeters : target.row.endCacheDistanceMeters,
-            linked: target.linked,
             target
         };
     }
@@ -209,9 +207,7 @@
         if (personal) return '<div class="place-main">개인사용</div>';
 
         const place = getDrivingDisplayPlace(index, side);
-        if (!place || place.personal) {
-            return `<div class="place-main">개인사용</div>${place?.linked ? '<span class="driving-linked-note">이전 목적지 연동</span>' : ''}`;
-        }
+        if (!place || place.personal) return '<div class="place-main">개인사용</div>';
 
         const fallback = place.point ? `${place.point.lat.toFixed(6)}, ${place.point.lng.toFixed(6)}` : '';
         return `
@@ -221,15 +217,18 @@
                    placeholder="현장명 / 장소명 입력"
                    onchange="setPlaceName(${index}, '${side}', this.value)">
             <div class="place-sub">${escapeHtml(place.address || fallback)}</div>
-            ${place.linked ? '<span class="driving-linked-note"><i class="bi bi-link-45deg"></i> 이전 목적지 연동</span>' : ''}
         `;
     }
 
     function mergedStatusHtml(row, index, personal) {
         const count = Math.max(1, Array.isArray(row.originalIds) ? row.originalIds.length : 1);
-        if (!row.isMerged) return '<span class="text-secondary">일반</span>';
+        const routeButton = !personal && !row.isManual
+            ? `<button type="button" class="btn btn-sm btn-outline-info py-0 px-2 ms-1" onclick="openDrivingRoute(${index})" title="Timeline 실제 이동 경로 보기"><i class="bi bi-sign-turn-right me-1"></i>경로</button>`
+            : '';
+
+        if (!row.isMerged) return `<span class="text-secondary">일반</span>${routeButton}`;
         if (personal) return `<span class="badge badge-soft">${count}건 묶음</span>`;
-        return `<button type="button" class="badge badge-soft driving-merged-detail-btn" onclick="openMergedTripDetails(${index})" title="묶인 운행 상세보기">${count}건 묶음 · 보기</button>`;
+        return `<button type="button" class="badge badge-soft driving-merged-detail-btn" onclick="openMergedTripDetails(${index})" title="묶인 운행 상세보기">${count}건 묶음 · 보기</button>${routeButton}`;
     }
 
     function renderWorkflowRows() {
@@ -329,16 +328,73 @@
         return output;
     }
 
-    function mergedPartPlace(part, side) {
-        if (!part || isPersonalRow(part)) return '개인사용';
+    function getPartPlaceData(part, side) {
+        if (!part || isPersonalRow(part)) return { name: '개인사용', address: '' };
         const isStart = side === 'start';
-        const name = isStart ? part.startName : part.endName;
-        const address = isStart ? part.startAddress : part.endAddress;
-        const point = isStart ? part.start : part.end;
-        if (name && name !== '개인사용') return name;
-        if (address) return address;
-        if (point && Number.isFinite(point.lat) && Number.isFinite(point.lng)) return `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`;
-        return '-';
+        return {
+            name: isStart ? (part.startName || '') : (part.endName || ''),
+            address: isStart ? (part.startAddress || '') : (part.endAddress || ''),
+            point: isStart ? (part.start || null) : (part.end || null)
+        };
+    }
+
+    async function resolveMergedPartSide(part, side, resolvedPointCache) {
+        const data = getPartPlaceData(part, side);
+        if (!data.point || isPersonalRow(part)) return;
+        if (data.address && data.address !== '도로명 주소 없음') return;
+
+        const pointKey = `${Number(data.point.lat).toFixed(6)},${Number(data.point.lng).toFixed(6)}`;
+        let found = resolvedPointCache.get(pointKey) || null;
+
+        if (!found && typeof window.findCachedDrivingPlace === 'function') {
+            const cached = window.findCachedDrivingPlace(data.point);
+            if (cached) found = { name: cached.name || cached.address || '', address: cached.address || '' };
+        }
+
+        if (!found && window.kakaoReady !== false && typeof window.drivingFindNearestRoadAddress === 'function') {
+            try {
+                found = await window.drivingFindNearestRoadAddress(data.point);
+            } catch (err) {
+                console.warn('묶음 운행 주소 변환 실패:', err);
+            }
+        }
+
+        if (!found?.address || found.address === '도로명 주소 없음') return;
+        resolvedPointCache.set(pointKey, found);
+
+        if (side === 'start') {
+            part.startName = found.name || found.address;
+            part.startAddress = found.address;
+        } else {
+            part.endName = found.name || found.address;
+            part.endAddress = found.address;
+        }
+    }
+
+    async function resolveMergedPartAddresses(parts) {
+        const resolvedPointCache = new Map();
+        for (const part of parts) {
+            await resolveMergedPartSide(part, 'start', resolvedPointCache);
+            await resolveMergedPartSide(part, 'end', resolvedPointCache);
+        }
+    }
+
+    function mergedPartPlaceHtml(part, side) {
+        const data = getPartPlaceData(part, side);
+        if (isPersonalRow(part)) return '<span class="text-secondary">개인사용</span>';
+
+        const name = String(data.name || '').trim();
+        const address = String(data.address || '').trim();
+        if (!name && !address) return '<span class="text-warning">주소 확인 불가</span>';
+
+        if (!name || name === address) {
+            return `<div class="driving-merged-place-name">${escapeHtml(address || name)}</div>`;
+        }
+
+        return `
+            <div class="driving-merged-place-name">${escapeHtml(name)}</div>
+            ${address ? `<div class="driving-merged-place-address">${escapeHtml(address)}</div>` : ''}
+        `;
     }
 
     function ensureMergedTripModal() {
@@ -356,6 +412,7 @@
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
+                            <div id="drivingMergedDetailLoading" class="small text-warning mb-2 d-none">원본 운행의 주소를 확인하고 있습니다...</div>
                             <div class="table-responsive">
                                 <table class="table table-dark table-bordered driving-merged-detail-table mb-0">
                                     <thead><tr><th>#</th><th>일자</th><th>시간</th><th>출발</th><th>도착</th><th class="text-end">거리</th></tr></thead>
@@ -369,31 +426,40 @@
         document.body.appendChild(wrap.firstElementChild);
     }
 
-    function openMergedTripDetails(index) {
+    function renderMergedPartRows(parts) {
+        const body = document.getElementById('drivingMergedDetailBody');
+        if (!body) return;
+        body.innerHTML = parts.map((part, idx) => `
+            <tr>
+                <td>${idx + 1}</td>
+                <td>${escapeHtml(part.date || '')}</td>
+                <td>${escapeHtml(part.startTime || '')} → ${escapeHtml(part.endTime || '')}</td>
+                <td>${mergedPartPlaceHtml(part, 'start')}</td>
+                <td>${mergedPartPlaceHtml(part, 'end')}</td>
+                <td class="text-end fw-bold">${Number(part.distanceKm || 0).toFixed(1)} km</td>
+            </tr>`).join('');
+    }
+
+    async function openMergedTripDetails(index) {
         const row = drivingRows?.[index];
         if (!row || !row.isMerged || isPersonalRow(row)) return;
         const parts = flattenMergedParts(row, []);
         if (!parts.length) return;
 
         ensureMergedTripModal();
-        const body = document.getElementById('drivingMergedDetailBody');
         const summary = document.getElementById('drivingMergedDetailSummary');
+        const loading = document.getElementById('drivingMergedDetailLoading');
         const total = parts.reduce((sum, part) => sum + (Number(part.distanceKm) || 0), 0);
 
         if (summary) summary.textContent = `${parts.length}개 원본 운행 · 합계 ${total.toFixed(1)} km`;
-        if (body) {
-            body.innerHTML = parts.map((part, idx) => `
-                <tr>
-                    <td>${idx + 1}</td>
-                    <td>${escapeHtml(part.date || '')}</td>
-                    <td>${escapeHtml(part.startTime || '')} → ${escapeHtml(part.endTime || '')}</td>
-                    <td>${escapeHtml(mergedPartPlace(part, 'start'))}</td>
-                    <td>${escapeHtml(mergedPartPlace(part, 'end'))}</td>
-                    <td class="text-end fw-bold">${Number(part.distanceKm || 0).toFixed(1)} km</td>
-                </tr>`).join('');
-        }
+        if (loading) loading.classList.remove('d-none');
+        renderMergedPartRows(parts);
 
         bootstrap.Modal.getOrCreateInstance(document.getElementById('drivingMergedDetailModal')).show();
+
+        await resolveMergedPartAddresses(parts);
+        renderMergedPartRows(parts);
+        if (loading) loading.classList.add('d-none');
     }
 
     async function openLinkedDrivingMapReview(rowIndex, side) {
@@ -427,7 +493,7 @@
         document.getElementById('drivingMapAddress').value = address && address !== '도로명 주소 없음' ? address : '';
         document.getElementById('drivingMapRemember').checked = false;
         document.getElementById('drivingMapResult').textContent = target.linked
-            ? '이 출발지는 직전 운행의 목적지와 연결되어 있습니다. 수정하면 두 곳에 함께 반영됩니다.'
+            ? '직전 운행 목적지와 같은 위치입니다. 수정 내용은 다음 운행 출발지에도 함께 반영됩니다.'
             : '현재 GPS 위치를 표시했습니다. 위치가 다르면 지도를 클릭해 마커를 옮겨주세요.';
 
         const modalEl = document.getElementById('drivingMapModal');
@@ -446,6 +512,7 @@
     window.openMergedTripDetails = openMergedTripDetails;
     window.getDrivingPlaceTarget = getDrivingPlaceTarget;
     window.getDrivingDisplayPlace = getDrivingDisplayPlace;
+    window.flattenDrivingMergedParts = flattenMergedParts;
 
     window.drivingUsageLabel = function(row) {
         return usageLabel(isPersonalRow(row) ? 'personal' : row?.usageType);
@@ -459,6 +526,7 @@
         return String(place.name || place.address || '').trim();
     };
 
+    // 삭제된 자동 출퇴근 API 이름을 다른 오래된 코드가 호출해도 오류가 나지 않게 no-op으로 유지한다.
     window.applyCommuteAutoClassification = () => false;
     window.registerDrivingCommuteBase = () => {};
     window.clearDrivingCommuteBase = () => {};

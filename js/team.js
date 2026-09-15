@@ -103,6 +103,7 @@ async function loadTeamMembers() {
             </div>
         `;
     }).join('');
+    await loadTeamJoinRequests();
 }
 
 async function joinTeam() {
@@ -127,14 +128,12 @@ async function joinTeam() {
         const members = teamData.members || [];
 
         if (!members.includes(myEmail)) {
-            members.push(myEmail);
-
-            await db.collection("teams").doc(tid).update({
-                members: members
+            await db.collection("teams").doc(tid).collection("joinRequests").doc(auth.currentUser.uid).set({
+                email: myEmail,
+                nickname: userNickname,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
-
-            alert("팀 합류 성공!");
-            location.reload();
+            alert("팀 가입 요청을 보냈습니다. 관리자 승인 후 다시 로그인해 주세요.");
         } else {
             alert("이미 소속된 팀입니다.");
         }
@@ -323,3 +322,42 @@ window.kickMember = kickMember;
 window.toggleAdmin = toggleAdmin;
 window.openPermModal = openPermModal;
 window.savePerms = savePerms;
+
+// Membership approval prevents self-joining from bypassing meeting access rules.
+async function loadTeamJoinRequests() {
+    const host = document.getElementById('member-list');
+    if (!host || !myTeamId) return;
+    let panel = document.getElementById('team-join-requests');
+    if (!panel) { panel = document.createElement('div'); panel.id = 'team-join-requests'; host.after(panel); }
+    panel.replaceChildren();
+    if (!['owner', 'admin'].includes(myRole)) return;
+    const targetTeam = myTeamId;
+    try {
+        const snapshot = await db.collection('teams').doc(targetTeam).collection('joinRequests').get();
+        if (targetTeam !== myTeamId || snapshot.empty) return;
+        const heading = document.createElement('h6'); heading.className = 'mt-4 mb-3'; heading.textContent = '팀 가입 요청'; panel.append(heading);
+        snapshot.forEach(doc => {
+            const data = doc.data(), row = document.createElement('div'); row.className = 'd-flex flex-wrap gap-2 align-items-center mb-2';
+            const text = document.createElement('span'); text.className = 'flex-grow-1'; text.textContent = `${data.nickname} (${data.email})`; row.append(text);
+            for (const [label, approve] of [['승인', true], ['거절', false]]) {
+                const button = document.createElement('button'); button.className = 'btn btn-sm ' + (approve ? 'btn-primary' : 'btn-outline-secondary'); button.textContent = label;
+                button.onclick = async () => {
+                    if (!confirm(`${data.email}님의 가입 요청을 ${label}하시겠습니까?`)) return;
+                    row.querySelectorAll('button').forEach(b => b.disabled = true);
+                    try {
+                        const teamRef = db.collection('teams').doc(targetTeam), requestRef = teamRef.collection('joinRequests').doc(doc.id);
+                        await db.runTransaction(async tx => {
+                            const team = await tx.get(teamRef), request = await tx.get(requestRef);
+                            if (!team.exists || !request.exists) throw new Error('이미 처리되었거나 없는 요청입니다.');
+                            if (approve) tx.update(teamRef, { members: Array.from(new Set([...(team.data().members || []), request.data().email])) });
+                            tx.delete(requestRef);
+                        });
+                        await loadTeamMembers();
+                    } catch (error) { alert('요청 처리 실패: ' + error.message); row.querySelectorAll('button').forEach(b => b.disabled = false); }
+                };
+                row.append(button);
+            }
+            panel.append(row);
+        });
+    } catch (error) { panel.textContent = '가입 요청을 불러오지 못했습니다. 관리자에게 Firebase 규칙 적용 여부를 확인해 주세요.'; }
+}

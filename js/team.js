@@ -157,6 +157,7 @@ async function createTeam() {
         statusAdmins: [],
         worklogAdmins: [],
         leaveAdmins: [],
+        meetingAdmins: [],
         inviteCode: c
     });
 
@@ -193,6 +194,7 @@ async function kickMember(tEmail) {
     const statusAdmins = (data.statusAdmins || []).filter(x => x !== tEmail);
     const worklogAdmins = (data.worklogAdmins || []).filter(x => x !== tEmail);
     const leaveAdmins = (data.leaveAdmins || []).filter(x => x !== tEmail);
+    const meetingAdmins = (data.meetingAdmins || []).filter(x => x !== tEmail);
 
     await db.collection("teams").doc(myTeamId).update({
         members: members,
@@ -200,7 +202,8 @@ async function kickMember(tEmail) {
         noticeAdmins: noticeAdmins,
         statusAdmins: statusAdmins,
         worklogAdmins: worklogAdmins,
-        leaveAdmins: leaveAdmins
+        leaveAdmins: leaveAdmins,
+        meetingAdmins: meetingAdmins
     });
 
     loadTeamMembers();
@@ -228,6 +231,7 @@ async function toggleAdmin(tEmail, isPro) {
 }
 
 async function openPermModal(type) {
+    if (type === 'meetings' && !['owner', 'admin'].includes(myRole)) return;
     currentPermType = type;
 
     let title = '종합 상황판 담당자 설정';
@@ -239,6 +243,9 @@ async function openPermModal(type) {
     } else if (type === 'worklog') {
         title = '작업일보 완료 담당자 설정';
         activeList = globalWorklogAdmins;
+    } else if (type === 'meetings') {
+        title = '회의록 담당자 설정';
+        activeList = globalMeetingAdmins;
     } else if (type === 'leave') {
         title = '연차관리 담당자 설정';
         activeList = globalLeaveAdmins;
@@ -279,6 +286,7 @@ async function openPermModal(type) {
 }
 
 async function savePerms() {
+    if (currentPermType === 'meetings' && !['owner', 'admin'].includes(myRole)) return;
     const selected = [];
     document.querySelectorAll('.perm-check:checked').forEach(cb => {
         selected.push(cb.value);
@@ -290,6 +298,8 @@ async function savePerms() {
         updateData.noticeAdmins = selected;
     } else if (currentPermType === 'worklog') {
         updateData.worklogAdmins = selected;
+    } else if (currentPermType === 'meetings') {
+        updateData.meetingAdmins = selected;
     } else if (currentPermType === 'leave') {
         updateData.leaveAdmins = selected;
     } else {

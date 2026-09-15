@@ -4,6 +4,7 @@
 // =====================================================
 
 auth.onAuthStateChanged(async user => {
+    if (window.KimmoksuMeetings) window.KimmoksuMeetings.stop();
     if (user) {
         myEmail = user.email;
         document.getElementById("auth-overlay").style.display = "none";
@@ -32,6 +33,8 @@ auth.onAuthStateChanged(async user => {
             globalStatusAdmins = tData.statusAdmins || [];
             globalWorklogAdmins = tData.worklogAdmins || [];
             globalLeaveAdmins = tData.leaveAdmins || [];
+            globalMeetingAdmins = tData.meetingAdmins || [];
+            if (window.KimmoksuMeetings) window.KimmoksuMeetings.start({ teamId: myTeamId, email: myEmail, uid: user.uid, nickname: userNickname });
 
             applyRoleRestrictions();
 
@@ -113,6 +116,7 @@ async function resetPassword() {
 
 async function handleLogout() {
     if (confirm("로그아웃 하시겠습니까?")) {
+        if (window.KimmoksuMeetings && !await window.KimmoksuMeetings.prepareLogout()) return;
         await auth.signOut();
         location.reload();
     }

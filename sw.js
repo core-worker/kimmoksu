@@ -2,7 +2,7 @@
 // - 핵심 파일을 캐시에 저장해두고, 네트워크 실패 시 캐시에서 응답
 // - Firebase 통신은 캐싱하지 않음 (실시간 DB 보호)
 
-const CACHE_NAME = 'kimmoksu-v33-meetings-auth';
+const CACHE_NAME = 'kimmoksu-v34-permissions';
 const CORE_ASSETS = [
     './',
     './index.html',
@@ -10,6 +10,7 @@ const CORE_ASSETS = [
     './leave.html',
     './style.css',
     './meetings.css',
+    './js/team.js?v=20260916-permissions',
     './js/meetings.js?v=20260916-meetings',
     './js/auth.js?v=20260916-meetings',
     './js/main.js?v=20260916-meetings',

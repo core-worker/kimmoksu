@@ -158,6 +158,8 @@
         .btn-primary-custom { background: var(--primary-accent); border: none; color: white; border-radius: 8px; padding: 8px 16px; transition: 0.2s; cursor: pointer; font-weight: bold; }
 
         .board-list { max-height: 250px; overflow-y: auto; padding-right: 5px; }
+        /* Reserve four notice rows even when fewer notices are posted. */
+        #home-notice-list { line-height: 1.5; min-height: calc(6em + 1rem); }
         .board-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid var(--primary-accent); font-size: 0.9rem; }
         .status-table { width: 100%; border-collapse: separate; border-spacing: 0 4px; table-layout: fixed; }
         .status-table th { color: #94a3b8; font-weight: 600; font-size: 0.82rem; padding: 12px 10px; border-bottom: 2px solid rgba(255,255,255,0.05); text-align: center; white-space: nowrap; }
@@ -503,8 +505,6 @@
 <section class="archive"><div class="section-heading"><h2>회의 기록 <span id="meeting-count" class="count"></span></h2><div id="meeting-tabs" class="tabs"><button data-tab="published" class="active">게시된 글</button><button data-tab="draft">임시저장</button></div></div><div class="filters"><label class="search"><span>검색</span><input id="meeting-query" type="search" placeholder="제목 또는 본문 검색 · 자재, 작업일보…"></label><label>시작일<input id="meeting-from" type="date"></label><label>종료일<input id="meeting-to" type="date"></label><button id="meeting-clear">초기화</button></div><p id="meeting-status" role="status" aria-live="polite"></p><div id="meeting-list" class="list"></div></section></section>
 
         <section id="page-home" class="page-section active">
-            <div class="t5-card meeting-ui"><div class="section-heading"><h2>최근 회의록</h2><button type="button" id="meeting-show-all">전체 보기</button></div><div id="meeting-home-list"><p class="empty">회의록을 불러오는 중입니다.</p></div></div>
-
             <div class="row g-3 mb-3">
                 <div class="col-12 col-md-8">
                     <div class="t5-card h-100 mb-0">
@@ -524,6 +524,8 @@
                     </div>
                 </div>
             </div>
+
+            <div class="t5-card meeting-ui"><div class="section-heading"><h2>최근 회의록</h2><button type="button" id="meeting-show-all">전체 보기</button></div><div id="meeting-home-list"><p class="empty">회의록을 불러오는 중입니다.</p></div></div>
 
             <div class="row g-3 mb-4">
                 <div class="col-12 col-md-8">

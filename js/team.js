@@ -229,88 +229,91 @@ async function toggleAdmin(tEmail, isPro) {
     loadTeamMembers();
 }
 
-async function openPermModal(type) {
-    if (type === 'meetings' && !['owner', 'admin'].includes(myRole)) return;
-    currentPermType = type;
+const permissionFields = Object.freeze({ notice: 'noticeAdmins', status: 'statusAdmins', worklog: 'worklogAdmins', leave: 'leaveAdmins', meetings: 'meetingAdmins' });
+let permissionContext = null;
+let permissionSaving = false;
+let permissionOpenVersion = 0;
 
-    let title = '종합 상황판 담당자 설정';
-    let activeList = globalStatusAdmins;
-
-    if (type === 'notice') {
-        title = '공지사항 담당자 설정';
-        activeList = globalNoticeAdmins;
-    } else if (type === 'worklog') {
-        title = '작업일보 완료 담당자 설정';
-        activeList = globalWorklogAdmins;
-    } else if (type === 'meetings') {
-        title = '회의록 담당자 설정';
-        activeList = globalMeetingAdmins;
-    } else if (type === 'leave') {
-        title = '연차관리 담당자 설정';
-        activeList = globalLeaveAdmins;
-    }
-
-    const titleEl = document.getElementById('permModalTitle');
-    if (titleEl) {
-        titleEl.innerText = title;
-    }
-
-    const tDoc = await db.collection("teams").doc(myTeamId).get();
-    const tData = tDoc.data() || {};
-    const members = tData.members || [];
-
-    const permMemberList = document.getElementById('permMemberList');
-    if (!permMemberList) return;
-
-    permMemberList.innerHTML = members.map(m => {
-        const nick = globalEmailToNick[m] || m;
-        const checked = activeList.includes(m) ? 'checked' : '';
-
-        return `
-            <label class="d-flex align-items-center gap-2 p-3 rounded perm-item-box cursor-pointer">
-                <input type="checkbox"
-                       class="form-check-input perm-check"
-                       value="${m}"
-                       ${checked}
-                       style="width:20px; height:20px;">
-                <span class="fw-bold">
-                    ${nick}
-                    <small class="text-secondary fw-normal">(${m})</small>
-                </span>
-            </label>
-        `;
-    }).join('');
-
-    permModalInst.show();
+function permissionMessage(message, error = false) {
+    const el = document.getElementById('permSaveStatus');
+    if (el) { el.textContent = message; el.className = 'small mb-3 ' + (error ? 'text-danger' : 'text-secondary'); }
 }
-
+function canManageTeamPermissions(data, email) {
+    return (data.members || []).includes(email) && (data.owner === email || (data.admins || []).includes(email) || email === 'idong2300@naver.com');
+}
+function permissionError(error) {
+    const code = String(error?.code || '');
+    if (code.endsWith('permission-denied')) return 'Firebase에서 권한 저장을 거부했습니다. 현재 관리자 권한과 게시된 Firestore 규칙을 확인해 주세요. (permission-denied)';
+    if (code.endsWith('unavailable') || code.endsWith('deadline-exceeded')) return '서버에 연결하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 저장해 주세요. (' + code + ')';
+    return error?.message || '권한을 저장하지 못했습니다. 다시 시도해 주세요.';
+}
+async function openPermModal(type) {
+    if (permissionSaving) return;
+    const version = ++permissionOpenVersion;
+    permissionContext = null;
+    const saveButton = document.getElementById('btnSavePerms');
+    if (saveButton) saveButton.disabled = true;
+    const titles = { notice: '공지사항 담당자 설정', status: '종합 상황판 담당자 설정', worklog: '작업일보 완료 담당자 설정', leave: '연차관리 담당자 설정', meetings: '회의록 담당자 설정' };
+    const list = document.getElementById('permMemberList');
+    list.replaceChildren();
+    document.getElementById('permModalTitle').textContent = titles[type] || '담당자 설정';
+    permModalInst.show();
+    permissionMessage('현재 담당자와 관리자 권한을 확인하고 있습니다.');
+    try {
+        if (!Object.hasOwn(permissionFields, type)) throw new Error('설정 항목을 확인할 수 없습니다. 창을 닫고 다시 열어 주세요.');
+        const user = auth.currentUser;
+        if (!user || !myTeamId) throw new Error('로그인 또는 팀 정보를 확인할 수 없습니다. 새로고침 후 다시 시도해 주세요.');
+        const context = { type, field: permissionFields[type], teamId: myTeamId, uid: user.uid, email: user.email };
+        const snapshot = await db.collection('teams').doc(context.teamId).get();
+        if (version !== permissionOpenVersion) return;
+        if (auth.currentUser?.uid !== context.uid || myTeamId !== context.teamId) throw new Error('로그인 또는 팀이 변경되었습니다. 다시 열어 주세요.');
+        if (!snapshot.exists || !canManageTeamPermissions(snapshot.data(), context.email)) throw new Error('팀 소유자 또는 관리자만 담당자를 설정할 수 있습니다.');
+        const data = snapshot.data(), active = data[context.field] || [];
+        for (const email of data.members || []) {
+            const label = document.createElement('label'); label.className = 'd-flex align-items-center gap-2 p-3 rounded perm-item-box cursor-pointer';
+            const check = document.createElement('input'); check.type = 'checkbox'; check.className = 'form-check-input perm-check'; check.value = email; check.checked = active.includes(email); check.style.width = '20px'; check.style.height = '20px';
+            const text = document.createElement('span'); text.className = 'fw-bold'; text.textContent = (globalEmailToNick[email] || email) + ' (' + email + ')';
+            label.append(check, text); list.append(label);
+        }
+        currentPermType = type;
+        permissionContext = context;
+        permissionMessage('담당자를 선택하고 권한 저장을 눌러 주세요.');
+        if (saveButton) saveButton.disabled = false;
+    } catch (error) { console.error('[permissions] open failed', error); permissionMessage(permissionError(error), true); }
+}
 async function savePerms() {
-    if (currentPermType === 'meetings' && !['owner', 'admin'].includes(myRole)) return;
-    const selected = [];
-    document.querySelectorAll('.perm-check:checked').forEach(cb => {
-        selected.push(cb.value);
-    });
-
-    const updateData = {};
-
-    if (currentPermType === 'notice') {
-        updateData.noticeAdmins = selected;
-    } else if (currentPermType === 'worklog') {
-        updateData.worklogAdmins = selected;
-    } else if (currentPermType === 'meetings') {
-        updateData.meetingAdmins = selected;
-    } else if (currentPermType === 'leave') {
-        updateData.leaveAdmins = selected;
-    } else {
-        updateData.statusAdmins = selected;
+    if (permissionSaving) return;
+    const context = permissionContext;
+    if (!context) { permissionMessage('담당자 정보를 불러오지 못했습니다. 창을 닫고 다시 열어 주세요.', true); return; }
+    if (auth.currentUser?.uid !== context.uid || myTeamId !== context.teamId) { permissionMessage('로그인 또는 팀이 변경되었습니다. 다시 열어 주세요.', true); return; }
+    const selected = [...new Set(Array.from(document.querySelectorAll('#permMemberList .perm-check:checked'), cb => cb.value))];
+    const button = document.getElementById('btnSavePerms');
+    const checks = document.querySelectorAll('#permMemberList .perm-check');
+    permissionSaving = true;
+    if (button) { button.disabled = true; button.textContent = '저장 중…'; }
+    checks.forEach(cb => cb.disabled = true);
+    permissionMessage('담당자 권한을 저장하고 있습니다.');
+    const slow = setTimeout(() => permissionMessage('서버 응답을 기다리고 있습니다. 아직 저장 완료가 아니므로 잠시 기다려 주세요.'), 10000);
+    try {
+        const ref = db.collection('teams').doc(context.teamId);
+        await db.runTransaction(async tx => {
+            const snapshot = await tx.get(ref);
+            if (auth.currentUser?.uid !== context.uid || myTeamId !== context.teamId) throw new Error('로그인 또는 팀이 변경되었습니다.');
+            if (!snapshot.exists || !canManageTeamPermissions(snapshot.data(), context.email)) throw new Error('관리자 권한이 변경되어 저장할 수 없습니다.');
+            if (selected.some(email => !(snapshot.data().members || []).includes(email))) throw new Error('팀원 목록이 변경되었습니다. 창을 닫고 다시 선택해 주세요.');
+            tx.update(ref, { [context.field]: selected });
+        });
+        permissionMessage('담당자 권한이 저장되었습니다.');
+        alert('담당자 권한이 저장되었습니다. 최신 권한을 반영하기 위해 새로고침합니다.');
+        location.reload();
+    } catch (error) {
+        console.error('[permissions] save failed', error);
+        permissionMessage(permissionError(error), true);
+    } finally {
+        clearTimeout(slow); permissionSaving = false;
+        if (button) { button.disabled = false; button.textContent = '권한 저장'; }
+        checks.forEach(cb => cb.disabled = false);
     }
-
-    await db.collection("teams").doc(myTeamId).update(updateData);
-
-    permModalInst.hide();
-
-    alert("담당자 권한이 성공적으로 저장되었습니다.\n(새로고침 시 권한이 반영됩니다.)");
-    location.reload();
 }
 
 window.checkTeamUI = checkTeamUI;

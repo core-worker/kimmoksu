@@ -1313,9 +1313,10 @@
                 <h5 class="fw-bold mb-4" id="permModalTitle">담당자 설정</h5>
                 <p class="small text-secondary mb-3">체크된 팀원에게만 수정 및 삭제 권한이 부여됩니다.</p>
                 <div id="permMemberList" class="d-flex flex-column gap-2 mb-4" style="max-height: 300px; overflow-y: auto;"></div>
+                <p id="permSaveStatus" class="small mb-3 text-secondary" role="status" aria-live="polite"></p>
                 <div class="d-flex gap-2 mt-2">
                     <button class="btn btn-secondary w-50 py-2 fw-bold" data-bs-dismiss="modal">취소</button>
-                    <button class="btn btn-primary w-50 py-2 fw-bold" onclick="savePerms()">권한 저장</button>
+                    <button id="btnSavePerms" type="button" class="btn btn-primary w-50 py-2 fw-bold" onclick="savePerms()">권한 저장</button>
                 </div>
             </div>
         </div>
@@ -1336,7 +1337,7 @@
 <script src="js/t5calc.js"></script>
 <script src="js/punch.js"></script>
 <script src="js/memo.js"></script>
-<script src="js/team.js"></script>
+<script src="js/team.js?v=20260916-permissions"></script>
 <script src="js/worklog.js"></script>
 <script src="js/leave.js"></script>
 <script src="js/meetings.js?v=20260916-meetings"></script>

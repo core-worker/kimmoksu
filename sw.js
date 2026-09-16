@@ -2,7 +2,7 @@
 // - 핵심 파일을 캐시에 저장해두고, 네트워크 실패 시 캐시에서 응답
 // - Firebase 통신은 캐싱하지 않음 (실시간 DB 보호)
 
-const CACHE_NAME = 'kimmoksu-v34-permissions';
+const CACHE_NAME = 'kimmoksu-v35-home-layout';
 const CORE_ASSETS = [
     './',
     './index.html',

@@ -4,7 +4,6 @@
 // =====================================================
 
 auth.onAuthStateChanged(async user => {
-    if (window.KimmoksuMeetings) window.KimmoksuMeetings.stop();
     if (user) {
         myEmail = user.email;
         document.getElementById("auth-overlay").style.display = "none";
@@ -34,7 +33,6 @@ auth.onAuthStateChanged(async user => {
             globalWorklogAdmins = tData.worklogAdmins || [];
             globalLeaveAdmins = tData.leaveAdmins || [];
             globalMeetingAdmins = tData.meetingAdmins || [];
-            if (window.KimmoksuMeetings) window.KimmoksuMeetings.start({ teamId: myTeamId, email: myEmail, uid: user.uid, nickname: userNickname });
 
             applyRoleRestrictions();
 

@@ -1329,7 +1329,7 @@
 <dialog class="meeting-ui" id="meeting-reader"><div class="dialog-top"><span class="eyebrow">회의록 상세</span><button data-close="meeting-reader" aria-label="회의록 닫기">닫기 ✕</button></div><div id="meeting-detail"></div><div class="dialog-actions"><button id="meeting-copy">내용 복사</button><button id="meeting-pin">상단 고정</button><button id="meeting-edit" class="primary">수정</button></div></dialog>
 <dialog class="meeting-ui" id="meeting-editor"><form id="meeting-form"><div class="dialog-top"><h2 id="meeting-editor-title">회의록 작성</h2><button type="button" id="meeting-close-editor">닫기 ✕</button></div><div class="form-grid"><label>회의 날짜<input id="meeting-date" type="date" required></label><label>작성자<input id="meeting-author" readonly aria-label="로그인한 작성자"></label></div><label>제목<input id="meeting-title" required maxlength="120" placeholder="예: 직원회의 — 현장 정리 및 자재 사용"></label><label>회의 내용<textarea id="meeting-body" required rows="12" placeholder="회의에서 나온 이야기를 주제별로 정리해 주세요.\n\n• 주요 내용\n\n• 꼭 기억할 내용"></textarea></label><p class="helper">기존 회의록을 그대로 붙여넣을 수 있습니다. 줄바꿈과 • 글머리표를 사용해 정리해 주세요.</p><div class="save-state" id="meeting-save-state" role="status">작성 중인 내용은 자동 임시저장됩니다.</div><div class="dialog-actions"><button type="button" id="meeting-save-draft">임시저장 후 닫기</button><button type="submit" class="primary">게시하기</button></div></form></dialog>
 <div id="meeting-toast" role="status" aria-live="polite"></div>
-<script src="js/main.js"></script>
+<script src="js/main.js?v=20260916-meetings"></script>
 <script src="js/board_memo.js"></script>
 <script src="js/status.js"></script>
 <script src="js/gantt.js"></script>
@@ -1339,8 +1339,8 @@
 <script src="js/team.js"></script>
 <script src="js/worklog.js"></script>
 <script src="js/leave.js"></script>
-<script src="js/meetings.js"></script>
-<script src="js/auth.js"></script>
+<script src="js/meetings.js?v=20260916-meetings"></script>
+<script src="js/auth.js?v=20260916-meetings"></script>
 
 
 

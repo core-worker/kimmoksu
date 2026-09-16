@@ -7,6 +7,7 @@
     let writer = false, manager = false, tab = 'published', selected = null, editing = null;
     let timer = null, pending = Promise.resolve(), dirty = false, busy = false, version = 0, generation = 0;
     let recordsReady = false, recordsError = '', readMarks = {}, recovery = null;
+    let authEpoch = 0, sessionMessage = '로그인 상태를 확인하는 중입니다.', retryAllowed = false;
     const now = () => firebase.firestore.FieldValue.serverTimestamp();
     const millis = value => value && typeof value.toMillis === 'function' ? value.toMillis() : 0;
     const teamRef = () => db.collection('teams').doc(session.teamId);
@@ -31,7 +32,7 @@
         $('new').hidden = !writer; $('tabs').hidden = !writer;
         document.getElementById('btnMeetingPerm').hidden = !manager;
         const published = [...records].sort((a, b) => b.date.localeCompare(a.date) || millis(b.updatedAt) - millis(a.updatedAt));
-        const empty = session ? (recordsError || (!recordsReady ? '회의록을 불러오는 중입니다.' : '아직 게시된 회의록이 없습니다.')) : '로그인 후 회의록을 확인할 수 있습니다.';
+        const empty = session ? (recordsError || (!recordsReady ? '회의록을 불러오는 중입니다.' : '아직 게시된 회의록이 없습니다.')) : sessionMessage;
         $('recent').innerHTML = published.slice(0, 3).map(r => `<button class="recent-card" type="button" data-meeting-open="${esc(r.id)}"><span class="metadata">${esc(r.date)}${fresh(r) ? '<span class="new">NEW</span>' : ''}</span><strong>${esc(r.title)}</strong><span class="metadata">${esc(r.authorName)}</span></button>`).join('') || `<div class="empty">${esc(empty)}</div>`;
         $('home-list').innerHTML = published.slice(0, 3).map(r => row(r, '')).join('') || `<div class="empty">${esc(empty)}</div>`;
         const q = $('query').value.trim(), from = $('from').value, to = $('to').value;
@@ -39,6 +40,10 @@
         $('count').textContent = String(rows.length);
         $('list').innerHTML = from && to && from > to ? '<div class="empty">시작일을 종료일 이전으로 선택해 주세요.</div>' : rows.map(r => row(r, q)).join('') || `<div class="empty">${esc(q || from || to ? '검색 조건에 맞는 회의록이 없습니다.' : tab === 'draft' ? '작성 중인 회의록이 없습니다.' : empty)}</div>`;
         $('status').textContent = recordsError;
+        if (retryAllowed) {
+            const retry = document.createElement('button'); retry.type = 'button'; retry.textContent = '다시 불러오기';
+            retry.onclick = () => initializeFromAuth(auth.currentUser); $('status').append(' ', retry);
+        }
         if (recovery && writer) { const b = document.createElement('button'); b.type = 'button'; b.textContent = '저장 중이던 내용 복구'; b.onclick = () => openEditor(recovery, true); $('status').append(' ', b); }
         $('tabs').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     }
@@ -140,7 +145,8 @@
             drafts = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })); render();
         }, error => { if (session === current) { $('save-state').textContent = fail(error); toast('임시저장 목록을 불러오지 못했습니다. 권한과 연결을 확인해 주세요.'); } });
     }
-    function stop() {
+    function stop(message = '로그인 후 회의록을 확인할 수 있습니다.', allowRetry = false) {
+        sessionMessage = message; retryAllowed = allowRetry;
         backup(); generation++; clearTimeout(timer);
         unsubscribers.forEach(fn => fn()); unsubscribers = [];
         if (draftUnsubscribe) draftUnsubscribe(); draftUnsubscribe = null;
@@ -148,26 +154,54 @@
         $('reader').close(); $('editor').close(); $('detail').textContent = ''; $('form').reset(); editing = null; dirty = false; pending = Promise.resolve(); setBusy(false); render();
     }
     function start(context) {
-        stop(); session = { ...context }; const current = session;
+        if (session && session.uid === context.uid && session.teamId === context.teamId) return;
+        stop('회의록을 불러오는 중입니다.'); session = { ...context }; const current = session;
         try { readMarks = JSON.parse(localStorage.getItem(key('read')) || '{}') || {}; recovery = JSON.parse(localStorage.getItem(key('recovery')) || 'null'); } catch { readMarks = {}; recovery = null; }
         if (recovery && (typeof recovery.id !== 'string' || recovery.id.includes('/') || typeof recovery.body !== 'string' || typeof recovery.title !== 'string' || !Number.isInteger(recovery.baseRevision) || recovery.baseRevision < 0)) recovery = null;
         unsubscribers.push(teamRef().onSnapshot(snapshot => {
             if (session !== current) return;
             const previous = writer;
-            if (!snapshot.exists || !permissionFromTeam(snapshot.data())) { stop(); return; }
+            if (!snapshot.exists || !permissionFromTeam(snapshot.data())) { stop('현재 계정의 팀 소속을 확인할 수 없습니다. 팀원 및 조직 관리에서 소속을 확인해 주세요.', true); return; }
             if (previous !== writer) {
                 listenDrafts();
                 if (!writer) { backup(); clearTimeout(timer); $('editor').close(); editing = null; dirty = false; tab = 'published'; }
             }
             if ($('reader').open && selected) openRecord(selected); else render();
-        }, () => { if (session === current) { stop(); toast('회의록 권한을 불러오지 못했습니다. 다시 로그인해 주세요.'); } }));
+        }, error => { if (session === current) {
+            console.error('[meetings] team subscription failed', error);
+            stop(error?.code === 'permission-denied' ? '로그인은 되어 있지만 팀 정보 접근이 거부되었습니다. Firebase 규칙을 확인해 주세요.' : '로그인은 되어 있지만 팀 정보를 불러오지 못했습니다. 연결 상태를 확인한 뒤 다시 불러오세요.', true);
+        } }));
         unsubscribers.push(teamRef().collection('meetings').onSnapshot(snapshot => {
             if (session !== current) return;
-            records = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })); recordsReady = true; recordsError = '';
+            records = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })); recordsReady = true; retryAllowed = false; recordsError = '';
             if ($('reader').open && selected) { if (records.some(r => r.id === selected)) openRecord(selected); else $('reader').close(); }
             render();
-        }, error => { if (session === current) { recordsReady = true; records = []; $('reader').close(); $('detail').textContent = ''; recordsError = error?.code === 'permission-denied' ? '회의록 접근 권한을 확인해 주세요.' : '회의록을 불러오지 못했습니다. 연결 상태를 확인한 후 새로고침해 주세요.'; render(); } }));
+        }, error => { if (session === current) { recordsReady = true; retryAllowed = true; records = []; $('reader').close(); $('detail').textContent = ''; recordsError = error?.code === 'permission-denied' ? '회의록 접근 권한을 확인해 주세요.' : '회의록을 불러오지 못했습니다. 연결 상태를 확인한 후 새로고침해 주세요.'; render(); } }));
         render();
+    }
+    // Own the Firebase subscription: meeting initialization must not depend on a cached auth.js.
+    async function initializeFromAuth(user) {
+        const epoch = ++authEpoch;
+        stop(user ? '로그인 정보를 확인하고 있습니다.' : '로그인 후 회의록을 확인할 수 있습니다.');
+        if (!user) return;
+        if (!user.email) { stop('이 계정에는 이메일 정보가 없습니다. ERP 계정을 확인해 주세요.'); return; }
+        try {
+            const teams = await db.collection('teams').where('members', 'array-contains', user.email).get();
+            if (epoch !== authEpoch) return;
+            if (teams.empty) { stop('로그인은 되어 있지만 소속 팀이 없습니다. 팀원 및 조직 관리에서 가입 상태를 확인해 주세요.', true); return; }
+            const team = teams.docs[0];
+            let nickname = user.displayName || user.email.split('@')[0];
+            try {
+                const profile = await db.collection('users').doc(user.email).get();
+                if (profile.exists && profile.data().nickname) nickname = profile.data().nickname;
+            } catch (error) { console.warn('[meetings] profile lookup failed; using account name', error); }
+            if (epoch !== authEpoch) return;
+            start({ teamId: team.id, email: user.email, uid: user.uid, nickname });
+        } catch (error) {
+            if (epoch !== authEpoch) return;
+            console.error('[meetings] initialization failed', error);
+            stop(error?.code === 'permission-denied' ? '로그인은 되어 있지만 팀 정보 접근이 거부되었습니다. Firebase 규칙을 확인해 주세요.' : '로그인은 되어 있지만 회의록 연결을 시작하지 못했습니다. 다시 불러오세요.', true);
+        }
     }
     $('new').onclick = () => openEditor(); $('close-editor').onclick = closeEditor; $('save-draft').onclick = closeEditor;
     $('editor').addEventListener('cancel', event => { event.preventDefault(); closeEditor(); });
@@ -187,4 +221,8 @@
     window.addEventListener('beforeunload', event => { if (editing && (dirty || busy)) { backup(); event.preventDefault(); event.returnValue = ''; } });
     window.KimmoksuMeetings = { start, stop, refreshPermissions: render, prepareLogout: async () => { if (busy) { toast('저장 중입니다. 잠시 후 다시 시도해 주세요.'); return false; } return saveDraft(); } };
     render();
+    auth.onAuthStateChanged(initializeFromAuth, error => {
+        authEpoch++; console.error('[meetings] auth state failed', error);
+        stop('로그인 상태를 확인하지 못했습니다. 다시 불러오세요.', true);
+    });
 })();

@@ -24,7 +24,13 @@ service cloud.firestore {
         && request.resource.data.get('leaveAdmins', []) == []
         && request.resource.data.get('meetingAdmins', []) == []
         && request.resource.data.inviteCode is string;
+      // Validate only the selected meeting writers, not unrelated legacy team fields.
+      // Existing teams may omit admins or retain a departed owner/admin.
+      allow update: if meetingManager(teamId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['meetingAdmins'])
+        && validMeetingAdminsChange();
       allow update: if meetingMember(teamId)
+        && validMeetingAdminsChange()
         && request.resource.data.owner == resource.data.owner
         && request.resource.data.members is list
         && request.resource.data.admins is list
@@ -53,6 +59,11 @@ service cloud.firestore {
       allow delete: if meetingManager(teamId);
     }
 
+    function validMeetingAdminsChange() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['meetingAdmins'])
+        || (request.resource.data.get('meetingAdmins', null) is list
+          && resource.data.get('members', []).hasAll(request.resource.data.meetingAdmins));
+    }
     function meetingMember(teamId) {
       return request.auth != null
         && request.auth.token.email is string

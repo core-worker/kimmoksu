@@ -43,6 +43,29 @@ const fs = require('node:fs');
     await assertSucceeds(setDoc(doc(clients.outsider,'teams/t2'),{owner:'outsider@test.com',members:['outsider@test.com'],admins:[],meetingAdmins:[],inviteCode:'XYZ123'}));
     await assertSucceeds(setDoc(doc(clients.reader,'worklogs/compatibility'),{test:true}));
     await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(),'worklogs/compatibility')));
-    console.log('PASS: emulator checks for meeting access, private drafts, role escalation, join approval, transaction publish, and legacy compatibility.');
+    const specialEmail='idong2300@naver.com';
+    const special=env.authenticatedContext('special',{email:specialEmail}).firestore();
+    const legacyTeams={
+      missingAdmins:{owner:specialEmail,members:[specialEmail,'reader@test.com']},
+      missingOwner:{members:[specialEmail,'reader@test.com'],admins:[]},
+      departedOwner:{owner:'departed@test.com',members:[specialEmail,'admin@test.com','reader@test.com'],admins:['admin@test.com']},
+      departedAdmin:{owner:specialEmail,members:[specialEmail,'reader@test.com'],admins:['departed@test.com']}
+    };
+    await env.withSecurityRulesDisabled(async c=>{
+      for(const [id,data] of Object.entries(legacyTeams)) await setDoc(doc(c.firestore(),'teams/'+id),data);
+    });
+    for(const id of Object.keys(legacyTeams)) {
+      const ref=doc(special,'teams/'+id);
+      await assertSucceeds(runTransaction(special,async tx=>{await tx.get(ref);tx.update(ref,{meetingAdmins:['reader@test.com']});}));
+      await assertSucceeds(updateDoc(ref,{meetingAdmins:[]}));
+      await assertFails(updateDoc(doc(clients.reader,'teams/'+id),{meetingAdmins:['reader@test.com']}));
+      await assertFails(updateDoc(ref,{meetingAdmins:['outsider@test.com']}));
+      await assertFails(updateDoc(ref,{meetingAdmins:'reader@test.com'}));
+      await assertFails(updateDoc(doc(clients.reader,'teams/'+id),{meetingAdmins:['reader@test.com'],admins:['reader@test.com']}));
+      await assertFails(updateDoc(ref,{meetingAdmins:[],owner:'reader@test.com'}));
+    }
+    await assertSucceeds(updateDoc(doc(clients.admin,'teams/departedOwner'),{meetingAdmins:['reader@test.com']}));
+    await assertFails(updateDoc(doc(clients.outsider,'teams/missingAdmins'),{meetingAdmins:[]}));
+    console.log('PASS: emulator checks for meeting access, private drafts, role escalation, join approval, transaction publish, and legacy permission saves.');
   } finally { await env.cleanup(); }
 })().catch(e=>{console.error(e);process.exitCode=1;});

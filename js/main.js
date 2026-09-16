@@ -13,6 +13,7 @@ let globalNoticeAdmins = [];
 let globalStatusAdmins = [];
 let globalWorklogAdmins = [];
 let globalLeaveAdmins = [];
+let globalMeetingAdmins = [];
 let currentPermType = "";
 
 let worklogCollapsedStates = {};
@@ -273,6 +274,7 @@ window.addEventListener("popstate", e => {
 function applyRoleRestrictions() {
     const isSuper = myRole === "owner" || myRole === "admin";
     const canUseEditMode = canUseIntegratedEditMode();
+    if (window.KimmoksuMeetings) window.KimmoksuMeetings.refreshPermissions();
 
     document.getElementById("btnNoticePerm").style.display = isSuper ? "inline-block" : "none";
     document.getElementById("btnStatusPerm").style.display = isSuper ? "inline-block" : "none";

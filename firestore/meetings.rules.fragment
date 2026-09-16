@@ -1,0 +1,69 @@
+// Insert INSIDE the existing match /databases/{database}/documents block.
+// This is an additive fragment, NOT a replacement for the deployed rules.
+// A broad matching allow elsewhere must be restricted: Firestore allow rules OR together.
+function meetingMember(teamId) {
+  return request.auth != null
+    && request.auth.token.email is string
+    && request.auth.token.email in get(/databases/$(database)/documents/teams/$(teamId)).data.get('members', []);
+}
+function meetingManager(teamId) {
+  let t = get(/databases/$(database)/documents/teams/$(teamId)).data;
+  return meetingMember(teamId)
+    && (t.get('owner', '') == request.auth.token.email
+      || request.auth.token.email in t.get('admins', [])
+      || request.auth.token.email == 'idong2300@naver.com');
+}
+function meetingWriter(teamId) {
+  return meetingMember(teamId)
+    && (meetingManager(teamId)
+      || request.auth.token.email in get(/databases/$(database)/documents/teams/$(teamId)).data.get('meetingAdmins', []));
+}
+function validMeetingText(d) {
+  return d.title is string && d.title.size() > 0 && d.title.size() <= 120
+    && d.body is string && d.body.size() > 0 && d.body.size() <= 100000
+    && d.date is string && d.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+}
+function validPublishedMeeting(d) {
+  return d.keys().hasAll(['title','body','date','authorUid','authorName','createdAt','updatedAt','updatedByUid','updatedByName','revision','pinned'])
+    && d.keys().hasOnly(['title','body','date','authorUid','authorName','createdAt','updatedAt','updatedByUid','updatedByName','revision','pinned'])
+    && validMeetingText(d)
+    && d.authorUid is string && d.authorName is string && d.authorName.size() <= 100
+    && d.updatedByUid == request.auth.uid && d.updatedByName is string && d.updatedByName.size() <= 100
+    && d.createdAt is timestamp && d.updatedAt == request.time
+    && d.revision is int && d.pinned is bool;
+}
+match /teams/{teamId}/meetings/{meetingId} {
+  allow read: if meetingMember(teamId);
+  allow create: if meetingWriter(teamId) && validPublishedMeeting(request.resource.data)
+    && request.resource.data.authorUid == request.auth.uid
+    && request.resource.data.createdAt == request.time
+    && request.resource.data.revision == 1;
+  allow update: if meetingWriter(teamId) && (
+    // Pinning is independent from content edits and does not invalidate a draft revision.
+    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pinned'])
+      && request.resource.data.pinned is bool)
+    || (validPublishedMeeting(request.resource.data)
+      && request.resource.data.authorUid == resource.data.authorUid
+      && request.resource.data.authorName == resource.data.authorName
+      && request.resource.data.createdAt == resource.data.createdAt
+      && request.resource.data.revision == resource.data.revision + 1));
+  allow delete: if false;
+}
+match /teams/{teamId}/meetingDrafts/{authorUid}/items/{meetingId} {
+  allow read, delete: if meetingWriter(teamId) && request.auth.uid == authorUid;
+  allow create, update: if meetingWriter(teamId) && request.auth.uid == authorUid
+    && request.resource.data.keys().hasAll(['title','body','date','authorUid','authorName','baseRevision','updatedAt'])
+    && request.resource.data.keys().hasOnly(['title','body','date','authorUid','authorName','baseRevision','updatedAt'])
+    && request.resource.data.authorUid == authorUid
+    && request.resource.data.authorName is string && request.resource.data.authorName.size() <= 100
+    && request.resource.data.title is string && request.resource.data.title.size() <= 120
+    && request.resource.data.body is string && request.resource.data.body.size() <= 100000
+    && request.resource.data.date is string && request.resource.data.date.size() <= 10
+    && request.resource.data.baseRevision is int && request.resource.data.baseRevision >= 0
+    && request.resource.data.updatedAt == request.time;
+}
+// ALSO amend EVERY existing allow-update on /teams/{teamId}:
+//   <existing condition>
+//   && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['meetingAdmins'])
+//       || meetingManager(teamId))
+// Existing team membership/owner/admin fields must already be protected against self-escalation.

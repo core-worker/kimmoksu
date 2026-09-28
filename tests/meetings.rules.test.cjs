@@ -66,6 +66,25 @@ const fs = require('node:fs');
     }
     await assertSucceeds(updateDoc(doc(clients.admin,'teams/departedOwner'),{meetingAdmins:['reader@test.com']}));
     await assertFails(updateDoc(doc(clients.outsider,'teams/missingAdmins'),{meetingAdmins:[]}));
+    for (const [id, data] of Object.entries(legacyTeams)) {
+      const requestPath='teams/'+id+'/joinRequests/outsider';
+      await assertSucceeds(setDoc(doc(clients.outsider,requestPath),{email:'outsider@test.com',nickname:'new member',createdAt:serverTimestamp()}));
+      const approve = client => runTransaction(client,async tx=>{
+        const t=doc(client,'teams/'+id), r=doc(client,requestPath);
+        const td=await tx.get(t), rd=await tx.get(r);
+        tx.update(t,{members:Array.from(new Set([...td.data().members,rd.data().email]))});
+        tx.delete(r);
+      });
+      await assertFails(approve(clients.reader));
+      await assertFails(updateDoc(doc(clients.outsider,'teams/'+id),{members:[...data.members,'outsider@test.com']}));
+      await assertFails(updateDoc(doc(special,'teams/'+id),{members:[...data.members,'outsider@test.com'],owner:'outsider@test.com'}));
+      const manager=id==='departedOwner'?clients.admin:special;
+      await assertSucceeds(approve(manager));
+      const saved=(await getDoc(doc(manager,'teams/'+id))).data();
+      if (!saved.members.includes('outsider@test.com') || (await getDoc(doc(manager,requestPath))).exists()) throw Error('Approval must add member and remove request atomically');
+      for (const key of ['owner','admins']) if(JSON.stringify(saved[key])!==JSON.stringify(data[key])) throw Error('Approval changed legacy roles');
+      await assertFails(updateDoc(doc(manager,'teams/'+id),{members:'invalid'}));
+    }
     console.log('PASS: emulator checks for meeting access, private drafts, role escalation, join approval, transaction publish, and legacy permission saves.');
   } finally { await env.cleanup(); }
 })().catch(e=>{console.error(e);process.exitCode=1;});

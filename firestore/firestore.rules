@@ -29,6 +29,12 @@ service cloud.firestore {
       allow update: if meetingManager(teamId)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['meetingAdmins'])
         && validMeetingAdminsChange();
+      // Join approval only adds members. Preserve unrelated legacy role data.
+      // Authorization is checked against the existing team, before the write.
+      allow update: if meetingManager(teamId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
+        && request.resource.data.members is list
+        && request.resource.data.members.hasAll(resource.data.get('members', []));
       allow update: if meetingMember(teamId)
         && validMeetingAdminsChange()
         && request.resource.data.owner == resource.data.owner
